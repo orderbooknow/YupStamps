@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Yupland NFT Explorer</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--tg-theme-bg-color);
+            color: var(--tg-theme-text-color);
+            padding: 16px;
+        }
+        .container { max-width: 600px; margin: 0 auto; }
+        
+        /* Поиск */
+        .search-box { margin-bottom: 20px; }
+        .search-input {
+            width: 100%;
+            padding: 12px 16px;
+            font-size: 16px;
+            background: var(--tg-theme-secondary-bg-color);
+            color: var(--tg-theme-text-color);
+            border: none;
+            border-radius: 12px;
+            outline: none;
+        }
+        
+        /* Фильтры */
+        .filters {
+            display: flex;
+            gap: 8px;
+            margin: 12px 0;
+            flex-wrap: wrap;
+        }
+        .filter-btn {
+            padding: 6px 14px;
+            background: var(--tg-theme-secondary-bg-color);
+            color: var(--tg-theme-text-color);
+            border: none;
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .filter-btn.active {
+            background: var(--tg-theme-button-color);
+            color: var(--tg-theme-button-text-color);
+        }
+        
+        /* Статистика */
+        .stats {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .stat-card {
+            flex: 1;
+            min-width: 100px;
+            background: var(--tg-theme-secondary-bg-color);
+            padding: 12px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--tg-theme-button-color);
+        }
+        .stat-label {
+            font-size: 11px;
+            opacity: 0.7;
+            margin-top: 4px;
+        }
+        
+        /* Вкладки */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--tg-theme-secondary-bg-color);
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 20px;
+        }
+        .tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .tab.active {
+            background: var(--tg-theme-button-color);
+            color: var(--tg-theme-button-text-color);
+        }
+        
+        /* NFT Карточка */
+        .nft-card {
+            background: var(--tg-theme-secondary-bg-color);
+            border-radius: 16px;
+            margin-bottom: 16px;
+            overflow: hidden;
+            display: flex;
+            gap: 12px;
+            padding: 12px;
+        }
+        .nft-image {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 12px;
+            background: #2a2a2a;
+            flex-shrink: 0;
+        }
+        .nft-info {
+            flex: 1;
+        }
+        .nft-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .nft-id {
+            font-size: 10px;
+            opacity: 0.5;
+            font-family: monospace;
+            margin-bottom: 4px;
+        }
+        .nft-owner {
+            font-size: 12px;
+            padding: 4px 8px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 6px;
+            display: inline-block;
+            margin-top: 6px;
+        }
+        .rarity-badge {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            display: inline-block;
+            margin-left: 8px;
+        }
+        .rarity-legend { background: #ffd700; color: #000; }
+        .rarity-epic { background: #9b59b6; color: #fff; }
+        .rarity-rare { background: #3498db; color: #fff; }
+        .rarity-common { background: #7f8c8d; color: #fff; }
+        
+        /* Таблица топ держателей */
+        .holder-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px;
+            background: var(--tg-theme-secondary-bg-color);
+            border-radius: 10px;
+            margin-bottom: 8px;
+        }
+        .holder-rank {
+            font-weight: bold;
+            width: 40px;
+        }
+        .holder-address {
+            flex: 1;
+            font-family: monospace;
+            font-size: 13px;
+        }
+        .holder-count {
+            font-weight: bold;
+            color: var(--tg-theme-button-color);
+        }
+        
+        .loading, .no-results {
+            text-align: center;
+            padding: 40px;
+            opacity: 0.6;
+        }
+        
+        .load-more {
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>🎨 Yupland NFT Explorer</h2>
+    
+    <!-- Поиск -->
+    <div class="search-box">
+        <input type="text" id="searchInput" class="search-input" placeholder="🔍 Поиск по названию или владельцу...">
+    </div>
+    
+    <!-- Фильтры по редкости -->
+    <div class="filters" id="rarityFilters">
+        <button class="filter-btn active" data-rarity="all">Все</button>
+        <button class="filter-btn" data-rarity="legend">⭐ Legend</button>
+        <button class="filter-btn" data-rarity="epic">💜 Epic</button>
+        <button class="filter-btn" data-rarity="rare">💙 Rare</button>
+        <button class="filter-btn" data-rarity="common">🤍 Common</button>
+    </div>
+    
+    <!-- Статистика -->
+    <div class="stats">
+        <div class="stat-card">
+            <div class="stat-value" id="totalSupply">...</div>
+            <div class="stat-label">Всего NFT</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="burnedCount">...</div>
+            <div class="stat-label">Сожжено</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="holdersCount">...</div>
+            <div class="stat-label">Держателей</div>
+        </div>
+    </div>
+    
+    <!-- Вкладки -->
+    <div class="tabs">
+        <div class="tab active" data-tab="gallery">🖼️ Галерея</div>
+        <div class="tab" data-tab="holders">🏆 Топ держатели</div>
+    </div>
+    
+    <!-- Галерея -->
+    <div id="galleryView">
+        <div id="results"></div>
+        <button id="loadMoreBtn" class="load-more" style="display: none;">Загрузить ещё</button>
+    </div>
+    
+    <!-- Топ держатели -->
+    <div id="holdersView" style="display: none;">
+        <div id="holdersList"></div>
+    </div>
+</div>
+
+<script>
+    const CONTRACT_ID = 'yuplandshop.mintbase1.near';
+    const RPC_URL = 'https://rpc.mainnet.near.org';
+    
+    let tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
+    
+    // Состояние
+    let allNFTs = [];
+    let filteredNFTs = [];
+    let currentRarity = 'all';
+    let currentTab = 'gallery';
+    let displayedCount = 20;
+    let holdersData = [];
+    
+    // RPC вызов
+    async function callView(method, args) {
+        const response = await fetch(RPC_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                jsonrpc: '2.0',
+                id: '1',
+                method: 'query',
+                params: {
+                    request_type: 'call_function',
+                    account_id: CONTRACT_ID,
+                    method_name: method,
+                    args_base64: btoa(JSON.stringify(args))
+                }
+            })
+        });
+        const { result } = await response.json();
+        if (result && result.result) {
+            return JSON.parse(atob(result.result));
+        }
+        return null;
+    }
+    
+    // Определение редкости по названию
+    function getRarity(title) {
+        if (!title) return 'common';
+        const lower = title.toLowerCase();
+        if (lower.includes('legend')) return 'legend';
+        if (lower.includes('epic')) return 'epic';
+        if (lower.includes('rare')) return 'rare';
+        return 'common';
+    }
+    
+    // Загрузка всех NFT (с пагинацией)
+    async function loadAllNFTs() {
+        let allTokens = [];
+        let fromIndex = "0";
+        const limit = 100;
+        
+        while (true) {
+            const tokens = await callView('nft_tokens', { from_index: fromIndex, limit });
+            if (!tokens || tokens.length === 0) break;
+            
+            // Добавляем поле редкости
+            tokens.forEach(t => {
+                t.rarity = getRarity(t.metadata?.title);
+            });
+            
+            allTokens.push(...tokens);
+            fromIndex = (parseInt(fromIndex) + tokens.length).toString();
+            
+            if (tokens.length < limit) break;
+        }
+        
+        allNFTs = allTokens;
+        return allNFTs;
+    }
+    
+    // Фильтрация
+    function filterNFTs() {
+        const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+        
+        filteredNFTs = allNFTs.filter(nft => {
+            // Фильтр по редкости
+            if (currentRarity !== 'all' && nft.rarity !== currentRarity) return false;
+            
+            // Поиск
+            if (searchQuery) {
+                const title = (nft.metadata?.title || '').toLowerCase();
+                const owner = (nft.owner_id || '').toLowerCase();
+                if (!title.includes(searchQuery) && !owner.includes(searchQuery)) return false;
+            }
+            
+            return true;
+        });
+        
+        renderGallery();
+    }
+    
+    // Рендер галереи
+    function renderGallery() {
+        const container = document.getElementById('results');
+        const loadMoreBtn = document.getElementById('loadMoreBtn');
+        const toShow = filteredNFTs.slice(0, displayedCount);
+        
+        if (toShow.length === 0) {
+            container.innerHTML = '<div class="no-results">😕 Ничего не найдено</div>';
+            loadMoreBtn.style.display = 'none';
+            return;
+        }
+        
+        const rarityColors = {
+            legend: '⭐ Legend',
+            epic: '💜 Epic',
+            rare: '💙 Rare',
+            common: '🤍 Common'
+        };
+        
+        container.innerHTML = toShow.map(nft => `
+            <div class="nft-card">
+                ${nft.metadata?.media ? 
+                    `<img class="nft-image" src="${nft.metadata.media}" alt="${nft.metadata?.title || nft.token_id}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%23666\'%3E%3Crect width=\'24\' height=\'24\'/%3E%3Ctext x=\'12\' y=\'16\' text-anchor=\'middle\' fill=\'%23aaa\'%3E🖼️%3C/text%3E%3C/svg%3E'">` : 
+                    `<div class="nft-image" style="display: flex; align-items: center; justify-content: center; font-size: 30px;">🖼️</div>`
+                }
+                <div class="nft-info">
+                    <div class="nft-title">
+                        ${nft.metadata?.title || 'Без названия'}
+                        <span class="rarity-badge rarity-${nft.rarity}">${rarityColors[nft.rarity] || 'Common'}</span>
+                    </div>
+                    <div class="nft-id">ID: ${nft.token_id}</div>
+                    <div class="nft-owner">
+                        👤 ${nft.owner_id || 'Неизвестно'}
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        
+        loadMoreBtn.style.display = displayedCount < filteredNFTs.length ? 'block' : 'none';
+    }
+    
+    // Загрузка топ держателей
+    async function loadTopHolders() {
+        const container = document.getElementById('holdersList');
+        container.innerHTML = '<div class="loading">🏆 Загрузка топ держателей...</div>';
+        
+        // Собираем статистику по владельцам
+        const ownerMap = new Map();
+        
+        for (const nft of allNFTs) {
+            const owner = nft.owner_id;
+            if (owner && !owner.includes('system')) {
+                ownerMap.set(owner, (ownerMap.get(owner) || 0) + 1);
+            }
+        }
+        
+        // Сортируем и берем топ 50
+        holdersData = Array.from(ownerMap.entries())
+            .map(([address, count]) => ({ address, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 50);
+        
+        if (holdersData.length === 0) {
+            container.innerHTML = '<div class="no-results">😕 Нет данных о держателях</div>';
+            return;
+        }
+        
+        container.innerHTML = holdersData.map((holder, idx) => `
+            <div class="holder-row">
+                <span class="holder-rank">#${idx + 1}</span>
+                <span class="holder-address">${holder.address}</span>
+                <span class="holder-count">${holder.count} NFT</span>
+            </div>
+        `).join('');
+    }
+    
+    // Статистика
+    async function loadStats() {
+        document.getElementById('totalSupply').textContent = allNFTs.length || '⏳';
+        document.getElementById('holdersCount').textContent = '⏳';
+        
+        // Уникальные держатели
+        const uniqueOwners = new Set();
+        allNFTs.forEach(nft => {
+            if (nft.owner_id && !nft.owner_id.includes('system')) {
+                uniqueOwners.add(nft.owner_id);
+            }
+        });
+        document.getElementById('holdersCount').textContent = uniqueOwners.size;
+        
+        // Сожженные (приблизительно)
+        const burned = allNFTs.filter(n => n.owner_id === 'system' || n.owner_id?.includes('burn')).length;
+        document.getElementById('burnedCount').textContent = burned || '0';
+    }
+    
+    // Обработчики
+    document.getElementById('searchInput').addEventListener('input', () => {
+        displayedCount = 20;
+        filterNFTs();
+    });
+    
+    document.querySelectorAll('[data-rarity]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('[data-rarity]').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentRarity = btn.dataset.rarity;
+            displayedCount = 20;
+            filterNFTs();
+        });
+    });
+    
+    document.getElementById('loadMoreBtn').addEventListener('click', () => {
+        displayedCount += 20;
+        renderGallery();
+    });
+    
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            currentTab = tab.dataset.tab;
+            
+            if (currentTab === 'gallery') {
+                document.getElementById('galleryView').style.display = 'block';
+                document.getElementById('holdersView').style.display = 'none';
+                filterNFTs();
+            } else {
+                document.getElementById('galleryView').style.display = 'none';
+                document.getElementById('holdersView').style.display = 'block';
+                loadTopHolders();
+            }
+        });
+    });
+    
+    // Инициализация
+    async function init() {
+        await loadAllNFTs();
+        await loadStats();
+        filterNFTs();
+    }
+    
+    init();
+</script>
+</body>
+</html>
