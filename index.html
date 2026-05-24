@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Yupland Stamps Explorer</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="supabase.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            padding: 16px;
+        }
+        .container { max-width: 600px; margin: 0 auto; }
+        
+        /* Анимации */
+        @keyframes pulse { 0% { transform: scale(0.95); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes spin { 0% { transform: rotateY(0deg); } 100% { transform: rotateY(360deg); } }
+        @keyframes bounce { 0% { transform: translateY(-20px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+        
+        .btn {
+            background: #0f3460;
+            color: #eee;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 16px;
+            transition: all 0.3s;
+        }
+        .btn-primary { background: #e94560; }
+        .btn-primary:hover { background: #ff6b8b; transform: scale(1.02); }
+        
+        .tabs {
+            display: flex;
+            gap: 4px;
+            background: #16213e;
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .tab {
+            flex: 1;
+            padding: 8px 12px;
+            text-align: center;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .tab.active { background: #0f3460; color: #e94560; }
+        
+        .group-filter {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            max-height: 100px;
+            overflow-y: auto;
+            padding: 8px;
+            background: #0f0f1a;
+            border-radius: 12px;
+        }
+        .group-btn {
+            padding: 6px 12px;
+            border-radius: 20px;
+            background: #16213e;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        .group-btn.active { background: #e94560; }
+        
+        .stamp-card {
+            background: #16213e;
+            border-radius: 16px;
+            margin-bottom: 16px;
+            overflow: hidden;
+            display: flex;
+            gap: 12px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .stamp-card:hover { transform: translateX(4px); background: #1f2a4e; }
+        .stamp-image {
+            width: 70px;
+            height: 70px;
+            object-fit: cover;
+            border-radius: 12px;
+            background: #0f3460;
+            flex-shrink: 0;
+        }
+        .stamp-info { flex: 1; }
+        .stamp-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+        .stamp-group { font-size: 11px; opacity: 0.7; margin-bottom: 4px; }
+        .stamp-badge {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-left: 6px;
+        }
+        .rarity-legend { background: #ffd700; color: #000; }
+        .rarity-epic { background: #9b59b6; }
+        .rarity-rare { background: #3498db; }
+        .rarity-common { background: #7f8c8d; }
+        .stamp-count { font-size: 12px; margin-top: 6px; }
+        .count-number { color: #e94560; font-weight: bold; }
+        
+        .holder-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            background: #0f0f1a;
+            border-radius: 10px;
+            margin-bottom: 8px;
+        }
+        .holder-address { font-family: monospace; font-size: 12px; }
+        .holder-count { font-weight: bold; color: #e94560; }
+        
+        .history-item {
+            background: #16213e;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .history-item:hover { background: #1f2a4e; transform: translateX(4px); }
+        .history-date { font-size: 11px; opacity: 0.6; margin-bottom: 4px; }
+        .history-stamp { font-weight: bold; color: #e94560; }
+        
+        .stats-grid {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .stat-card {
+            flex: 1;
+            background: #16213e;
+            padding: 12px;
+            border-radius: 16px;
+            text-align: center;
+        }
+        .stat-value { font-size: 24px; font-weight: bold; color: #e94560; }
+        .stat-label { font-size: 11px; opacity: 0.7; }
+        
+        .raffle-result {
+            background: #0f3460;
+            border-radius: 20px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+            animation: pulse 0.5s ease;
+        }
+        .raffle-animation {
+            font-size: 32px;
+            animation: spin 0.8s ease-in-out;
+            display: inline-block;
+            margin: 10px;
+        }
+        .raffle-winner {
+            font-size: 22px;
+            font-weight: bold;
+            color: #e94560;
+            margin: 10px 0;
+            animation: bounce 0.5s ease;
+        }
+        
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: #16213e;
+            border-radius: 24px;
+            padding: 20px;
+            max-width: 90%;
+            max-height: 80%;
+            overflow-y: auto;
+            width: 400px;
+        }
+        .modal-close {
+            background: #e94560;
+            padding: 10px;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            margin-top: 16px;
+        }
+        
+        .loading, .no-results { text-align: center; padding: 40px; opacity: 0.6; }
+        .debug { font-size: 11px; opacity: 0.5; text-align: center; margin-top: 20px; padding: 10px; background: #0f0f1a; border-radius: 12px; }
+        
+        .search-input {
+            width: 100%;
+            padding: 10px 14px;
+            background: #16213e;
+            border: none;
+            border-radius: 12px;
+            color: #eee;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>🎨 Yupland Stamps Explorer</h2>
+    
+    <div class="stats-grid" id="statsGrid"></div>
+    
+    <button id="raffleBtn" class="btn btn-primary">🎲 Провести розыгрыш</button>
+    <div id="raffleResult" class="raffle-result" style="display: none;">
+        <div class="raffle-animation">🎰</div>
+        <div id="raffleWinner" class="raffle-winner"></div>
+    </div>
+    
+    <div class="tabs">
+        <div class="tab active" data-tab="gallery">🖼️ Галерея</div>
+        <div class="tab" data-tab="holders">🏆 Топ держатели</div>
+        <div class="tab" data-tab="history">📜 История</div>
+    </div>
+    
+    <input type="text" id="searchInput" class="search-input" placeholder="🔍 Поиск по марке или владельцу...">
+    <div id="groupFilter" class="group-filter"></div>
+    
+    <div id="galleryView"><div id="gallery"></div></div>
+    <div id="holdersView" style="display: none;"><div id="holdersList"></div></div>
+    <div id="historyView" style="display: none;"><div id="historyList"></div></div>
+    <div class="debug" id="debugInfo">🟢 Загрузка...</div>
+</div>
+
+<script>
+    // ==================== НАСТРОЙКИ ====================
+    const SUPABASE_URL = 'https://obbujhdmegdgxzdtpbai.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_R0pbZnbuSEbkaCLHcZ_YhQ_J2ZRgIB8';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    
+    let allStamps = [];
+    let dynamicInstances = [];
+    let groupedStamps = [];
+    let currentGroup = 'all';
+    let currentTab = 'gallery';
+    let searchQuery = '';
+    
+    // ==================== ЗАГРУЗКА ДАННЫХ ====================
+    async function loadStaticStamps() {
+        let allData = [];
+        let from = 0;
+        const limit = 1000;
+        let hasMore = true;
+        while (hasMore) {
+            const { data, error } = await supabaseClient
+                .from('stamps')
+                .select('*')
+                .range(from, from + limit - 1);
+            if (error) throw error;
+            allData.push(...data);
+            from += limit;
+            hasMore = data.length === limit;
+        }
+        return allData;
+    }
+    
+    async function loadDynamicInstances() {
+        let allData = [];
+        let from = 0;
+        const limit = 1000;
+        let hasMore = true;
+        while (hasMore) {
+            const { data, error } = await supabaseClient
+                .from('stamp_instances')
+                .select('*')
+                .range(from, from + limit - 1);
+            if (error && error.code !== '42P01') throw error;
+            if (data) allData.push(...data);
+            from += limit;
+            hasMore = data && data.length === limit;
+        }
+        return allData;
+    }
+    
+    async function loadHistory() {
+        const { data, error } = await supabaseClient
+            .from('raffle_history')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(100);
+        if (error && error.code !== '42P01') console.log('Таблица не создана');
+        return data || [];
+    }
+    
+    // ==================== ГРУППИРОВКА ====================
+    function groupStamps(staticStamps, dynamic) {
+        const staticMap = new Map();
+        staticStamps.forEach(s => {
+            const name = s.base_name || s.title?.replace('Postage Stamp - ', '');
+            if (!staticMap.has(name)) {
+                staticMap.set(name, {
+                    name: name,
+                    group: s.group_name,
+                    rarity: s.rarity,
+                    image: s.image_url,
+                    count: 0,
+                    burned: 0,
+                    instances: [],
+                    isDynamic: false
+                });
+            }
+            const entry = staticMap.get(name);
+            entry.count++;
+            if (!s.owner_id || s.owner_id === 'null' || s.owner_id === 'darai_duplo.near') entry.burned++;
+            if (!d.owner_id || d.owner_id === 'null' || d.owner_id === 'darai_duplo.near') entry.burned++;
+        });
+        
+        const dynamicMap = new Map();
+        dynamic.forEach(d => {
+            const name = d.name;
+            if (!dynamicMap.has(name)) {
+                dynamicMap.set(name, {
+                    name: name,
+                    group: 'Alchemist',
+                    rarity: 'Legendary',
+                    image: null,
+                    count: 0,
+                    burned: 0,
+                    instances: [],
+                    isDynamic: true
+                });
+            }
+            const entry = dynamicMap.get(name);
+            entry.count++;
+            if (!d.owner_id || d.owner_id === 'null') entry.burned++;
+            if (d.owner_id && d.owner_id !== 'null') entry.instances.push(d.owner_id);
+        });
+        
+        const all = [...staticMap.values(), ...dynamicMap.values()];
+        all.sort((a,b) => a.name.localeCompare(b.name));
+        return all;
+    }
+    
+    // ==================== СТАТИСТИКА ====================
+    function updateStats() {
+        const totalStamps = groupedStamps.reduce((sum, s) => sum + s.count, 0);
+        const totalBurned = groupedStamps.reduce((sum, s) => sum + s.burned, 0);
+        const uniqueStamps = groupedStamps.length;
+        document.getElementById('statsGrid').innerHTML = `
+            <div class="stat-card"><div class="stat-value">${totalStamps}</div><div class="stat-label">Всего марок</div></div>
+            <div class="stat-card"><div class="stat-value">${uniqueStamps}</div><div class="stat-label">Видов марок</div></div>
+            <div class="stat-card"><div class="stat-value">${totalBurned}</div><div class="stat-label">Сожжено</div></div>
+        `;
+    }
+    
+    // ==================== ГРУППЫ ====================
+    function getUniqueGroups() {
+        const groups = new Set();
+        groupedStamps.forEach(s => { if (s.group) groups.add(s.group); });
+        return Array.from(groups).sort();
+    }
+    
+    function renderGroupFilters() {
+        const groups = getUniqueGroups();
+        const container = document.getElementById('groupFilter');
+        container.innerHTML = `<div class="group-btn ${currentGroup === 'all' ? 'active' : ''}" data-group="all">Все (${groupedStamps.length})</div>`;
+        groups.forEach(g => {
+            const count = groupedStamps.filter(s => s.group === g).length;
+            container.innerHTML += `<div class="group-btn ${currentGroup === g ? 'active' : ''}" data-group="${g}">${g} (${count})</div>`;
+        });
+        document.querySelectorAll('.group-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.group-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentGroup = btn.dataset.group;
+                renderGallery();
+            });
+        });
+    }
+    
+    // ==================== ПОИСК ====================
+    function setupSearch() {
+        const input = document.getElementById('searchInput');
+        input.addEventListener('input', (e) => {
+            searchQuery = e.target.value.toLowerCase();
+            renderGallery();
+        });
+    }
+    
+    // ==================== ГАЛЕРЕЯ ====================
+    function getRarityClass(r) {
+        const x = (r||'').toLowerCase();
+        if (x.includes('legend')) return 'rarity-legend';
+        if (x.includes('epic')) return 'rarity-epic';
+        if (x.includes('rare')) return 'rarity-rare';
+        return 'rarity-common';
+    }
+    
+    function renderGallery() {
+        let filtered = groupedStamps;
+        if (currentGroup !== 'all') {
+            filtered = filtered.filter(s => s.group === currentGroup);
+        }
+        if (searchQuery) {
+            filtered = filtered.filter(s => 
+                s.name.toLowerCase().includes(searchQuery) ||
+                s.instances.some(o => o.toLowerCase().includes(searchQuery))
+            );
+        }
+        
+        if (filtered.length === 0) {
+            document.getElementById('gallery').innerHTML = '<div class="loading">😕 Ничего не найдено</div>';
+            return;
+        }
+        
+        document.getElementById('gallery').innerHTML = filtered.map(s => `
+            <div class="stamp-card" onclick="showHolders('${s.name.replace(/'/g, "\\'")}')">
+                <img class="stamp-image" src="${s.image || 'https://placehold.co/70x70?text=🖼️'}" onerror="this.src='https://placehold.co/70x70?text=🖼️'">
+                <div class="stamp-info">
+                    <div class="stamp-title">
+                        ${s.name}
+                        <span class="stamp-badge ${getRarityClass(s.rarity)}">${s.rarity || 'Common'}</span>
+                    </div>
+                    <div class="stamp-group">📁 ${s.group || 'Без группы'}</div>
+                    <div class="stamp-count">📊 <span class="count-number">${s.count}</span> экз. | 🔥 <span class="count-number">${s.burned}</span> сожжено</div>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    // ==================== ТОП ДЕРЖАТЕЛЕЙ ====================
+    function buildHoldersList() {
+        const holderMap = new Map();
+        groupedStamps.forEach(s => {
+            s.instances.forEach(owner => {
+                if (owner && owner !== 'null') {
+                    holderMap.set(owner, (holderMap.get(owner) || 0) + 1);
+                }
+            });
+        });
+        const holders = Array.from(holderMap.entries())
+            .map(([a,c]) => ({ address: a, count: c }))
+            .sort((a,b) => b.count - a.count)
+            .slice(0, 50);
+        
+        if (!holders.length) {
+            document.getElementById('holdersList').innerHTML = '<div class="loading">😕 Нет данных</div>';
+            return;
+        }
+        
+        document.getElementById('holdersList').innerHTML = holders.map((h,i) => `
+            <div class="holder-row">
+                <span style="width:40px">#${i+1}</span>
+                <span class="holder-address">${h.address}</span>
+                <span class="holder-count">${h.count} NFT</span>
+            </div>
+        `).join('');
+    }
+    
+    // ==================== ИСТОРИЯ ====================
+    async function renderHistory() {
+        const history = await loadHistory();
+        if (!history.length) {
+            document.getElementById('historyList').innerHTML = '<div class="loading">📜 История пуста</div>';
+            return;
+        }
+        document.getElementById('historyList').innerHTML = history.map(h => `
+            <div class="history-item" onclick="showHoldersFromHistory('${h.stamp_name.replace(/'/g, "\\'")}')">
+                <div class="history-date">📅 ${new Date(h.created_at).toLocaleString()}</div>
+                <div>🏆 <span class="history-stamp">${h.stamp_name}</span></div>
+                <div>📁 Группа: ${h.group_name}</div>
+            </div>
+        `).join('');
+    }
+    
+    window.showHoldersFromHistory = function(stampName) {
+        const stamp = groupedStamps.find(s => s.name === stampName);
+        if (stamp) showHolders(stampName);
+        else alert('Данные о держателях этой марки временно недоступны');
+    };
+    
+    // ==================== МОДАЛЬНОЕ ОКНО С ДЕРЖАТЕЛЯМИ ====================
+    window.showHolders = function(stampName) {
+        const stamp = groupedStamps.find(s => s.name === stampName);
+        if (!stamp) return;
+        
+        const ownerCounts = new Map();
+        stamp.instances.forEach(owner => {
+            if (owner && owner !== 'null') {
+                ownerCounts.set(owner, (ownerCounts.get(owner) || 0) + 1);
+            }
+        });
+        const owners = Array.from(ownerCounts.entries())
+            .map(([a,c]) => ({ address: a, count: c }))
+            .sort((a,b) => b.count - a.count);
+        
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <h3>${stamp.name}</h3>
+                <p>📁 ${stamp.group || 'Нет группы'} | ${stamp.rarity || 'Common'}</p>
+                <hr style="margin:10px 0">
+                <div>🏆 Держатели (${owners.length}):</div>
+                ${owners.map(o => `<div class="holder-row"><span class="holder-address">${o.address}</span><span class="holder-count">${o.count} шт.</span></div>`).join('')}
+                <div style="margin-top:16px">📊 Всего экземпляров: ${stamp.count}</div>
+                <div>🔥 Сожжено: ${stamp.burned}</div>
+                <div class="modal-close" onclick="this.closest('.modal').remove()">Закрыть</div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    };
+    
+    // ==================== РОЗЫГРЫШ (с анимацией) ====================
+    async function saveRaffle(group, stampName) {
+        try {
+            await supabaseClient.from('raffle_history').insert({
+                group_name: group,
+                stamp_name: stampName,
+                created_at: new Date()
+            });
+        } catch(e) { console.log('История не сохранена'); }
+    }
+    
+    async function runRaffle() {
+        let available = groupedStamps;
+        if (available.length === 0) return;
+        
+        const btn = document.getElementById('raffleBtn');
+        const originalText = btn.innerText;
+        const resultDiv = document.getElementById('raffleResult');
+        const winnerDiv = document.getElementById('raffleWinner');
+        
+        btn.innerText = '🎡 Выбираем группу...';
+        resultDiv.style.display = 'block';
+        winnerDiv.innerHTML = '<div class="raffle-animation">🎰</div>';
+        
+        setTimeout(() => {
+            const randomIndex = Math.floor(Math.random() * available.length);
+            const winner = available[randomIndex];
+            
+            btn.innerText = '🎲 Выбираем марку...';
+            winnerDiv.innerHTML = `<div class="raffle-animation">✨</div>`;
+            
+            setTimeout(() => {
+                winnerDiv.innerHTML = `🎉 ${winner.name} 🎉<br>📁 Группа: ${winner.group}<br>📊 Всего экземпляров: ${winner.count}`;
+                btn.innerText = originalText;
+                saveRaffle(winner.group, winner.name);
+                
+                setTimeout(() => {
+                    resultDiv.style.display = 'none';
+                    if (currentTab === 'history') renderHistory();
+                }, 8000);
+            }, 800);
+        }, 800);
+    }
+    
+    // ==================== ВКЛАДКИ ====================
+    function setupTabs() {
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', async () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentTab = tab.dataset.tab;
+                
+                document.getElementById('galleryView').style.display = currentTab === 'gallery' ? 'block' : 'none';
+                document.getElementById('holdersView').style.display = currentTab === 'holders' ? 'block' : 'none';
+                document.getElementById('historyView').style.display = currentTab === 'history' ? 'block' : 'none';
+                
+                if (currentTab === 'holders') buildHoldersList();
+                if (currentTab === 'history') await renderHistory();
+            });
+        });
+    }
+    
+    // ==================== ЗАПУСК ====================
+    async function init() {
+        document.getElementById('debugInfo').innerHTML = '🔄 Загрузка...';
+        try {
+            const [staticData, dynamicData] = await Promise.all([
+                loadStaticStamps(),
+                loadDynamicInstances()
+            ]);
+            groupedStamps = groupStamps(staticData, dynamicData);
+            document.getElementById('debugInfo').innerHTML = `✅ Загружено ${staticData.length + dynamicData.length} экземпляров, ${groupedStamps.length} видов`;
+            updateStats();
+            renderGroupFilters();
+            renderGallery();
+            setupTabs();
+            setupSearch();
+            document.getElementById('raffleBtn').addEventListener('click', runRaffle);
+        } catch(e) {
+            document.getElementById('debugInfo').innerHTML = '❌ ' + e.message;
+            console.error(e);
+        }
+    }
+    
+    init();
+</script>
+</body>
+</html>
