@@ -1,5 +1,4 @@
-// Используем только fetch (Node.js 18+ имеет fetch)
-const fetch = require('node-fetch');
+// НЕ НУЖНО: const fetch = require('node-fetch');
 
 const supabaseUrl = 'https://obbujhdmegdgxzdtpbai.supabase.co';
 const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
@@ -9,7 +8,6 @@ if (!supabaseKey) {
     process.exit(1);
 }
 
-// Функция для запросов к Supabase REST API
 const supabaseRest = async (method, path, body = null) => {
     const url = `${supabaseUrl}/rest/v1/${path}`;
     const headers = {
@@ -34,7 +32,6 @@ const API_URL = 'https://api.sendler.xyz/nft/list/yuplandshop.mintbase1.near?lim
 async function testUpdate() {
     console.log(`🚀 Test update at ${new Date().toISOString()}`);
     
-    // 1. Проверяем API Сендлера
     console.log('📡 Checking Sendler API...');
     let apiData;
     try {
@@ -47,11 +44,10 @@ async function testUpdate() {
         process.exit(1);
     }
     
-    // 2. Проверяем подключение к Supabase через REST
     console.log('📡 Checking Supabase...');
     try {
         const data = await supabaseRest('GET', 'stamps?select=base_name&limit=1');
-        console.log(`✅ Supabase OK, response:`, data.length || 0);
+        console.log(`✅ Supabase OK, response length: ${data.length}`);
     } catch (err) {
         console.error('❌ Supabase connection error:', err.message);
         process.exit(1);
