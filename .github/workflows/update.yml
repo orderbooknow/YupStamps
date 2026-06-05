@@ -23,12 +23,8 @@ jobs:
       - name: Clear npm cache
         run: npm cache clean --force
       
-      - name: Install dependencies
-        run: |
-          rm -rf node_modules package-lock.json
-          # Ничего не устанавливаем, используем встроенный fetch
-      
       - name: Run update
         env:
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          SENDLER_API_KEY: ${{ secrets.SENDLER_API_KEY }}
         run: node quick-update.js
