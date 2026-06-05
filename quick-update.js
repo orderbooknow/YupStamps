@@ -1,5 +1,5 @@
-// Импортируем только нужные части
-const { createClient } = require('@supabase/supabase-js');
+// Используем только fetch (Node.js 18+ имеет fetch)
+const fetch = require('node-fetch');
 
 const supabaseUrl = 'https://obbujhdmegdgxzdtpbai.supabase.co';
 const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
@@ -9,24 +9,25 @@ if (!supabaseKey) {
     process.exit(1);
 }
 
-// Создаём клиент с отключением realtime через подмену WebSocket
-// Важно: передаём пустой объект в транспорте, чтобы не инициализировался WebSocket
-const supabase = createClient(supabaseUrl, supabaseKey, {
-    auth: { persistSession: false },
-    realtime: { enabled: false }
-});
-
-// Чтобы реально отключить realtime — подменяем конструктор WebSocket
-// Это хак, но работает
-if (typeof globalThis.WebSocket === 'undefined') {
-    globalThis.WebSocket = class MockWebSocket {
-        constructor() {}
-        close() {}
-        send() {}
-        addEventListener() {}
-        removeEventListener() {}
+// Функция для запросов к Supabase REST API
+const supabaseRest = async (method, path, body = null) => {
+    const url = `${supabaseUrl}/rest/v1/${path}`;
+    const headers = {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json'
     };
-}
+    
+    const options = { method, headers };
+    if (body) options.body = JSON.stringify(body);
+    
+    const response = await fetch(url, options);
+    if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Supabase error ${response.status}: ${text}`);
+    }
+    return response.json();
+};
 
 const API_URL = 'https://api.sendler.xyz/nft/list/yuplandshop.mintbase1.near?limit=1';
 
@@ -46,14 +47,15 @@ async function testUpdate() {
         process.exit(1);
     }
     
-    // 2. Проверяем подключение к Supabase
+    // 2. Проверяем подключение к Supabase через REST
     console.log('📡 Checking Supabase...');
-    const { data, error } = await supabase.from('stamps').select('base_name', { count: 'exact', head: true });
-    if (error) {
-        console.error('❌ Supabase connection error:', error.message);
+    try {
+        const data = await supabaseRest('GET', 'stamps?select=base_name&limit=1');
+        console.log(`✅ Supabase OK, response:`, data.length || 0);
+    } catch (err) {
+        console.error('❌ Supabase connection error:', err.message);
         process.exit(1);
     }
-    console.log(`✅ Supabase OK, stamps count: ${data?.length || 0}`);
     
     console.log('🎉 All checks passed! Ready for full update.');
 }
