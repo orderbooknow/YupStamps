@@ -1,4 +1,5 @@
 const { createClient } = require('@supabase/supabase-js');
+const WebSocket = require('ws');
 
 const SUPABASE_URL = 'https://obbujhdmegdgxzdtpbai.supabase.co';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -9,7 +10,11 @@ if (!SUPABASE_KEY || !API_KEY) {
     process.exit(1);
 }
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+// Создаём клиент с поддержкой WebSocket через ws
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+    realtime: { transport: WebSocket }
+});
+
 const API_URL = 'https://api.sendler.xyz/nft/list/?contract_address=yuplandshop.mintbase1.near&limit=10000';
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
