@@ -1,10 +1,14 @@
-// НЕ НУЖНО: const fetch = require('node-fetch');
-
 const supabaseUrl = 'https://obbujhdmegdgxzdtpbai.supabase.co';
 const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
+const sendlerApiKey = process.env.SENDLER_API_KEY;
 
 if (!supabaseKey) {
     console.error('❌ SUPABASE_SERVICE_KEY not set');
+    process.exit(1);
+}
+
+if (!sendlerApiKey) {
+    console.error('❌ SENDLER_API_KEY not set');
     process.exit(1);
 }
 
@@ -35,8 +39,14 @@ async function testUpdate() {
     console.log('📡 Checking Sendler API...');
     let apiData;
     try {
-        const res = await fetch(API_URL);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const res = await fetch(API_URL, {
+            headers: {
+                'X-API-Key': sendlerApiKey,
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Accept': 'application/json'
+            }
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
         apiData = await res.json();
         console.log(`✅ API responded, tokens: ${apiData.tokens?.length || 0}`);
     } catch (err) {
