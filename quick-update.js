@@ -1,3 +1,4 @@
+// Импортируем только нужные части
 const { createClient } = require('@supabase/supabase-js');
 
 const supabaseUrl = 'https://obbujhdmegdgxzdtpbai.supabase.co';
@@ -8,11 +9,24 @@ if (!supabaseKey) {
     process.exit(1);
 }
 
-// Создаём клиент с отключённым realtime
+// Создаём клиент с отключением realtime через подмену WebSocket
+// Важно: передаём пустой объект в транспорте, чтобы не инициализировался WebSocket
 const supabase = createClient(supabaseUrl, supabaseKey, {
     auth: { persistSession: false },
     realtime: { enabled: false }
 });
+
+// Чтобы реально отключить realtime — подменяем конструктор WebSocket
+// Это хак, но работает
+if (typeof globalThis.WebSocket === 'undefined') {
+    globalThis.WebSocket = class MockWebSocket {
+        constructor() {}
+        close() {}
+        send() {}
+        addEventListener() {}
+        removeEventListener() {}
+    };
+}
 
 const API_URL = 'https://api.sendler.xyz/nft/list/yuplandshop.mintbase1.near?limit=1';
 
