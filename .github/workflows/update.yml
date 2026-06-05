@@ -8,8 +8,6 @@ on:
 jobs:
   update:
     runs-on: ubuntu-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     
     steps:
       - name: Checkout
@@ -20,8 +18,8 @@ jobs:
         with:
           node-version: '20'
       
-      - name: Clear npm cache
-        run: npm cache clean --force
+      - name: Install dependencies
+        run: npm install @supabase/supabase-js
       
       - name: Run update
         env:
