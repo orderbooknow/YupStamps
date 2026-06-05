@@ -22,8 +22,7 @@ jobs:
       
       - name: Install dependencies
         run: |
-          npm install @supabase/supabase-js
-          npm install ws
+          npm install node-fetch
       
       - name: Run update
         env:
