@@ -19,6 +19,15 @@ const ALCHEMY_ACCOUNT = 'sendler-alchemy.near';
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Node.js 18+ уже имеет fetch, но для совместимости оставим
+const fetchData = async (url) => {
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    return response.json();
+};
+
 async function fetchAllTokens() {
     let allTokens = [];
     let offset = 0;
@@ -32,8 +41,7 @@ async function fetchAllTokens() {
         console.log(`📥 offset=${offset}...`);
         
         try {
-            const response = await fetch(url);
-            const data = await response.json();
+            const data = await fetchData(url);
             
             if (!data.tokens || data.tokens.length === 0) {
                 hasMore = false;
@@ -45,7 +53,8 @@ async function fetchAllTokens() {
             await sleep(500);
             
         } catch (error) {
-            console.error('❌ Fetch error:', error);
+            console.error('❌ Fetch error:', error.message);
+            hasMore = false;
             break;
         }
     }
@@ -95,6 +104,7 @@ async function updateStampsTable(tokens) {
     const stampsArray = Array.from(stampMap.values());
     console.log(`📊 ${stampsArray.length} unique stamps`);
     
+    let updated = 0;
     for (const stamp of stampsArray) {
         const uniqueInstances = [...new Set(stamp.instances)];
         
@@ -115,11 +125,13 @@ async function updateStampsTable(tokens) {
             }, { onConflict: 'base_name' });
         
         if (error) {
-            console.error(`❌ Error ${stamp.base_name}:`, error);
+            console.error(`❌ Error ${stamp.base_name}:`, error.message);
+        } else {
+            updated++;
         }
     }
     
-    console.log('✅ Stamps updated');
+    console.log(`✅ Stamps updated: ${updated}/${stampsArray.length}`);
 }
 
 async function main() {
@@ -127,10 +139,14 @@ async function main() {
     
     try {
         const tokens = await fetchAllTokens();
+        if (tokens.length === 0) {
+            console.error('❌ No tokens loaded');
+            process.exit(1);
+        }
         await updateStampsTable(tokens);
         console.log('🎉 Update completed!');
     } catch (error) {
-        console.error('❌ Fatal error:', error);
+        console.error('❌ Fatal error:', error.message);
         process.exit(1);
     }
 }
