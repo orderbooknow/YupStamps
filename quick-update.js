@@ -149,7 +149,7 @@ async function main() {
         console.log(`📊 Total tokens: ${allTokens.length}`);
         
         const { updated, errors } = await updateStampsIncremental(allTokens);
-        const added = await updateDynamicStalls(allTokens);
+        const added = await updateDynamicStamps(allTokens);
         
         const duration = ((Date.now() - startTime) / 1000).toFixed(1);
         const statusEmoji = errors === 0 ? '✅' : '⚠️';
