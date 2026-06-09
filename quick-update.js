@@ -1,276 +1,274 @@
 const { createClient } = require('@supabase/supabase-js');
+const WebSocket = require('ws');
 
 const SUPABASE_URL = 'https://obbujhdmegdgxzdtpbai.supabase.co';
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const SENDLER_API_URL = 'https://api.sendler.xyz/nft/list/?contract_address=yuplandshop.mintbase1.near&limit=10000';
-const SENDLER_API_KEY = 'pR7xQnL2mV9cYfK4uD8sTjH1wB5eZaCgX0oNiUyE6lA';
-
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
+const API_KEY = process.env.SENDLER_API_KEY;
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+if (!SUPABASE_KEY || !API_KEY) {
+    console.error('❌ Missing SUPABASE_SERVICE_KEY or SENDLER_API_KEY');
+    process.exit(1);
+}
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+    realtime: { transport: WebSocket }
+});
+
+const API_URL = 'https://api.sendler.xyz/nft/list/?contract_address=yuplandshop.mintbase1.near&limit=10000';
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+const DYNAMIC_NAMES = [
+    'Stamp (legendary - 1 Lv)',
+    'Stamp (legendary - 2 Lv)',
+    'Stamp (legendary - 3 Lv)',
+    'Stamp (legendary - 4 Lv)',
+    'Stamp (legendary - 5 Lv)',
+    'Stamp (legendary - 6 Lv)',
+    'Stamp (legendary - 7 Lv)',
+    'Old stamp (legendary)'
+];
 
 const BURNER_ACCOUNT = 'darai_duplo.near';
 const ALCHEMY_ACCOUNT = 'sendler-alchemy.near';
 
-// Динамические марки (они считаются марками)
-const DYNAMIC_NAMES = [
-    'Energy of the East', 'Tiger Energy', 'Fairy Phoenix', 'Spirit of the Cherry Blossom',
-    'Blossom Dancer', 'Celestial Pheonix', 'Mystic Apple', 'Dragon Heart'
-];
-
-// Функция проверки, является ли токен МАРКОЙ
-function isStamp(token) {
-    const title = token.title || token.metadata?.title || '';
-    const baseName = token.base_name || '';
-    
-    // Динамические марки
-    if (DYNAMIC_NAMES.some(name => title.includes(name) || baseName.includes(name))) {
-        return true;
-    }
-    
-    // Postage Stamp марки
-    if (title.includes('Postage Stamp')) {
-        return true;
-    }
-    
-    // Если есть base_name и он не пустой — марка
-    if (baseName && baseName.length > 0 && baseName !== 'null' && baseName !== 'undefined') {
-        return true;
-    }
-    
-    // Если есть rarity — марка
-    if (token.rarity && token.rarity !== 'null' && token.rarity !== 'undefined') {
-        return true;
-    }
-    
-    // Если есть group_name — марка
-    if (token.group_name && token.group_name !== 'null' && token.group_name !== 'undefined') {
-        return true;
-    }
-    
+// Функция определения, является ли токен маркой (Postage Stamp)
+function isPostageStamp(token) {
+    const title = token.title || '';
+    // Postage Stamp марки обычно имеют такой формат
+    if (title.includes('Postage Stamp')) return true;
+    // Также проверяем по наличию rarity (редкость есть только у марок)
+    if (token.rarity && token.rarity !== 'null') return true;
     return false;
 }
 
-function getOwnerId(token) {
-    if (token.owner_id && token.owner_id !== 'null') return token.owner_id;
-    if (token.owner && token.owner !== 'null') return token.owner;
-    if (token.minter && token.minter !== 'null') return token.minter;
-    return null;
+async function fetchAllTokens() {
+    console.log('🔄 Loading tokens from Sendler API...');
+    let allTokens = [], cursor = null, page = 0;
+    while (true) {
+        let url = API_URL;
+        if (cursor) url += `&cursor=${cursor}`;
+        const response = await fetch(url, { headers: { 'X-API-Key': API_KEY } });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        allTokens.push(...data.items);
+        console.log(`📦 Page ${++page}: ${data.items.length} items, total ${allTokens.length}`);
+        if (data.next_cursor) { cursor = data.next_cursor; await sleep(500); }
+        else break;
+    }
+    return allTokens;
 }
 
-async function fetchAllTokens() {
-    let allTokens = [];
-    let offset = 0;
+async function updateStampsIncremental(allTokens) {
+    console.log('📊 Updating stamps table...');
+    let oldTokens = [];
+    let from = 0;
     const limit = 1000;
     let hasMore = true;
     
     while (hasMore) {
-        const url = `${SENDLER_API_URL}&offset=${offset}`;
-        console.log(`📡 Fetching tokens offset ${offset}...`);
+        const { data, error } = await supabase
+            .from('stamps')
+            .select('token_id, owner_id')
+            .range(from, from + limit - 1);
+        if (error) throw error;
+        oldTokens.push(...data);
+        from += limit;
+        hasMore = data.length === limit;
+    }
+    
+    const oldMap = new Map(oldTokens.map(t => [t.token_id, t.owner_id]));
+    console.log(`📊 Stamps in DB: ${oldMap.size}`);
+    
+    const apiMap = new Map(allTokens.map(t => [t.token_id, t.owner_id]));
+    
+    let updated = 0;
+    let errors = 0;
+    
+    for (const tokenId of oldMap.keys()) {
+        const apiOwner = apiMap.get(tokenId);
+        const dbOwner = oldMap.get(tokenId);
+        if (apiOwner && apiOwner !== dbOwner) {
+            const { error } = await supabase
+                .from('stamps')
+                .update({ owner_id: apiOwner })
+                .eq('token_id', tokenId);
+            if (error) errors++;
+            else updated++;
+        }
+    }
+    console.log(`✅ Updated: ${updated}, errors: ${errors}`);
+    return { updated, errors };
+}
+
+async function updateDynamicStamps(allTokens) {
+    console.log('📊 Updating dynamic stamps...');
+    const dynamicTokens = allTokens.filter(t => DYNAMIC_NAMES.includes(t.title));
+    console.log(`📊 Dynamic tokens found: ${dynamicTokens.length}`);
+    
+    await supabase.from('stamp_instances').delete().neq('token_id', '');
+    console.log('🧹 Cleared stamp_instances table');
+    
+    let added = 0;
+    for (const token of dynamicTokens) {
+        const { error } = await supabase.from('stamp_instances').insert({
+            token_id: token.token_id,
+            name: token.title,
+            owner_id: token.owner_id,
+            image_url: token.media,
+            last_updated: new Date()
+        });
+        if (error) console.error(`❌ Error ${token.token_id}: ${error.message}`);
+        else added++;
+    }
+    console.log(`✅ Added: ${added} dynamic stamps`);
+    return added;
+}
+
+function calculateSplitStats(allTokens, dynamicTokens) {
+    // Разделяем токены на МАРКИ (Postage + Dynamic) и ПРОЧИЕ NFT
+    const dynamicSet = new Set(dynamicTokens.map(t => t.token_id));
+    
+    const stamps = [];      // марки (Postage + Dynamic)
+    const otherNFTs = [];   // все остальные NFT
+    
+    for (const token of allTokens) {
+        const isDynamic = dynamicSet.has(token.token_id);
+        const isPostage = isPostageStamp(token);
         
-        try {
-            const response = await fetch(url, {
-                headers: { 'x-api-key': SENDLER_API_KEY }
-            });
-            const data = await response.json();
-            
-            if (!data.results || data.results.length === 0) break;
-            
-            allTokens.push(...data.results);
-            console.log(`   ✅ Got ${data.results.length} tokens (total: ${allTokens.length})`);
-            
-            hasMore = data.next !== null;
-            offset += limit;
-            
-            await new Promise(r => setTimeout(r, 200));
-        } catch (err) {
-            console.error(`❌ Error fetching offset ${offset}:`, err);
-            break;
+        if (isDynamic || isPostage) {
+            stamps.push(token);
+        } else {
+            otherNFTs.push(token);
         }
     }
     
-    return allTokens;
-}
-
-// Расчет статистики для набора токенов
-function calculateStatsForTokens(tokens) {
-    let total = tokens.length;
-    let burnedCount = 0;
-    let alchemyCount = 0;
-    const holdersSet = new Set();
-    
-    tokens.forEach(token => {
-        const owner = getOwnerId(token);
-        if (!owner) return;
+    // Функция расчета статистики для массива токенов
+    function calcStats(tokens) {
+        let total = tokens.length;
+        let burned = 0;
+        let alchemy = 0;
+        const holdersSet = new Set();
         
-        if (owner === BURNER_ACCOUNT) {
-            burnedCount++;
-        } else if (owner === ALCHEMY_ACCOUNT) {
-            alchemyCount++;
-        } else {
-            holdersSet.add(owner);
+        for (const token of tokens) {
+            const owner = token.owner_id;
+            if (!owner || owner === 'null' || owner === BURNER_ACCOUNT) {
+                burned++;
+            } else if (owner === ALCHEMY_ACCOUNT) {
+                alchemy++;
+            } else {
+                holdersSet.add(owner);
+            }
         }
-    });
+        
+        return {
+            total: total,
+            burned: burned,
+            alchemy: alchemy,
+            holders: holdersSet.size
+        };
+    }
+    
+    const stampsStats = calcStats(stamps);
+    const otherStats = calcStats(otherNFTs);
     
     return {
-        total: total,
-        burned: burnedCount,
-        alchemy: alchemyCount,
-        holders: holdersSet.size
+        stamps: stampsStats,
+        other: otherStats,
+        totalTokens: allTokens.length,
+        stampsCount: stamps.length,
+        otherCount: otherNFTs.length
     };
 }
 
-async function updateStampsTable(tokens) {
-    // Обновляем ТОЛЬКО марки в таблице stamps
-    const stampTokens = tokens.filter(t => isStamp(t));
-    let updatedCount = 0;
-    
-    for (const token of stampTokens) {
-        const ownerId = getOwnerId(token);
-        if (!ownerId) continue;
-        
-        const { error } = await supabase
-            .from('stamps')
-            .update({ 
-                owner_id: ownerId,
-                updated_at: new Date().toISOString()
-            })
-            .eq('token_id', token.token_id);
-        
-        if (!error || error.code === 'PGRST116') {
-            updatedCount++;
-        }
-    }
-    
-    return updatedCount;
-}
-
-async function updateDynamicInstances(tokens) {
-    const dynamicTokens = tokens.filter(token => {
-        const title = token.title || token.metadata?.title || '';
-        const baseName = token.base_name || '';
-        return DYNAMIC_NAMES.some(name => title.includes(name) || baseName.includes(name));
-    });
-    
-    console.log(`🔄 Processing ${dynamicTokens.length} dynamic stamps...`);
-    
-    await supabase.from('stamp_instances').delete().neq('token_id', '');
-    
-    let inserted = 0;
-    for (const token of dynamicTokens) {
-        const ownerId = getOwnerId(token);
-        if (!ownerId) continue;
-        
-        const { error } = await supabase.from('stamp_instances').insert({
-            token_id: token.token_id,
-            name: token.base_name || token.title?.replace('Postage Stamp - ', '') || token.title,
-            owner_id: ownerId,
-            image_url: token.image_url || token.metadata?.media,
-            last_updated: new Date().toISOString()
-        });
-        
-        if (!error) inserted++;
-    }
-    
-    return inserted;
-}
-
-async function sendTelegramNotification(stampsStats, otherStats, totalTokens) {
+async function sendTelegramNotification(updatedCount, stats, duration, isError = false, errorMessage = '') {
     if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
-        console.log('⚠️ Telegram credentials not set, skipping notification');
+        console.log('⚠️ Telegram not configured, skipping notification');
         return;
     }
     
-    const message = `🏆 *Yupland Stamps Update* 🏆
-
-📮 *МАРКИ (Postage + Dynamic):*
-   📊 Всего: ${stampsStats.total.toLocaleString()}
-   🔥 Сожжено: ${stampsStats.burned.toLocaleString()}
-   👥 Держателей: ${stampsStats.holders.toLocaleString()}
-   🏪 В Лавке: ${stampsStats.alchemy.toLocaleString()}
-
-📦 *ПРОЧИЕ NFT (не марки):*
-   📊 Всего: ${otherStats.total.toLocaleString()}
-   🔥 Сожжено: ${otherStats.burned.toLocaleString()}
-   👥 Держателей: ${otherStats.holders.toLocaleString()}
-   🏪 В Лавке: ${otherStats.alchemy.toLocaleString()}
-
-📊 *ВСЕГО NFT на контракте:*
-   📊 Всего: ${totalTokens.toLocaleString()}
-
-🕐 *Обновлено:* ${new Date().toLocaleString()}`;
-    
-    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+    let fullMessage = '';
+    if (isError) {
+        fullMessage = `❌ <b>Yupland Stamps Update FAILED</b>\n\n${errorMessage}\n⏱️ Duration: ${duration} sec`;
+    } else {
+        fullMessage = `🏆 <b>Yupland Stamps Update</b> 🏆\n\n` +
+            `<b>📮 МАРКИ (Postage + Dynamic):</b>\n` +
+            `   📊 Всего: ${stats.stamps.total.toLocaleString()}\n` +
+            `   🔥 Сожжено: ${stats.stamps.burned.toLocaleString()}\n` +
+            `   👥 Держателей: ${stats.stamps.holders.toLocaleString()}\n` +
+            `   🏪 В Лавке: ${stats.stamps.alchemy.toLocaleString()}\n\n` +
+            `<b>📦 ПРОЧИЕ NFT (не марки):</b>\n` +
+            `   📊 Всего: ${stats.other.total.toLocaleString()}\n` +
+            `   🔥 Сожжено: ${stats.other.burned.toLocaleString()}\n` +
+            `   👥 Держателей: ${stats.other.holders.toLocaleString()}\n` +
+            `   🏪 В Лавке: ${stats.other.alchemy.toLocaleString()}\n\n` +
+            `<b>📊 ВСЕГО NFT на контракте:</b>\n` +
+            `   📊 Всего: ${stats.totalTokens.toLocaleString()}\n\n` +
+            `🔄 Обновлено владельцев: ${updatedCount}\n` +
+            `✨ Динамических марок: ${stats.dynamicStamps || 0}\n\n` +
+            `⏱️ Время: ${duration} сек`;
+    }
     
     try {
-        await fetch(url, {
+        const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+        const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 chat_id: TELEGRAM_CHAT_ID,
-                text: message,
-                parse_mode: 'Markdown'
+                text: fullMessage,
+                parse_mode: 'HTML'
             })
         });
-        console.log('✅ Telegram notification sent');
+        if (response.ok) {
+            console.log('📨 Telegram notification sent');
+        } else {
+            console.log('⚠️ Telegram notification failed');
+        }
     } catch (err) {
-        console.error('❌ Failed to send Telegram notification:', err);
+        console.log('⚠️ Telegram notification error:', err.message);
     }
 }
 
 async function main() {
-    console.log('🚀 Starting quick-update with split statistics...');
     const startTime = Date.now();
+    console.log(`🚀 Starting update at ${new Date().toISOString()}`);
     
     try {
-        console.log('📡 Fetching ALL tokens from Sendler API...');
         const allTokens = await fetchAllTokens();
-        console.log(`✅ Fetched ${allTokens.length} total tokens`);
+        console.log(`📊 Total tokens: ${allTokens.length}`);
         
-        // Разделяем на марки и не-марки
-        const stamps = allTokens.filter(t => isStamp(t));
-        const otherNFTs = allTokens.filter(t => !isStamp(t));
+        const dynamicTokens = allTokens.filter(t => DYNAMIC_NAMES.includes(t.title));
+        console.log(`📊 Dynamic tokens: ${dynamicTokens.length}`);
         
-        console.log(`\n📊 SPLIT RESULT:`);
-        console.log(`   📮 Stamps (marks): ${stamps.length}`);
-        console.log(`   📦 Other NFTs: ${otherNFTs.length}`);
+        // Подсчет раздельной статистики ДО обновления (для отчета)
+        const splitStats = calculateSplitStats(allTokens, dynamicTokens);
+        console.log(`\n📊 SPLIT STATISTICS:`);
+        console.log(`   📮 Stamps: ${splitStats.stamps.total} (burned: ${splitStats.stamps.burned}, holders: ${splitStats.stamps.holders}, alchemy: ${splitStats.stamps.alchemy})`);
+        console.log(`   📦 Other NFTs: ${splitStats.other.total} (burned: ${splitStats.other.burned}, holders: ${splitStats.other.holders}, alchemy: ${splitStats.other.alchemy})`);
         
-        // Расчет статистики
-        const stampsStats = calculateStatsForTokens(stamps);
-        const otherStats = calculateStatsForTokens(otherNFTs);
+        const { updated, errors } = await updateStampsIncremental(allTokens);
+        const added = await updateDynamicStamps(allTokens);
         
-        console.log(`\n📮 STAMPS STATS:`);
-        console.log(`   Total: ${stampsStats.total}`);
-        console.log(`   Burned: ${stampsStats.burned}`);
-        console.log(`   Holders: ${stampsStats.holders}`);
-        console.log(`   Alchemy: ${stampsStats.alchemy}`);
+        splitStats.dynamicStamps = added;
         
-        console.log(`\n📦 OTHER NFTS STATS:`);
-        console.log(`   Total: ${otherStats.total}`);
-        console.log(`   Burned: ${otherStats.burned}`);
-        console.log(`   Holders: ${otherStats.holders}`);
-        console.log(`   Alchemy: ${otherStats.alchemy}`);
+        const duration = ((Date.now() - startTime) / 1000).toFixed(1);
         
-        // Обновляем таблицы Supabase (только для марок)
-        console.log('\n💾 Updating stamps table...');
-        const updatedCount = await updateStampsTable(allTokens);
-        console.log(`✅ Updated ${updatedCount} stamps`);
+        await sendTelegramNotification(updated, splitStats, duration, errors > 0, errors > 0 ? 'Some errors occurred during update' : '');
         
-        console.log('🔄 Updating dynamic instances...');
-        const dynamicInserted = await updateDynamicInstances(allTokens);
-        console.log(`✅ Inserted ${dynamicInserted} dynamic instances`);
+        if (errors > 0) {
+            console.log('⚠️ Update completed with errors');
+        } else {
+            console.log('🎉 UPDATE COMPLETED SUCCESSFULLY!');
+        }
         
-        // Отправляем уведомление с раздельной статистикой
-        await sendTelegramNotification(stampsStats, otherStats, allTokens.length);
-        
-        const duration = ((Date.now() - startTime) / 1000).toFixed(2);
-        console.log(`\n✅ Update completed in ${duration}s`);
-        
-    } catch (err) {
-        console.error('❌ Fatal error:', err);
+    } catch (error) {
+        const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+        console.error('❌ Fatal error:', error.message);
+        await sendTelegramNotification(0, null, duration, true, error.message);
         process.exit(1);
     }
 }
 
-main();
+main().catch(console.error);
