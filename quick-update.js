@@ -30,6 +30,9 @@ const DYNAMIC_NAMES = [
     'Old stamp (legendary)'
 ];
 
+const BURNER_ACCOUNT = 'darai_duplo.near';
+const ALCHEMY_ACCOUNT = 'sendler-alchemy.near';
+
 async function fetchAllTokens() {
     console.log('🔄 Loading tokens from Sendler API...');
     let allTokens = [], cursor = null, page = 0;
@@ -113,10 +116,104 @@ async function updateDynamicStamps(allTokens) {
     return added;
 }
 
-async function sendTelegramNotification(message, isError = false) {
+function calculateStats(allTokens, dynamicTokens) {
+    let burnedTotal = 0;
+    let burnedStamps = 0;
+    let burnedDynamic = 0;
+    
+    let alchemyTotal = 0;
+    let alchemyStamps = 0;
+    let alchemyDynamic = 0;
+    
+    const allHolders = new Set();
+    const stampsHolders = new Set();
+    const dynamicHolders = new Set();
+    
+    // Обрабатываем обычные марки (все токены, кроме динамических)
+    const normalTokens = allTokens.filter(t => !DYNAMIC_NAMES.includes(t.title));
+    
+    for (const token of normalTokens) {
+        const owner = token.owner_id;
+        
+        // Холдеры (исключаем null, сжигателя, лавку)
+        if (owner && owner !== 'null' && owner !== BURNER_ACCOUNT && owner !== ALCHEMY_ACCOUNT) {
+            stampsHolders.add(owner);
+            allHolders.add(owner);
+        }
+        
+        // Сожжённые
+        if (!owner || owner === 'null' || owner === BURNER_ACCOUNT) {
+            burnedStamps++;
+            burnedTotal++;
+        }
+        
+        // В лавке
+        if (owner === ALCHEMY_ACCOUNT) {
+            alchemyStamps++;
+            alchemyTotal++;
+        }
+    }
+    
+    // Обрабатываем динамические марки
+    for (const token of dynamicTokens) {
+        const owner = token.owner_id;
+        
+        // Холдеры (исключаем null, сжигателя, лавку)
+        if (owner && owner !== 'null' && owner !== BURNER_ACCOUNT && owner !== ALCHEMY_ACCOUNT) {
+            dynamicHolders.add(owner);
+            allHolders.add(owner);
+        }
+        
+        // Сожжённые
+        if (!owner || owner === 'null' || owner === BURNER_ACCOUNT) {
+            burnedDynamic++;
+            burnedTotal++;
+        }
+        
+        // В лавке
+        if (owner === ALCHEMY_ACCOUNT) {
+            alchemyDynamic++;
+            alchemyTotal++;
+        }
+    }
+    
+    const stampsHoldersTotal = stampsHolders.size + dynamicHolders.size;
+    const totalStamps = normalTokens.length + dynamicTokens.length;
+    
+    return {
+        totalTokens: allTokens.length,
+        totalStamps: totalStamps,
+        burnedTotal: burnedTotal,
+        burnedStamps: burnedStamps + burnedDynamic,
+        holdersTotal: allHolders.size,
+        holdersStamps: stampsHoldersTotal,
+        alchemyTotal: alchemyTotal,
+        alchemyStamps: alchemyStamps + alchemyDynamic
+    };
+}
+
+async function sendTelegramNotification(updatedCount, stats, duration, isError = false, errorMessage = '') {
     if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
         console.log('⚠️ Telegram not configured, skipping notification');
         return;
+    }
+    
+    let fullMessage = '';
+    if (isError) {
+        fullMessage = `❌ <b>Yupland Stamps Update FAILED</b>\n\n${errorMessage}\n⏱️ Duration: ${duration} sec`;
+    } else {
+        fullMessage = `✅ <b>Yupland Stamps Update</b>\n\n` +
+            `📊 Total tokens: ${stats.totalTokens.toLocaleString()}\n` +
+            `📮 Stamps: ${stats.totalStamps.toLocaleString()}\n` +
+            `🔄 Owners updated: ${updatedCount}\n` +
+            `✨ Dynamic stamps: ${stats.dynamicStamps || 0}\n\n` +
+            `🔥 Burned total: ${stats.burnedTotal.toLocaleString()}\n` +
+            `🔥 Burned stamps: ${stats.burnedStamps.toLocaleString()}\n\n` +
+            `👥 Holders total: ${stats.holdersTotal.toLocaleString()}\n` +
+            `👥 Holders stamps: ${stats.holdersStamps.toLocaleString()}\n\n` +
+            `🏪 Alchemy total: ${stats.alchemyTotal.toLocaleString()}\n` +
+            `🏪 Alchemy stamps: ${stats.alchemyStamps.toLocaleString()}\n\n` +
+            `⏱️ Duration: ${duration} sec`;
     }
     
     try {
@@ -126,7 +223,7 @@ async function sendTelegramNotification(message, isError = false) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 chat_id: TELEGRAM_CHAT_ID,
-                text: message,
+                text: fullMessage,
                 parse_mode: 'HTML'
             })
         });
@@ -148,20 +245,18 @@ async function main() {
         const allTokens = await fetchAllTokens();
         console.log(`📊 Total tokens: ${allTokens.length}`);
         
+        const dynamicTokens = allTokens.filter(t => DYNAMIC_NAMES.includes(t.title));
+        console.log(`📊 Dynamic tokens: ${dynamicTokens.length}`);
+        
         const { updated, errors } = await updateStampsIncremental(allTokens);
         const added = await updateDynamicStamps(allTokens);
         
-        const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-        const statusEmoji = errors === 0 ? '✅' : '⚠️';
-        const message = `${statusEmoji} <b>Yupland Stamps Update</b>\n\n` +
-            `📊 Total tokens: ${allTokens.length}\n` +
-            `🔄 Owners updated: ${updated}\n` +
-            `⚠️ Errors: ${errors}\n` +
-            `✨ Dynamic stamps: ${added}\n` +
-            `⏱️ Duration: ${duration} sec`;
+        const stats = calculateStats(allTokens, dynamicTokens);
+        stats.dynamicStamps = added;
         
-        console.log(message.replace(/<[^>]+>/g, ''));
-        await sendTelegramNotification(message, errors > 0);
+        const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+        
+        await sendTelegramNotification(updated, stats, duration, errors > 0, errors > 0 ? 'Some errors occurred during update' : '');
         
         if (errors > 0) {
             console.log('⚠️ Update completed with errors');
@@ -171,12 +266,8 @@ async function main() {
         
     } catch (error) {
         const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-        const errorMessage = `❌ <b>Yupland Stamps Update FAILED</b>\n\n` +
-            `${error.message}\n` +
-            `⏱️ Duration: ${duration} sec`;
-        
-        console.error(errorMessage.replace(/<[^>]+>/g, ''));
-        await sendTelegramNotification(errorMessage, true);
+        console.error('❌ Fatal error:', error.message);
+        await sendTelegramNotification(0, null, duration, true, error.message);
         process.exit(1);
     }
 }
