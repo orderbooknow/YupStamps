@@ -2654,20 +2654,23 @@ function handleDelete(e) {
     }
 
     function showReport(wallets, groups, stamps) {
-        const active = wallets.filter(w => w && w.trim());
-        if (!active.length) return;
-        let collapsed = new Set(groups);
-        function render() {
-            let html = `<div class="modal-content"><button class="modal-close" onclick="this.closest('.modal').remove()">❌</button><h3>${t('report')}</h3><div style="overflow-x:auto;"><table class="report-table"><thead><tr><th>${t('group')} / ${t('stampSingular')}</th><th>${t('totalStamps')}</th><th>${t('burned')}</th><th>${t('inShop')}</th>${active.map(w => `<th>${formatAddress(w)}</th>`).join('')}<th>${t('total')}</th></thead><tbody>`;
-            let grand = { count: 0, burned: 0, alchemy: 0 };
-            let grandW = new Array(active.length).fill(0);
-            groups.forEach(g => {
-                const inGroup = stamps.filter(s => s.group && (s.group === g || s.group.includes(g)));
-                if (!inGroup.length) return;
-                let gt = { count: 0, burned: 0, alchemy: 0 };
-                let gw = new Array(active.length).fill(0);
-                const isCollapsed = collapsed.has(g);
-                html += `<tr class="group-header" data-group="${g}"><td colspan="${4 + active.length + 1}"><span class="toggle-icon">${isCollapsed ? '▶' : '▼'}</span> <strong>📁 ${translateGroup(g)}</strong></td><title="group-stamps ${isCollapsed ? 'collapsed' : ''}" data-group-body="${g}">`;
+    const active = wallets.filter(w => w && w.trim());
+    if (!active.length) return;
+    let collapsed = new Set(groups);
+    function render() {
+        let html = `<div class="modal-content"><button class="modal-close" onclick="this.closest('.modal').remove()">❌</button><h3>${t('report')}</h3><div style="overflow-x:auto;"><table class="report-table"><thead><tr><th>${t('group')} / ${t('stampSingular')}</th><th>${t('totalStamps')}</th><th>${t('burned')}</th><th>${t('inShop')}</th>${active.map(w => `<th>${formatAddress(w)}</th>`).join('')}<th>${t('total')}</th></thead><tbody>`;
+        let grand = { count: 0, burned: 0, alchemy: 0 };
+        let grandW = new Array(active.length).fill(0);
+        groups.forEach(g => {
+            const inGroup = stamps.filter(s => s.group && (s.group === g || s.group.includes(g)));
+            if (!inGroup.length) return;
+            let gt = { count: 0, burned: 0, alchemy: 0 };
+            let gw = new Array(active.length).fill(0);
+            const isCollapsed = collapsed.has(g);
+            // ✅ ИСПРАВЛЕНО: убрал <title>, заменил на правильную строку
+            html += `<tr class="group-header" data-group="${g}"><td colspan="${4 + active.length + 1}"><span class="toggle-icon">${isCollapsed ? '▶' : '▼'}</span> <strong>📁 ${translateGroup(g)}</strong></td></tr>`;
+            // ✅ Добавляем обёртку для строк группы
+            if (!isCollapsed) {
                 inGroup.forEach(st => {
                     const wc = active.map(w => st.instances.filter(o => o.toLowerCase() === w.toLowerCase()).length);
                     const tw = wc.reduce((a, b) => a + b, 0);
@@ -2679,66 +2682,67 @@ function handleDelete(e) {
                     grand.burned += st.burned;
                     grand.alchemy += st.alchemyCount;
                     for (let i = 0; i < active.length; i++) grandW[i] += wc[i];
-                    html += `<tr><td style="padding-left:20px;">${st.name}</td><td>${st.count}</td><td>${st.burned}</td><td>${st.alchemyCount}</td>${wc.map(c => `<td><strong>${c}</strong></td>`).join('')}<tr><strong>${tw}</strong></td></tr>`;
+                    html += `<tr><td style="padding-left:20px;">${st.name}</td><td>${st.count}</td><td>${st.burned}</td><td>${st.alchemyCount}</td>${wc.map(c => `<td><strong>${c}</strong></td>`).join('')}<td><strong>${tw}</strong></td></tr>`;
                 });
                 html += `<tr class="total-row"><td><strong>${t('total')} ${t('group')}</strong></td><td><strong>${gt.count}</strong></td><td><strong>${gt.burned}</strong></td><td><strong>${gt.alchemy}</strong></td>${gw.map(t => `<td><strong>${t}</strong></td>`).join('')}<td><strong>${gw.reduce((a, b) => a + b, 0)}</strong></td></tr>`;
-            });
-            html += `<tr class="grand-total-row"><tr><strong>${t('total')}</strong></td><td><strong>${grand.count}</strong></td><td><strong>${grand.burned}</strong></td><td><strong>${grand.alchemy}</strong></td>${grandW.map(t => `<td><strong>${t}</strong></td>`).join('')}<td><strong>${grandW.reduce((a, b) => a + b, 0)}</strong></td></tr>`;
-            html += `</tbody></table></div><div style="display:flex;gap:10px;margin-top:16px;">`;
-            if (isMobile() || currentUserId) {
-                html += `<button id="sendToBotBtn" class="modal-btn" style="background:#2ecc71;">📤 ${t('snapshot')}</button>`;
-            } else {
-                html += `<button id="csvDownloadBtn" class="modal-btn" style="background:#334155;">📥 ${t('exportSelected')}</button>`;
             }
-            html += `<button class="modal-btn" onclick="this.closest('.modal').remove()">${t('close')}</button></div></div>`;
-            const modal = document.createElement('div');
-            modal.className = 'modal';
-            modal.innerHTML = html;
-            document.body.appendChild(modal);
-            document.querySelectorAll('.group-header').forEach(h => {
-                h.addEventListener('click', () => {
-                    const grp = h.dataset.group;
-                    if (collapsed.has(grp)) collapsed.delete(grp);
-                    else collapsed.add(grp);
-                    modal.remove();
-                    render();
-                });
-            });
-            const sendBtn = document.getElementById('sendToBotBtn');
-            if (sendBtn) {
-                sendBtn.onclick = async () => {
-                    const csv = generateCSV(active, groups, stamps, grand, grandW);
-                    let chatId = currentUserId;
-                    if (!chatId) {
-                        const inp = prompt('Введите ваш Telegram ID (узнать у @userinfobot):');
-                        if (!inp) return;
-                        chatId = parseInt(inp, 10);
-                        if (isNaN(chatId)) return;
-                    }
-                    const res = await fetch(EDGE_FUNCTION_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ chatId, wallets: active, csvContent: csv })
-                    });
-                    const result = await res.json();
-                    alert(result.success ? '✅ Отправлено!' : '❌ Ошибка');
-                };
-            }
-            const csvBtn = document.getElementById('csvDownloadBtn');
-            if (csvBtn) {
-                csvBtn.onclick = () => {
-                    const csv = generateCSV(active, groups, stamps, grand, grandW);
-                    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv' });
-                    const link = document.createElement('a');
-                    link.href = URL.createObjectURL(blob);
-                    link.download = `report_${active.join('_')}.csv`;
-                    link.click();
-                    URL.revokeObjectURL(link.href);
-                };
-            }
+        });
+        html += `<tr class="grand-total-row"><td><strong>${t('total')}</strong></td><td><strong>${grand.count}</strong></td><td><strong>${grand.burned}</strong></td><td><strong>${grand.alchemy}</strong></td>${grandW.map(t => `<td><strong>${t}</strong></td>`).join('')}<td><strong>${grandW.reduce((a, b) => a + b, 0)}</strong></td></tr>`;
+        html += `</tbody></table></div><div style="display:flex;gap:10px;margin-top:16px;">`;
+        if (isMobile() || currentUserId) {
+            html += `<button id="sendToBotBtn" class="modal-btn" style="background:#2ecc71;">📤 ${t('snapshot')}</button>`;
+        } else {
+            html += `<button id="csvDownloadBtn" class="modal-btn" style="background:#334155;">📥 ${t('exportSelected')}</button>`;
         }
-        render();
+        html += `<button class="modal-btn" onclick="this.closest('.modal').remove()">${t('close')}</button></div></div>`;
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = html;
+        document.body.appendChild(modal);
+        document.querySelectorAll('.group-header').forEach(h => {
+            h.addEventListener('click', () => {
+                const grp = h.dataset.group;
+                if (collapsed.has(grp)) collapsed.delete(grp);
+                else collapsed.add(grp);
+                modal.remove();
+                render();
+            });
+        });
+        const sendBtn = document.getElementById('sendToBotBtn');
+        if (sendBtn) {
+            sendBtn.onclick = async () => {
+                const csv = generateCSV(active, groups, stamps, grand, grandW);
+                let chatId = currentUserId;
+                if (!chatId) {
+                    const inp = prompt('Введите ваш Telegram ID (узнать у @userinfobot):');
+                    if (!inp) return;
+                    chatId = parseInt(inp, 10);
+                    if (isNaN(chatId)) return;
+                }
+                const res = await fetch(EDGE_FUNCTION_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chatId, wallets: active, csvContent: csv })
+                });
+                const result = await res.json();
+                alert(result.success ? '✅ Отправлено!' : '❌ Ошибка');
+            };
+        }
+        const csvBtn = document.getElementById('csvDownloadBtn');
+        if (csvBtn) {
+            csvBtn.onclick = () => {
+                const csv = generateCSV(active, groups, stamps, grand, grandW);
+                const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `report_${active.join('_')}.csv`;
+                link.click();
+                URL.revokeObjectURL(link.href);
+            };
+        }
     }
+    render();
+}
 
     function downloadReport() {
     // Показываем последние 3 кошелька из savedWallets для удобства
