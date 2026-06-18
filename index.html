@@ -71,7 +71,7 @@
             align-items: center;
             flex-wrap: wrap;
         }
-        .theme-toggle, .lang-toggle {
+        .theme-toggle, .lang-toggle, .wallet-toggle {
             background: rgba(0,0,0,0.45);
             backdrop-filter: blur(6px);
             border: 1px solid rgba(255,255,255,0.2);
@@ -638,44 +638,44 @@
             padding: 4px 0;
         }
         
-        /* Настройки */
-        .settings-section {
-            margin-top: 16px;
+        /* Привязка кошелька */
+        .wallet-modal .modal-content {
+            max-width: 350px;
         }
-        .settings-section h4 {
-            font-size: 14px;
-            margin-bottom: 8px;
-            color: #94a3b8;
+        .wallet-modal .modal-content .wallet-list {
+            max-height: 150px;
+            overflow-y: auto;
+            margin: 10px 0;
         }
-        .wallet-item {
+        .wallet-modal .modal-content .wallet-item {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 8px 12px;
+            padding: 6px 10px;
             background: #1e293b;
-            border-radius: 12px;
-            margin-bottom: 6px;
+            border-radius: 10px;
+            margin-bottom: 4px;
         }
-        body.light .wallet-item {
+        body.light .wallet-modal .modal-content .wallet-item {
             background: #f1f5f9;
         }
-        .wallet-item span {
-            font-size: 13px;
+        .wallet-modal .modal-content .wallet-item span {
+            font-size: 12px;
             font-family: monospace;
         }
-        .wallet-item button {
+        .wallet-modal .modal-content .wallet-item button {
             background: none;
             border: none;
             color: #e94560;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 14px;
         }
-        .settings-add-wallet {
+        .wallet-modal .modal-content .wallet-input-group {
             display: flex;
             gap: 8px;
             margin-top: 8px;
         }
-        .settings-add-wallet input {
+        .wallet-modal .modal-content .wallet-input-group input {
             flex: 1;
             padding: 8px 14px;
             border-radius: 40px;
@@ -684,12 +684,12 @@
             color: #e2e8f0;
             font-size: 13px;
         }
-        body.light .settings-add-wallet input {
+        body.light .wallet-modal .modal-content .wallet-input-group input {
             border-color: #cbd5e1;
             background: white;
             color: #1e293b;
         }
-        .settings-add-wallet button {
+        .wallet-modal .modal-content .wallet-input-group button {
             padding: 8px 16px;
             border-radius: 40px;
             background: #e94560;
@@ -730,6 +730,7 @@
                 </div>
             </div>
             <button id="showLoginModalBtn" class="btn btn-secondary" style="display: none; padding: 6px 12px; font-size: 12px;">🔑 Войти</button>
+            <button class="wallet-toggle" id="walletToggle" title="Привязать кошелёк">👛</button>
             <button class="lang-toggle" id="langToggle">RU / EN</button>
             <button class="theme-toggle" id="themeToggle">☀️</button>
         </div>
@@ -761,7 +762,6 @@
         <div class="tab" data-tab="holders">🏆 Топ держатели</div>
         <div class="tab" data-tab="history">📜 История</div>
         <div class="tab" data-tab="chances">📊 Шансы</div>
-        <div class="tab" data-tab="settings">⚙️ Настройки</div>
     </div>
     
     <div id="galleryView">
@@ -817,30 +817,6 @@
                 <thead><tr><th>Группа</th><th class="chance-sort" data-sort="name">Название</th><th class="chance-sort" data-sort="available">Доступно</th><th class="chance-sort" data-sort="chance">Шанс</th></tr></thead>
                 <tbody id="chancesTableBody"></tbody>
             </table>
-        </div>
-    </div>
-    
-    <div id="settingsView" style="display: none;">
-        <div class="settings-section">
-            <h4>👛 Мои кошельки</h4>
-            <div id="walletsList"></div>
-            <div class="settings-add-wallet">
-                <input type="text" id="newWalletInput" placeholder="Введите адрес кошелька">
-                <button id="addWalletBtn">➕ Добавить</button>
-            </div>
-        </div>
-        <div class="settings-section" style="margin-top: 20px;">
-            <h4>⚙️ Настройки</h4>
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <span>🌙 Тема:</span>
-                    <button id="settingsThemeToggle" class="btn btn-secondary" style="padding: 4px 12px; font-size: 12px;">Переключить</button>
-                </div>
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <span>🌐 Язык:</span>
-                    <button id="settingsLangToggle" class="btn btn-secondary" style="padding: 4px 12px; font-size: 12px;">RU / EN</button>
-                </div>
-            </div>
         </div>
     </div>
     
@@ -901,7 +877,6 @@
                 holders: '🏆 Топ держатели',
                 history: '📜 История',
                 chances: '📊 Шансы',
-                settings: '⚙️ Настройки',
                 totalStamps: 'Всего марок',
                 types: 'Видов',
                 burned: '🔥 Сожжено',
@@ -985,10 +960,6 @@
                 myWallets: '👛 Мои кошельки',
                 addWallet: '➕ Добавить',
                 enterWallet: 'Введите адрес кошелька',
-                settingsTitle: '⚙️ Настройки',
-                theme: '🌙 Тема',
-                language: '🌐 Язык',
-                switchTheme: 'Переключить',
                 showOnlyMyNFT: '🎯 Показать только мои NFT',
                 myNFT: 'Моих',
                 progress: '🧑‍💻 Ваш прогресс',
@@ -996,13 +967,14 @@
                 notHave: '❌ Нет',
                 enterYourWallet: 'Введите ваш кошелёк',
                 check: 'Проверить',
+                attachWallet: '👛 Привязать кошелёк',
+                noWallets: '😕 Нет привязанных кошельков',
             },
             en: {
                 gallery: '🖼️ Gallery',
                 holders: '🏆 Top Holders',
                 history: '📜 History',
                 chances: '📊 Chances',
-                settings: '⚙️ Settings',
                 totalStamps: 'Total stamps',
                 types: 'Types',
                 burned: '🔥 Burned',
@@ -1086,10 +1058,6 @@
                 myWallets: '👛 My wallets',
                 addWallet: '➕ Add',
                 enterWallet: 'Enter wallet address',
-                settingsTitle: '⚙️ Settings',
-                theme: '🌙 Theme',
-                language: '🌐 Language',
-                switchTheme: 'Switch',
                 showOnlyMyNFT: '🎯 Show only my NFT',
                 myNFT: 'My',
                 progress: '🧑‍💻 Your progress',
@@ -1097,6 +1065,8 @@
                 notHave: '❌ Not have',
                 enterYourWallet: 'Enter your wallet',
                 check: 'Check',
+                attachWallet: '👛 Attach wallet',
+                noWallets: '😕 No wallets attached',
             }
         };
         return translations[currentLang]?.[key] || key;
@@ -1114,39 +1084,37 @@
     }
     
     function toggleLang() {
-    currentLang = currentLang === 'ru' ? 'en' : 'ru';
-    localStorage.setItem('lang', currentLang);
-    document.getElementById('langToggle').innerText = currentLang === 'ru' ? 'RU / EN' : 'EN / RU';
-    updateUITexts();
-    
-    // Обновляем текст вкладок
-    document.querySelectorAll('.tab').forEach(tab => {
-        const keyMap = {
-            gallery: 'gallery',
-            holders: 'holders',
-            history: 'history',
-            chances: 'chances',
-            settings: 'settings'
-        };
-        const key = keyMap[tab.dataset.tab] || tab.dataset.tab;
-        tab.textContent = t(key);
-    });
-    
-    // Обновляем текст чекбокса
-    const myNftLabel = document.querySelector('.my-nft-checkbox label');
-    if (myNftLabel) myNftLabel.textContent = t('showOnlyMyNFT');
-    
-    // Обновляем текст кнопки отчёта
-    const reportBtn = document.getElementById('reportBtn');
-    if (reportBtn) reportBtn.textContent = t('report');
-    
-    updateStats();
-    renderGallery();
-    renderChancesTable();
-    if (currentTab === 'holders') buildHoldersList();
-    if (currentTab === 'history') renderHistory();
-    renderWallets();
-}
+        currentLang = currentLang === 'ru' ? 'en' : 'ru';
+        localStorage.setItem('lang', currentLang);
+        document.getElementById('langToggle').innerText = currentLang === 'ru' ? 'RU / EN' : 'EN / RU';
+        updateUITexts();
+        
+        // Обновляем текст вкладок
+        document.querySelectorAll('.tab').forEach(tab => {
+            const keyMap = {
+                gallery: 'gallery',
+                holders: 'holders',
+                history: 'history',
+                chances: 'chances'
+            };
+            const key = keyMap[tab.dataset.tab] || tab.dataset.tab;
+            tab.textContent = t(key);
+        });
+        
+        // Обновляем текст чекбокса
+        const myNftLabel = document.querySelector('.my-nft-checkbox label');
+        if (myNftLabel) myNftLabel.textContent = t('showOnlyMyNFT');
+        
+        // Обновляем текст кнопки отчёта
+        const reportBtn = document.getElementById('reportBtn');
+        if (reportBtn) reportBtn.textContent = t('report');
+        
+        updateStats();
+        renderGallery();
+        renderChancesTable();
+        if (currentTab === 'holders') buildHoldersList();
+        if (currentTab === 'history') renderHistory();
+    }
     
     function updateUITexts() {
         document.querySelectorAll('[data-lang-key]').forEach(el => {
@@ -1157,111 +1125,64 @@
         document.getElementById('walletSearchInput').placeholder = t('searchWallet');
         document.getElementById('chancesSearchInput').placeholder = t('searchStamp');
         document.getElementById('debugInfo').innerHTML = t('loading');
-        // Настройки
-        const newWalletInput = document.getElementById('newWalletInput');
-        if (newWalletInput) newWalletInput.placeholder = t('enterWallet');
     }
-    
-    // ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
-    let currentRankMode = 'count';
-    let currentGroupHolders = 'all';
-    let currentChancesGroup = 'all';
-    let chancesSortBy = 'chance';
-    let chancesSortOrder = 'desc';
-    let chancesSearchQuery = '';
-    let currentUserId = null;
-    let currentUserFirstName = null;
-    let isAdmin = false;
-    let currentGroup = 'all';
-    let currentTab = 'gallery';
-    let searchQuery = '';
-    let allStamps = [], dynamicInstances = [], groupedStamps = [];
-    let selectedRaffleIds = new Set();
-    
-    // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
-    function isMobile() {
-        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
-    }
-    
-    function formatAddress(addr) {
-        if (!addr) return 'Неизвестно';
-        if (addr.length <= 20) return addr;
-        if (addr.length >= 64) return addr.slice(0,6)+'…'+addr.slice(-4);
-        return addr;
-    }
-    
-    function getRarityClass(r) {
-        const x = (r||'').toLowerCase();
-        if(x.includes('legendary')) return 'rarity-legendary';
-        if(x.includes('epic')) return 'rarity-epic';
-        if(x.includes('rare')) return 'rarity-rare';
-        if(x.includes('uncommon')) return 'rarity-uncommon';
-        if(x.includes('unique')) return 'rarity-unique';
-        if(x.includes('mystic')) return 'rarity-mystic';
-        return 'rarity-common';
-    }
-    
-    function formatNumberWithSpaces(num) {
-        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-    }
-    
-    function parseNumberFromSpaces(str) {
-        return parseInt(str.replace(/\s/g, ''), 10);
-    }
-    
-    function getMoscowTime(date) {
-        return date.toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
-    }
-    
-    // ==================== SUPABASE ====================
-    const SUPABASE_URL = 'https://obbujhdmegdgxzdtpbai.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_R0pbZnbuSEbkaCLHcZ_YhQ_J2ZRgIB8';
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    const EXCLUDED_OWNERS = ['sendler-alchemy.near'];
-    const BURNER_ACCOUNT = 'darai_duplo.near';
-    const ALCHEMY_ACCOUNT = 'sendler-alchemy.near';
     
     // ==================== КОШЕЛЬКИ ====================
-    function saveWallets() {
-        localStorage.setItem('savedWallets', JSON.stringify(savedWallets));
-        renderWallets();
-        renderGallery();
+    function showWalletModal() {
+        const modal = document.createElement('div');
+        modal.className = 'modal wallet-modal';
+        renderWalletModalContent(modal);
+        document.body.appendChild(modal);
     }
     
-    function renderWallets() {
-        const container = document.getElementById('walletsList');
-        if (!container) return;
-        if (!savedWallets.length) {
-            container.innerHTML = `<div style="color: #94a3b8; font-size: 13px;">${t('noData')}</div>`;
-            return;
-        }
-        container.innerHTML = savedWallets.map(w => `
-            <div class="wallet-item">
-                <span>${w}</span>
-                <button onclick="removeWallet('${w}')">✖</button>
+    function renderWalletModalContent(modal) {
+        const walletsHtml = savedWallets.length > 0 
+            ? savedWallets.map(w => `
+                <div class="wallet-item">
+                    <span>${w}</span>
+                    <button onclick="removeWalletFromModal('${w}')">✖</button>
+                </div>
+            `).join('')
+            : `<div style="color: #94a3b8; font-size: 13px; padding: 8px 0;">${t('noWallets')}</div>`;
+        
+        modal.innerHTML = `
+            <div class="modal-content">
+                <button class="modal-close" onclick="this.closest('.modal').remove()">❌</button>
+                <h3>${t('attachWallet')}</h3>
+                <div class="wallet-list">${walletsHtml}</div>
+                <div class="wallet-input-group">
+                    <input type="text" id="newWalletInput" placeholder="${t('enterWallet')}">
+                    <button id="addWalletBtn">${t('addWallet')}</button>
+                </div>
+                <button class="modal-btn" onclick="this.closest('.modal').remove()">${t('close')}</button>
             </div>
-        `).join('');
+        `;
+        
+        document.getElementById('addWalletBtn').onclick = () => {
+            const input = document.getElementById('newWalletInput');
+            const wallet = input.value.trim();
+            if (!wallet) return;
+            if (savedWallets.includes(wallet)) {
+                alert('Кошелёк уже добавлен');
+                return;
+            }
+            savedWallets.push(wallet);
+            localStorage.setItem('savedWallets', JSON.stringify(savedWallets));
+            renderWalletModalContent(modal);
+            renderGallery();
+        };
+        document.getElementById('newWalletInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') document.getElementById('addWalletBtn').click();
+        });
     }
     
-    window.removeWallet = function(wallet) {
+    window.removeWalletFromModal = function(wallet) {
         savedWallets = savedWallets.filter(w => w !== wallet);
-        saveWallets();
+        localStorage.setItem('savedWallets', JSON.stringify(savedWallets));
+        const modal = document.querySelector('.wallet-modal');
+        if (modal) renderWalletModalContent(modal);
         renderGallery();
     };
-    
-    function addWallet() {
-        const input = document.getElementById('newWalletInput');
-        const wallet = input.value.trim();
-        if (!wallet) return;
-        if (savedWallets.includes(wallet)) {
-            alert('Кошелёк уже добавлен');
-            return;
-        }
-        savedWallets.push(wallet);
-        saveWallets();
-        input.value = '';
-        renderGallery();
-    }
     
     function checkUserHasStamp(stamp, wallets) {
         if (!wallets || wallets.length === 0) return false;
@@ -1271,6 +1192,15 @@
             }
         }
         return false;
+    }
+    
+    function getUserStampCount(stamp, wallets) {
+        if (!wallets || wallets.length === 0) return 0;
+        let count = 0;
+        for (const wallet of wallets) {
+            count += stamp.instances.filter(owner => owner.toLowerCase() === wallet.toLowerCase()).length;
+        }
+        return count;
     }
     
     // ==================== ОТПРАВКА В TELEGRAM ====================
@@ -1963,7 +1893,6 @@
             if (isSearchByOwner) filtered = filtered.filter(s => s.instances.some(o => o.toLowerCase().includes(searchQuery)));
             else filtered = filtered.filter(s => s.name.toLowerCase().includes(searchQuery));
         }
-        // Фильтр по моим NFT
         const myNftCheckbox = document.getElementById('myNftFilter');
         if (myNftCheckbox && myNftCheckbox.checked && savedWallets.length > 0) {
             filtered = filtered.filter(s => checkUserHasStamp(s, savedWallets));
@@ -1972,13 +1901,13 @@
             document.getElementById('gallery').innerHTML = `<div class="loading">${t('nothingFound')}</div>`;
             return;
         }
-        // Подсчёт своих NFT
         let myCount = 0;
         if (savedWallets.length > 0) {
             myCount = groupedStamps.filter(s => checkUserHasStamp(s, savedWallets)).length;
         }
         document.getElementById('gallery').innerHTML = filtered.map(s => {
             const hasStamp = checkUserHasStamp(s, savedWallets);
+            const stampCount = getUserStampCount(s, savedWallets);
             let extra = '';
             if (isSearchByOwner && searchQuery) {
                 const cnt = s.instances.filter(o => o.toLowerCase().includes(searchQuery)).length;
@@ -1986,7 +1915,7 @@
                 extra = ` | 👤 ${cnt} ${t('holdersPlural')}`;
             }
             const groupDisplay = s.group ? translateGroup(s.group).replace(',',' / ') : 'Без группы';
-            const myMarker = hasStamp ? ' ✅' : '';
+            const myMarker = hasStamp ? ` ✅ ${stampCount} шт.` : '';
             return `<div class="stamp-card" onclick="showHolders('${s.name.replace(/'/g,"\\'")}')">
                 <img class="stamp-image" src="${s.image||'https://placehold.co/80x80?text=🐉'}" onerror="this.src='https://placehold.co/80x80?text=🐉'">
                 <div>
@@ -1996,15 +1925,6 @@
                 </div>
             </div>`;
         }).join('');
-        
-        // Обновляем счётчик
-        const statsGrid = document.getElementById('statsGrid');
-        if (myNftCheckbox && myNftCheckbox.checked) {
-            const totalDisplay = document.querySelector('.stat-value');
-            if (totalDisplay) {
-                // уже обновлено в updateStats
-            }
-        }
     }
     
     function buildHoldersList() {
@@ -2248,23 +2168,37 @@
             rewardAmount: data.rewardAmount || 0
         };
         
-        // Проверка прогресса пользователя
+        // Проверка прогресса пользователя (для 1 марки и для комбо)
         let progressHtml = '';
-        if (data.type === 'combo' && savedWallets.length > 0) {
-            const stamps = data.names || [];
-            progressHtml = `
-                <hr>
-                <div style="margin-top: 12px;">
-                    <h4>🧑‍💻 ${t('progress')}</h4>
-                    <div style="font-size: 12px; margin-top: 6px;">
-                        ${stamps.map(name => {
-                            const stamp = groupedStamps.find(s => s.name === name);
-                            const has = stamp ? checkUserHasStamp(stamp, savedWallets) : false;
-                            return `<div style="padding: 2px 0;">${name} ${has ? t('have') : t('notHave')}</div>`;
-                        }).join('')}
+        if (savedWallets.length > 0) {
+            let stamps = [];
+            if (data.type === 'single') {
+                stamps = [data.name];
+            } else if (data.type === 'combo') {
+                stamps = data.names || [];
+            }
+            if (stamps.length > 0) {
+                progressHtml = `
+                    <hr>
+                    <div style="margin-top: 12px;">
+                        <h4>🧑‍💻 ${t('progress')}</h4>
+                        <div style="font-size: 12px; margin-top: 6px;">
+                            ${stamps.map(name => {
+                                const stamp = groupedStamps.find(s => s.name === name);
+                                let count = 0;
+                                if (stamp) {
+                                    for (const wallet of savedWallets) {
+                                        const instances = stamp.instances.filter(o => o.toLowerCase() === wallet.toLowerCase());
+                                        count += instances.length;
+                                    }
+                                }
+                                const has = count > 0;
+                                return `<div style="padding: 2px 0;">${name} ${has ? `✅ ${count} шт.` : '❌ 0 шт.'}</div>`;
+                            }).join('')}
+                        </div>
                     </div>
-                </div>
-            `;
+                `;
+            }
         }
         
         modal.innerHTML = `<div class="modal-content"><button class="modal-close" onclick="this.closest('.modal').remove()">❌</button>
@@ -2880,7 +2814,6 @@
                 document.getElementById('holdersView').style.display = currentTab === 'holders' ? 'block' : 'none';
                 document.getElementById('historyView').style.display = currentTab === 'history' ? 'block' : 'none';
                 document.getElementById('chancesView').style.display = currentTab === 'chances' ? 'block' : 'none';
-                document.getElementById('settingsView').style.display = currentTab === 'settings' ? 'block' : 'none';
                 document.getElementById('groupFilter').style.display = currentTab === 'gallery' ? 'flex' : 'none';
                 document.getElementById('groupFilterHolders').style.display = currentTab === 'holders' ? 'flex' : 'none';
                 document.getElementById('groupFilterChances').style.display = currentTab === 'chances' ? 'flex' : 'none';
@@ -2888,15 +2821,13 @@
                 if (currentTab === 'history') await renderHistory();
                 if (currentTab === 'gallery') renderGallery();
                 if (currentTab === 'chances') renderChancesTable();
-                if (currentTab === 'settings') renderWallets();
                 // Обновляем тексты вкладок
                 document.querySelectorAll('.tab').forEach(t => {
                     const keyMap = {
                         gallery: 'gallery',
                         holders: 'holders',
                         history: 'history',
-                        chances: 'chances',
-                        settings: 'settings'
+                        chances: 'chances'
                     };
                     const key = keyMap[t.dataset.tab] || t.dataset.tab;
                     t.textContent = t(key);
@@ -2911,20 +2842,12 @@
         loadSavedUser();
         updateUserUI();
         updateUITexts();
-        renderWallets();
         
         document.getElementById('themeToggle').addEventListener('click', toggleTheme);
         document.getElementById('langToggle').addEventListener('click', toggleLang);
+        document.getElementById('walletToggle').addEventListener('click', showWalletModal);
         document.getElementById('reportBtn').addEventListener('click', downloadReport);
         document.getElementById('showLoginModalBtn').addEventListener('click', showPCLoginModal);
-        
-        // Настройки
-        document.getElementById('addWalletBtn').addEventListener('click', addWallet);
-        document.getElementById('newWalletInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') addWallet();
-        });
-        document.getElementById('settingsThemeToggle').addEventListener('click', toggleTheme);
-        document.getElementById('settingsLangToggle').addEventListener('click', toggleLang);
         
         // Фильтр моих NFT
         document.getElementById('myNftFilter').addEventListener('change', () => {
