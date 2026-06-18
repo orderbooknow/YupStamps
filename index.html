@@ -71,15 +71,16 @@
             align-items: center;
             flex-wrap: wrap;
         }
-        .theme-toggle {
+        .theme-toggle, .lang-toggle {
             background: rgba(0,0,0,0.45);
             backdrop-filter: blur(6px);
             border: 1px solid rgba(255,255,255,0.2);
             border-radius: 40px;
             padding: 6px 12px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 12px;
             color: white;
+            transition: 0.2s;
         }
         .user-menu {
             position: relative;
@@ -157,6 +158,10 @@
             background: #f59e0b;
             color: white;
         }
+        .btn-mass {
+            background: #ec4899;
+            color: white;
+        }
         
         .stats-grid {
             display: grid;
@@ -186,8 +191,8 @@
             font-size: 10px;
             color: #94a3b8;
         }
+        body.light .stat-label { color: #64748b; }
         
-        /* Розыгрыш — УВЕЛИЧЕННЫЙ ДЛЯ СТРИМА */
         .raffle-container {
             background: linear-gradient(135deg, #1a1a2e, #16213e);
             border-radius: 48px;
@@ -380,9 +385,26 @@
             align-items: center;
             cursor: pointer;
             transition: 0.2s;
+            gap: 8px;
         }
         body.light .history-item { background: white; }
         .history-item:hover { transform: translateX(5px); background: #334155; }
+        .history-checkbox {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #e94560;
+            flex-shrink: 0;
+        }
+        .history-content {
+            flex: 1;
+            cursor: pointer;
+        }
+        .history-actions {
+            display: flex;
+            gap: 5px;
+            flex-shrink: 0;
+        }
         .delete-raffle-btn, .complete-raffle-btn {
             background: none;
             border: none;
@@ -390,10 +412,23 @@
             cursor: pointer;
             opacity: 0.6;
             color: #e2e8f0;
-            margin-left: 8px;
         }
         .delete-raffle-btn:hover, .complete-raffle-btn:hover { opacity: 1; }
         .complete-raffle-btn { color: #10b981; }
+        
+        .mass-actions {
+            display: none;
+            gap: 10px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .mass-actions.visible {
+            display: flex;
+        }
+        .mass-actions .btn {
+            font-size: 12px;
+            padding: 6px 14px;
+        }
         
         .report-table {
             width: 100%;
@@ -599,6 +634,86 @@
             font-weight: 500;
             letter-spacing: 1px;
         }
+        .history-item .history-content {
+            padding: 4px 0;
+        }
+        
+        /* Настройки */
+        .settings-section {
+            margin-top: 16px;
+        }
+        .settings-section h4 {
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: #94a3b8;
+        }
+        .wallet-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: #1e293b;
+            border-radius: 12px;
+            margin-bottom: 6px;
+        }
+        body.light .wallet-item {
+            background: #f1f5f9;
+        }
+        .wallet-item span {
+            font-size: 13px;
+            font-family: monospace;
+        }
+        .wallet-item button {
+            background: none;
+            border: none;
+            color: #e94560;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .settings-add-wallet {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .settings-add-wallet input {
+            flex: 1;
+            padding: 8px 14px;
+            border-radius: 40px;
+            border: 1px solid #475569;
+            background: #1e293b;
+            color: #e2e8f0;
+            font-size: 13px;
+        }
+        body.light .settings-add-wallet input {
+            border-color: #cbd5e1;
+            background: white;
+            color: #1e293b;
+        }
+        .settings-add-wallet button {
+            padding: 8px 16px;
+            border-radius: 40px;
+            background: #e94560;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .my-nft-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            cursor: pointer;
+        }
+        .my-nft-checkbox input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #e94560;
+        }
+        .my-nft-checkbox label {
+            font-size: 13px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body class="dark">
@@ -615,6 +730,7 @@
                 </div>
             </div>
             <button id="showLoginModalBtn" class="btn btn-secondary" style="display: none; padding: 6px 12px; font-size: 12px;">🔑 Войти</button>
+            <button class="lang-toggle" id="langToggle">RU / EN</button>
             <button class="theme-toggle" id="themeToggle">☀️</button>
         </div>
     </div>
@@ -645,12 +761,17 @@
         <div class="tab" data-tab="holders">🏆 Топ держатели</div>
         <div class="tab" data-tab="history">📜 История</div>
         <div class="tab" data-tab="chances">📊 Шансы</div>
+        <div class="tab" data-tab="settings">⚙️ Настройки</div>
     </div>
     
     <div id="galleryView">
         <div class="search-group">
             <input type="text" id="gallerySearchInput" class="search-input" placeholder="🔍 Поиск...">
             <button id="galleryFindBtn" class="btn">🔍</button>
+        </div>
+        <div class="my-nft-checkbox">
+            <input type="checkbox" id="myNftFilter">
+            <label for="myNftFilter">🎯 Показать только мои NFT</label>
         </div>
         <div id="groupFilter" class="group-filter"></div>
         <div id="gallery"></div>
@@ -670,9 +791,17 @@
     </div>
     
     <div id="historyView" style="display: none;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
             <h3 style="font-size: 16px;">📜 История розыгрышей</h3>
-            <button id="updateDataBtn" class="btn-update" style="padding: 6px 12px; font-size: 12px; background: #2c3e50; color: white; border-radius: 40px; cursor: pointer;">🔄 Обновить данные</button>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button id="updateDataBtn" class="btn-update" style="padding: 6px 12px; font-size: 12px; background: #2c3e50; color: white; border-radius: 40px; cursor: pointer;">🔄 Обновить данные</button>
+            </div>
+        </div>
+        <div id="massActions" class="mass-actions">
+            <button id="selectAllBtn" class="btn btn-secondary" style="font-size: 12px; padding: 6px 14px;">☑ Все</button>
+            <button id="deselectAllBtn" class="btn btn-secondary" style="font-size: 12px; padding: 6px 14px;">☐ Снять</button>
+            <button id="exportSelectedBtn" class="btn btn-payment" style="font-size: 12px; padding: 6px 14px;">📥 Выгрузить выбранные</button>
+            <button id="completeSelectedBtn" class="btn btn-success" style="font-size: 12px; padding: 6px 14px;">✅ Завершить выбранные</button>
         </div>
         <div id="historyList"></div>
     </div>
@@ -691,6 +820,30 @@
         </div>
     </div>
     
+    <div id="settingsView" style="display: none;">
+        <div class="settings-section">
+            <h4>👛 Мои кошельки</h4>
+            <div id="walletsList"></div>
+            <div class="settings-add-wallet">
+                <input type="text" id="newWalletInput" placeholder="Введите адрес кошелька">
+                <button id="addWalletBtn">➕ Добавить</button>
+            </div>
+        </div>
+        <div class="settings-section" style="margin-top: 20px;">
+            <h4>⚙️ Настройки</h4>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span>🌙 Тема:</span>
+                    <button id="settingsThemeToggle" class="btn btn-secondary" style="padding: 4px 12px; font-size: 12px;">Переключить</button>
+                </div>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span>🌐 Язык:</span>
+                    <button id="settingsLangToggle" class="btn btn-secondary" style="padding: 4px 12px; font-size: 12px;">RU / EN</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <div class="debug" id="debugInfo">🟢 Загрузка...</div>
 </div>
 
@@ -703,6 +856,311 @@
     const BOT_TOKEN = '8708530374:AAHhcWFtjLqXK_Yxl0qlCtYrwi0ORLcDHNQ';
     const GROUP_CHAT_ID = '-1002166870776';
     const YAROSLAV_CHAT_ID = '454371494';
+    
+    // ==================== ПЕРЕВОД ====================
+    let currentLang = localStorage.getItem('lang') || 'ru';
+    let savedWallets = JSON.parse(localStorage.getItem('savedWallets') || '[]');
+    let myNftFilterEnabled = false;
+    
+    const groupTranslations = {
+        'АЗИЯ': 'ASIA',
+        'ЕВРОПА': 'EUROPE',
+        'АМЕРИКА': 'AMERICA',
+        'АФРИКА': 'AFRICA',
+        'ОКЕАНИЯ': 'OCEANIA',
+        'ЗОДИАКИ': 'ZODIACS',
+        'СКАЗОЧНЫЕ МИРЫ': 'FAIRY WORLDS',
+        'СОЛНЕЧНАЯ СИСТЕМА': 'SOLAR SYSTEM',
+        'МАШИНЫ': 'CARS',
+        'ИНФЛЮЕНСЕР': 'INFLUENCER',
+        'Профессии': 'PROFESSIONS',
+        'Охотники': 'HUNTERS',
+        'Северные Миры': 'NORTHERN WORLDS',
+        'Времена года': 'SEASONS',
+        'АЗИЯ, ЕВРОПА': 'ASIA, EUROPE',
+        'Alchemist (7)': 'Alchemist (7)',
+        'Alchemist (6)': 'Alchemist (6)',
+        'Alchemist (4-5)': 'Alchemist (4-5)',
+        'Alchemist (old-3)': 'Alchemist (old-3)',
+    };
+    
+    const rarityTranslations = {
+        'Legendary': 'Legendary',
+        'Epic': 'Epic',
+        'Rare': 'Rare',
+        'Uncommon': 'Uncommon',
+        'Common': 'Common',
+        'Unique': 'Unique',
+        'Mystic': 'Mystic',
+    };
+    
+    function t(key) {
+        const translations = {
+            ru: {
+                gallery: '🖼️ Галерея',
+                holders: '🏆 Топ держатели',
+                history: '📜 История',
+                chances: '📊 Шансы',
+                settings: '⚙️ Настройки',
+                totalStamps: 'Всего марок',
+                types: 'Видов',
+                burned: '🔥 Сожжено',
+                inShop: '🏪 В Лавке',
+                report: '📊 Отчёт по кошелькам',
+                raffle1: '🎲 1 марка',
+                raffle2: '🔥 Комбо 2',
+                raffle3: '💎 Комбо 3',
+                search: '🔍 Поиск...',
+                searchWallet: '🔍 Поиск кошелька...',
+                searchStamp: '🔍 Поиск марки...',
+                noData: '😕 Нет данных',
+                nothingFound: '😕 Ничего не найдено',
+                loading: '🔄 Загрузка...',
+                updateData: '🔄 Обновить данные',
+                historyEmpty: '📜 История пуста',
+                completeAll: '✅ Завершить все',
+                selectAll: '☑ Все',
+                deselectAll: '☐ Снять',
+                exportSelected: '📥 Выгрузить выбранные',
+                completeSelected: '✅ Завершить выбранные',
+                copy: '📋 Копировать',
+                forPayment: '💳 Для выплат',
+                snapshot: '📤 Снимок в бот',
+                enterAmount: '🎁 Введите сумму награды',
+                enterAmountPlaceholder: 'Сумма в DarAI',
+                cancel: 'Отмена',
+                continue: 'Продолжить',
+                adminConfirm: '🔐 Подтверждение администратора',
+                adminPasswordPlaceholder: 'Введите пароль',
+                confirm: 'Подтвердить',
+                login: '🔐 Вход в аккаунт',
+                loginIdPlaceholder: 'Ваш Telegram ID',
+                loginBtn: 'Войти',
+                winner: '🏆 ПОБЕДИТЕЛЬ',
+                holdersTitle: '🏆 АКТУАЛЬНЫЕ ДЕРЖАТЕЛИ',
+                group: '📁 Группа',
+                total: '📊 Всего экземпляров',
+                burnedLabel: '🔥 Сожжено',
+                shopLabel: '🏪 В Лавке',
+                reward: '💰 Награда',
+                wallet: '👤 Кошелёк',
+                count: '🎫 Количество NFT',
+                amount: '💰 DarAI',
+                raffleDraw: '🎰 РОЗЫГРЫШ 🎰',
+                step1: 'Шаг 1/2: Выбор группы...',
+                step2: 'Шаг 2/2: Выбор',
+                stamps: 'марок',
+                stampSingular: 'марки',
+                close: 'Закрыть',
+                noGroups: '❌ Нет доступных марок в этой группе',
+                noGroupsForCombo: '❌ Нет групп с достаточным количеством марок для ',
+                combo2: 'комбо 2',
+                combo3: 'комбо 3',
+                raffleStarted: '🎡 Запуск...',
+                raffleStartedCombo: '🔥 Комбо',
+                chance: '🎲 Шанс выпадения',
+                avgChance: '🎲 Средний шанс',
+                combo2Label: 'Комбо 2',
+                combo3Label: 'Комбо 3',
+                byCount: 'По количеству',
+                byUnique: 'По уникальным',
+                enterId: 'Введите Telegram ID',
+                idOnlyDigits: 'ID должен содержать только цифры',
+                welcome: '✅ Добро пожаловать, администратор!',
+                wrongPassword: '❌ Неверный пароль. Админ-панель недоступна.',
+                noStampFound: '❌ Не удалось найти марку',
+                updateStarted: '✅ Обновление запущено! Результат придёт в Telegram через 2-3 минуты.',
+                updateError: '❌ Ошибка: ',
+                connectionError: '❌ Ошибка соединения',
+                completed: '✅ Розыгрыш завершён! Награда ',
+                distributed: ' DarAI распределена между ',
+                holdersPlural: ' держателями.',
+                deleteConfirm: 'Удалить розыгрыш?',
+                completeConfirm: 'Завершить розыгрыш и зафиксировать распределение ',
+                completeAllConfirm: 'Завершить все выбранные розыгрыши?',
+                completeAllDone: '✅ Все выбранные розыгрыши завершены!',
+                noSelected: '❌ Не выбрано ни одного розыгрыша',
+                exportSuccess: '✅ Экспорт выполнен!',
+                completeSelectedConfirm: 'Завершить выбранные розыгрыши?',
+                myWallets: '👛 Мои кошельки',
+                addWallet: '➕ Добавить',
+                enterWallet: 'Введите адрес кошелька',
+                settingsTitle: '⚙️ Настройки',
+                theme: '🌙 Тема',
+                language: '🌐 Язык',
+                switchTheme: 'Переключить',
+                showOnlyMyNFT: '🎯 Показать только мои NFT',
+                myNFT: 'Моих',
+                progress: '🧑‍💻 Ваш прогресс',
+                have: '✅ Есть',
+                notHave: '❌ Нет',
+                enterYourWallet: 'Введите ваш кошелёк',
+                check: 'Проверить',
+            },
+            en: {
+                gallery: '🖼️ Gallery',
+                holders: '🏆 Top Holders',
+                history: '📜 History',
+                chances: '📊 Chances',
+                settings: '⚙️ Settings',
+                totalStamps: 'Total stamps',
+                types: 'Types',
+                burned: '🔥 Burned',
+                inShop: '🏪 In Shop',
+                report: '📊 Wallet Report',
+                raffle1: '🎲 1 stamp',
+                raffle2: '🔥 Combo 2',
+                raffle3: '💎 Combo 3',
+                search: '🔍 Search...',
+                searchWallet: '🔍 Search wallet...',
+                searchStamp: '🔍 Search stamp...',
+                noData: '😕 No data',
+                nothingFound: '😕 Nothing found',
+                loading: '🔄 Loading...',
+                updateData: '🔄 Update data',
+                historyEmpty: '📜 History is empty',
+                completeAll: '✅ Complete all',
+                selectAll: '☑ Select all',
+                deselectAll: '☐ Deselect all',
+                exportSelected: '📥 Export selected',
+                completeSelected: '✅ Complete selected',
+                copy: '📋 Copy',
+                forPayment: '💳 For payments',
+                snapshot: '📤 Snapshot to bot',
+                enterAmount: '🎁 Enter reward amount',
+                enterAmountPlaceholder: 'Amount in DarAI',
+                cancel: 'Cancel',
+                continue: 'Continue',
+                adminConfirm: '🔐 Admin confirmation',
+                adminPasswordPlaceholder: 'Enter password',
+                confirm: 'Confirm',
+                login: '🔐 Login',
+                loginIdPlaceholder: 'Your Telegram ID',
+                loginBtn: 'Login',
+                winner: '🏆 WINNER',
+                holdersTitle: '🏆 CURRENT HOLDERS',
+                group: '📁 Group',
+                total: '📊 Total instances',
+                burnedLabel: '🔥 Burned',
+                shopLabel: '🏪 In Shop',
+                reward: '💰 Reward',
+                wallet: '👤 Wallet',
+                count: '🎫 NFT count',
+                amount: '💰 DarAI',
+                raffleDraw: '🎰 DRAW',
+                step1: 'Step 1/2: Selecting group...',
+                step2: 'Step 2/2: Selecting',
+                stamps: 'stamps',
+                stampSingular: 'stamp',
+                close: 'Close',
+                noGroups: '❌ No stamps available in this group',
+                noGroupsForCombo: '❌ No groups with enough stamps for ',
+                combo2: 'combo 2',
+                combo3: 'combo 3',
+                raffleStarted: '🎡 Starting...',
+                raffleStartedCombo: '🔥 Combo',
+                chance: '🎲 Chance',
+                avgChance: '🎲 Average chance',
+                combo2Label: 'Combo 2',
+                combo3Label: 'Combo 3',
+                byCount: 'By count',
+                byUnique: 'By unique',
+                enterId: 'Enter Telegram ID',
+                idOnlyDigits: 'ID must contain only digits',
+                welcome: '✅ Welcome, administrator!',
+                wrongPassword: '❌ Wrong password. Admin panel unavailable.',
+                noStampFound: '❌ Stamp not found',
+                updateStarted: '✅ Update started! Result will come to Telegram in 2-3 minutes.',
+                updateError: '❌ Error: ',
+                connectionError: '❌ Connection error',
+                completed: '✅ Raffle completed! Reward ',
+                distributed: ' DarAI distributed among ',
+                holdersPlural: ' holders.',
+                deleteConfirm: 'Delete raffle?',
+                completeConfirm: 'Complete raffle and fix distribution ',
+                completeAllConfirm: 'Complete all selected raffles?',
+                completeAllDone: '✅ All selected raffles completed!',
+                noSelected: '❌ No raffles selected',
+                exportSuccess: '✅ Export completed!',
+                completeSelectedConfirm: 'Complete selected raffles?',
+                myWallets: '👛 My wallets',
+                addWallet: '➕ Add',
+                enterWallet: 'Enter wallet address',
+                settingsTitle: '⚙️ Settings',
+                theme: '🌙 Theme',
+                language: '🌐 Language',
+                switchTheme: 'Switch',
+                showOnlyMyNFT: '🎯 Show only my NFT',
+                myNFT: 'My',
+                progress: '🧑‍💻 Your progress',
+                have: '✅ Have',
+                notHave: '❌ Not have',
+                enterYourWallet: 'Enter your wallet',
+                check: 'Check',
+            }
+        };
+        return translations[currentLang]?.[key] || key;
+    }
+    
+    function translateGroup(group) {
+        if (currentLang === 'ru') return group;
+        return groupTranslations[group] || group;
+    }
+    
+    function getRarityLabel(rarity) {
+        if (currentLang === 'ru') return rarity || 'Common';
+        const r = rarity || 'Common';
+        return rarityTranslations[r] || r;
+    }
+    
+    function toggleLang() {
+    currentLang = currentLang === 'ru' ? 'en' : 'ru';
+    localStorage.setItem('lang', currentLang);
+    document.getElementById('langToggle').innerText = currentLang === 'ru' ? 'RU / EN' : 'EN / RU';
+    updateUITexts();
+    
+    // Обновляем текст вкладок
+    document.querySelectorAll('.tab').forEach(tab => {
+        const keyMap = {
+            gallery: 'gallery',
+            holders: 'holders',
+            history: 'history',
+            chances: 'chances',
+            settings: 'settings'
+        };
+        const key = keyMap[tab.dataset.tab] || tab.dataset.tab;
+        tab.textContent = t(key);
+    });
+    
+    // Обновляем текст чекбокса
+    const myNftLabel = document.querySelector('.my-nft-checkbox label');
+    if (myNftLabel) myNftLabel.textContent = t('showOnlyMyNFT');
+    
+    // Обновляем текст кнопки отчёта
+    const reportBtn = document.getElementById('reportBtn');
+    if (reportBtn) reportBtn.textContent = t('report');
+    
+    updateStats();
+    renderGallery();
+    renderChancesTable();
+    if (currentTab === 'holders') buildHoldersList();
+    if (currentTab === 'history') renderHistory();
+    renderWallets();
+}
+    
+    function updateUITexts() {
+        document.querySelectorAll('[data-lang-key]').forEach(el => {
+            const key = el.dataset.langKey;
+            if (key) el.textContent = t(key);
+        });
+        document.getElementById('gallerySearchInput').placeholder = t('search');
+        document.getElementById('walletSearchInput').placeholder = t('searchWallet');
+        document.getElementById('chancesSearchInput').placeholder = t('searchStamp');
+        document.getElementById('debugInfo').innerHTML = t('loading');
+        // Настройки
+        const newWalletInput = document.getElementById('newWalletInput');
+        if (newWalletInput) newWalletInput.placeholder = t('enterWallet');
+    }
     
     // ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
     let currentRankMode = 'count';
@@ -718,6 +1176,7 @@
     let currentTab = 'gallery';
     let searchQuery = '';
     let allStamps = [], dynamicInstances = [], groupedStamps = [];
+    let selectedRaffleIds = new Set();
     
     // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
     function isMobile() {
@@ -761,6 +1220,58 @@
     const EXCLUDED_OWNERS = ['sendler-alchemy.near'];
     const BURNER_ACCOUNT = 'darai_duplo.near';
     const ALCHEMY_ACCOUNT = 'sendler-alchemy.near';
+    
+    // ==================== КОШЕЛЬКИ ====================
+    function saveWallets() {
+        localStorage.setItem('savedWallets', JSON.stringify(savedWallets));
+        renderWallets();
+        renderGallery();
+    }
+    
+    function renderWallets() {
+        const container = document.getElementById('walletsList');
+        if (!container) return;
+        if (!savedWallets.length) {
+            container.innerHTML = `<div style="color: #94a3b8; font-size: 13px;">${t('noData')}</div>`;
+            return;
+        }
+        container.innerHTML = savedWallets.map(w => `
+            <div class="wallet-item">
+                <span>${w}</span>
+                <button onclick="removeWallet('${w}')">✖</button>
+            </div>
+        `).join('');
+    }
+    
+    window.removeWallet = function(wallet) {
+        savedWallets = savedWallets.filter(w => w !== wallet);
+        saveWallets();
+        renderGallery();
+    };
+    
+    function addWallet() {
+        const input = document.getElementById('newWalletInput');
+        const wallet = input.value.trim();
+        if (!wallet) return;
+        if (savedWallets.includes(wallet)) {
+            alert('Кошелёк уже добавлен');
+            return;
+        }
+        savedWallets.push(wallet);
+        saveWallets();
+        input.value = '';
+        renderGallery();
+    }
+    
+    function checkUserHasStamp(stamp, wallets) {
+        if (!wallets || wallets.length === 0) return false;
+        for (const wallet of wallets) {
+            if (stamp.instances.some(owner => owner.toLowerCase() === wallet.toLowerCase())) {
+                return true;
+            }
+        }
+        return false;
+    }
     
     // ==================== ОТПРАВКА В TELEGRAM ====================
     async function sendTelegramMessage(chatId, text, parseMode = 'HTML') {
@@ -824,6 +1335,106 @@
             csv += `${item.address},${item.count}\n`;
         });
         return csv;
+    }
+    
+    function generateMultiExportCSV(rafflesData) {
+        let csv = '';
+        for (let i = 0; i < rafflesData.length; i++) {
+            const data = rafflesData[i];
+            if (i > 0) csv += '\n\n';
+            csv += `Снимок Розыгрыша YupStamp\n`;
+            csv += `Дата и время: ${getMoscowTime(new Date(data.raffleDate || Date.now()))}\n`;
+            csv += `Розыгрыш: ${data.resultText}\n`;
+            csv += `Группа: ${data.finalGroup}\n`;
+            if (data.rewardAmount > 0) {
+                csv += `Награда: ${formatNumberWithSpaces(data.rewardAmount)} DarAI\n`;
+            }
+            csv += `\nwallet,count\n`;
+            data.holders.forEach(item => {
+                csv += `${item.address},${item.count}\n`;
+            });
+        }
+        return csv;
+    }
+    
+    // ==================== МАССОВЫЕ ОПЕРАЦИИ ====================
+    async function completeSelectedRaffles() {
+        if (!isAdmin) return;
+        const selected = getSelectedRaffleIds();
+        if (selected.length === 0) {
+            alert(t('noSelected'));
+            return;
+        }
+        if (!confirm(t('completeSelectedConfirm'))) return;
+        
+        for (const id of selected) {
+            const history = await loadHistory();
+            const raffle = history.find(h => h.id === id);
+            if (raffle && raffle.reward_status !== 'closed' && raffle.reward_amount > 0) {
+                const stamps = raffle.stamp_name.includes(' + ') ? raffle.stamp_name.split(' + ') : [raffle.stamp_name];
+                await completeRaffle(id, stamps, raffle.reward_amount);
+            }
+        }
+        selectedRaffleIds.clear();
+        alert(t('completeAllDone'));
+        await renderHistory();
+    }
+    
+    async function exportSelectedRaffles() {
+        if (!isAdmin) return;
+        const selected = getSelectedRaffleIds();
+        if (selected.length === 0) {
+            alert(t('noSelected'));
+            return;
+        }
+        
+        const history = await loadHistory();
+        const rafflesData = [];
+        for (const id of selected) {
+            const raffle = history.find(h => h.id === id);
+            if (!raffle) continue;
+            let stamps = [];
+            if (raffle.stamp_name.includes(' + ')) {
+                stamps = raffle.stamp_name.split(' + ');
+            } else {
+                stamps = [raffle.stamp_name];
+            }
+            const data = await getCurrentHoldersForRaffle(stamps, raffle.reward_amount || 0);
+            if (data) {
+                const combinedData = data.owners.map(owner => ({
+                    address: owner.address,
+                    count: owner.count
+                }));
+                rafflesData.push({
+                    resultText: raffle.stamp_name,
+                    finalGroup: raffle.group_name,
+                    rewardAmount: raffle.reward_amount || 0,
+                    holders: combinedData,
+                    raffleDate: raffle.created_at
+                });
+            }
+        }
+        
+        if (rafflesData.length === 0) {
+            alert(t('noData'));
+            return;
+        }
+        
+        const csv = generateMultiExportCSV(rafflesData);
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.href = url;
+        link.download = `Raffles_${Date.now()}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        alert(t('exportSuccess'));
+    }
+    
+    function getSelectedRaffleIds() {
+        return Array.from(selectedRaffleIds);
     }
     
     // ==================== ЗАГРУЗКА ДАННЫХ ====================
@@ -910,9 +1521,9 @@
             modal.innerHTML = `
                 <div class="modal-content" style="max-width: 300px;">
                     <button class="modal-close" onclick="this.closest('.modal').remove()">❌</button>
-                    <h3>🔐 Подтверждение администратора</h3>
-                    <input type="password" id="adminPasswordInput" class="reward-input" placeholder="Введите пароль">
-                    <button id="submitAdminPassword" class="modal-btn">Подтвердить</button>
+                    <h3>${t('adminConfirm')}</h3>
+                    <input type="password" id="adminPasswordInput" class="reward-input" placeholder="${t('adminPasswordPlaceholder')}">
+                    <button id="submitAdminPassword" class="modal-btn">${t('confirm')}</button>
                 </div>
             `;
             document.body.appendChild(modal);
@@ -932,11 +1543,11 @@
             modal.innerHTML = `
                 <div class="modal-content" style="max-width: 350px;">
                     <button class="modal-close" onclick="this.closest('.modal').remove()">❌</button>
-                    <h3>🎁 Введите сумму награды</h3>
-                    <input type="text" id="rewardAmountInput" class="reward-input" placeholder="Сумма в DarAI" value="">
+                    <h3>${t('enterAmount')}</h3>
+                    <input type="text" id="rewardAmountInput" class="reward-input" placeholder="${t('enterAmountPlaceholder')}" value="">
                     <div style="display: flex; gap: 10px; margin-top: 10px;">
-                        <button id="cancelRewardBtn" class="modal-btn" style="background: #475569;">Отмена</button>
-                        <button id="confirmRewardBtn" class="modal-btn">Продолжить</button>
+                        <button id="cancelRewardBtn" class="modal-btn" style="background: #475569;">${t('cancel')}</button>
+                        <button id="confirmRewardBtn" class="modal-btn">${t('continue')}</button>
                     </div>
                 </div>
             `;
@@ -987,9 +1598,9 @@
             if (passwordOk) {
                 adminStatus = true;
                 currentUserFirstName = 'Админ';
-                alert('✅ Добро пожаловать, администратор!');
+                alert(t('welcome'));
             } else {
-                alert('❌ Неверный пароль. Админ-панель недоступна.');
+                alert(t('wrongPassword'));
             }
         }
         isAdmin = adminStatus;
@@ -1004,20 +1615,20 @@
         modal.innerHTML = `
             <div class="modal-content">
                 <button class="modal-close" onclick="this.closest('.modal').remove()">❌</button>
-                <h3>🔐 Вход в аккаунт</h3>
-                <input type="text" id="loginUserId" class="reward-input" placeholder="Ваш Telegram ID">
-                <button id="submitLoginBtn" class="modal-btn">Войти</button>
+                <h3>${t('login')}</h3>
+                <input type="text" id="loginUserId" class="reward-input" placeholder="${t('loginIdPlaceholder')}">
+                <button id="submitLoginBtn" class="modal-btn">${t('loginBtn')}</button>
             </div>
         `;
         document.body.appendChild(modal);
         document.getElementById('submitLoginBtn').onclick = () => {
             const id = document.getElementById('loginUserId').value.trim();
             if (!id) {
-                alert('Введите Telegram ID');
+                alert(t('enterId'));
                 return;
             }
             if (!/^\d+$/.test(id)) {
-                alert('ID должен содержать только цифры');
+                alert(t('idOnlyDigits'));
                 return;
             }
             modal.remove();
@@ -1128,7 +1739,7 @@
         }
     }
     
-    // ==================== ТЕМА ====================
+    // ==================== ТЕМА И ЯЗЫК ====================
     function initTheme() {
         const saved = localStorage.getItem('theme');
         if (saved === 'light') {
@@ -1154,6 +1765,12 @@
             localStorage.setItem('theme', 'dark');
             document.getElementById('themeToggle').innerText = '☀️';
         }
+    }
+    
+    function initLang() {
+        const saved = localStorage.getItem('lang') || 'ru';
+        currentLang = saved;
+        document.getElementById('langToggle').innerText = currentLang === 'ru' ? 'RU / EN' : 'EN / RU';
     }
     
     // ==================== ФУНКЦИИ ДЛЯ НАГРАД ====================
@@ -1251,7 +1868,7 @@
         }
         await saveRewardSnapshot(id, rewardAmount, distribution);
         await renderHistory();
-        alert(`✅ Розыгрыш завершён! Награда ${formatNumberWithSpaces(rewardAmount)} DarAI распределена между ${distribution.length} держателями.`);
+        alert(`${t('completed')}${formatNumberWithSpaces(rewardAmount)}${t('distributed')}${distribution.length}${t('holdersPlural')}`);
     }
     
     function updateStats() {
@@ -1259,10 +1876,10 @@
         const burned = groupedStamps.reduce((s,g)=>s+g.burned,0);
         const inAlchemy = groupedStamps.reduce((s,g)=>s+g.alchemyCount,0) + dynamicInstances.filter(i=>i.owner_id===ALCHEMY_ACCOUNT).length;
         document.getElementById('statsGrid').innerHTML = `
-            <div class="stat-card"><div class="stat-value">${total}</div><div class="stat-label">Всего марок</div></div>
-            <div class="stat-card"><div class="stat-value">${groupedStamps.length}</div><div class="stat-label">Видов</div></div>
-            <div class="stat-card"><div class="stat-value">${burned}</div><div class="stat-label">🔥 Сожжено</div></div>
-            <div class="stat-card"><div class="stat-value">${inAlchemy}</div><div class="stat-label">🏪 В Лавке</div></div>
+            <div class="stat-card"><div class="stat-value">${total}</div><div class="stat-label">${t('totalStamps')}</div></div>
+            <div class="stat-card"><div class="stat-value">${groupedStamps.length}</div><div class="stat-label">${t('types')}</div></div>
+            <div class="stat-card"><div class="stat-value">${burned}</div><div class="stat-label">${t('burned')}</div></div>
+            <div class="stat-card"><div class="stat-value">${inAlchemy}</div><div class="stat-label">${t('inShop')}</div></div>
         `;
     }
     
@@ -1292,10 +1909,11 @@
     function renderGroupFilters() {
         const groups = getUniqueGroups();
         const container = document.getElementById('groupFilter');
-        container.innerHTML = `<div class="group-btn ${currentGroup==='all'?'active':''}" data-group="all">Все (${groupedStamps.length})</div>`;
+        container.innerHTML = `<div class="group-btn ${currentGroup==='all'?'active':''}" data-group="all">${t('totalStamps')} (${groupedStamps.length})</div>`;
         groups.forEach(g => {
+            const translated = translateGroup(g);
             const cnt = groupedStamps.filter(s => s.group && (s.group===g || s.group.includes(g))).length;
-            container.innerHTML += `<div class="group-btn" data-group="${g}">${g} (${cnt})</div>`;
+            container.innerHTML += `<div class="group-btn" data-group="${g}">${translated} (${cnt})</div>`;
         });
         document.querySelectorAll('#groupFilter .group-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -1307,9 +1925,10 @@
         });
         
         const holdersContainer = document.getElementById('groupFilterHolders');
-        holdersContainer.innerHTML = `<div class="group-btn ${currentGroupHolders==='all'?'active':''}" data-group-holders="all">Все</div>`;
+        holdersContainer.innerHTML = `<div class="group-btn ${currentGroupHolders==='all'?'active':''}" data-group-holders="all">${t('totalStamps')}</div>`;
         groups.forEach(g => {
-            holdersContainer.innerHTML += `<div class="group-btn" data-group-holders="${g}">${g}</div>`;
+            const translated = translateGroup(g);
+            holdersContainer.innerHTML += `<div class="group-btn" data-group-holders="${g}">${translated}</div>`;
         });
         document.querySelectorAll('#groupFilterHolders .group-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -1321,9 +1940,10 @@
         });
         
         const chancesContainer = document.getElementById('groupFilterChances');
-        chancesContainer.innerHTML = `<div class="group-btn ${currentChancesGroup==='all'?'active':''}" data-group-chances="all">Все</div>`;
+        chancesContainer.innerHTML = `<div class="group-btn ${currentChancesGroup==='all'?'active':''}" data-group-chances="all">${t('totalStamps')}</div>`;
         groups.forEach(g => {
-            chancesContainer.innerHTML += `<div class="group-btn" data-group-chances="${g}">${g}</div>`;
+            const translated = translateGroup(g);
+            chancesContainer.innerHTML += `<div class="group-btn" data-group-chances="${g}">${translated}</div>`;
         });
         document.querySelectorAll('#groupFilterChances .group-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -1343,27 +1963,48 @@
             if (isSearchByOwner) filtered = filtered.filter(s => s.instances.some(o => o.toLowerCase().includes(searchQuery)));
             else filtered = filtered.filter(s => s.name.toLowerCase().includes(searchQuery));
         }
+        // Фильтр по моим NFT
+        const myNftCheckbox = document.getElementById('myNftFilter');
+        if (myNftCheckbox && myNftCheckbox.checked && savedWallets.length > 0) {
+            filtered = filtered.filter(s => checkUserHasStamp(s, savedWallets));
+        }
         if (!filtered.length) {
-            document.getElementById('gallery').innerHTML = '<div class="loading">😕 Ничего не найдено</div>';
+            document.getElementById('gallery').innerHTML = `<div class="loading">${t('nothingFound')}</div>`;
             return;
         }
+        // Подсчёт своих NFT
+        let myCount = 0;
+        if (savedWallets.length > 0) {
+            myCount = groupedStamps.filter(s => checkUserHasStamp(s, savedWallets)).length;
+        }
         document.getElementById('gallery').innerHTML = filtered.map(s => {
+            const hasStamp = checkUserHasStamp(s, savedWallets);
             let extra = '';
             if (isSearchByOwner && searchQuery) {
                 const cnt = s.instances.filter(o => o.toLowerCase().includes(searchQuery)).length;
                 if (cnt === 0) return '';
-                extra = ` | 👤 ${cnt} у владельца`;
+                extra = ` | 👤 ${cnt} ${t('holdersPlural')}`;
             }
-            const groupDisplay = s.group ? s.group.replace(',',' / ') : 'Без группы';
+            const groupDisplay = s.group ? translateGroup(s.group).replace(',',' / ') : 'Без группы';
+            const myMarker = hasStamp ? ' ✅' : '';
             return `<div class="stamp-card" onclick="showHolders('${s.name.replace(/'/g,"\\'")}')">
                 <img class="stamp-image" src="${s.image||'https://placehold.co/80x80?text=🐉'}" onerror="this.src='https://placehold.co/80x80?text=🐉'">
                 <div>
-                    <div class="stamp-title">${s.name}<span class="stamp-badge ${getRarityClass(s.rarity)}">${s.rarity||'Common'}</span></div>
+                    <div class="stamp-title">${s.name}<span class="stamp-badge ${getRarityClass(s.rarity)}">${getRarityLabel(s.rarity)}</span></div>
                     <div class="stamp-group">📁 ${groupDisplay}</div>
-                    <div class="stamp-count">📊 ${s.count} экз. | 🔥 ${s.burned} сожжено${s.alchemyCount?` | 🏪 ${s.alchemyCount}`:''}${extra}</div>
+                    <div class="stamp-count">📊 ${s.count} ${t('stamps')} | ${t('burned')} ${s.burned}${s.alchemyCount?` | ${t('inShop')} ${s.alchemyCount}`:''}${extra}${myMarker}</div>
                 </div>
             </div>`;
         }).join('');
+        
+        // Обновляем счётчик
+        const statsGrid = document.getElementById('statsGrid');
+        if (myNftCheckbox && myNftCheckbox.checked) {
+            const totalDisplay = document.querySelector('.stat-value');
+            if (totalDisplay) {
+                // уже обновлено в updateStats
+            }
+        }
     }
     
     function buildHoldersList() {
@@ -1382,7 +2023,7 @@
             const isHighlight = searchTerm && (h.address.toLowerCase() === searchTerm || h.address.toLowerCase().includes(searchTerm));
             if (isHighlight) highlighted = i;
             return `<div class="holder-row" id="holder-row-${i}"><span>#${i+1}</span><span>${formatAddress(h.address)}</span><span>${h.count} ${currentRankMode==='count'?'NFT':'видов'}</span><button class="copy-address-btn" data-address="${h.address}">📋</button></div>`;
-        }).join('') : '<div class="loading">😕 Нет данных</div>';
+        }).join('') : `<div class="loading">${t('noData')}</div>`;
         if (highlighted !== -1) {
             setTimeout(() => {
                 const row = document.getElementById(`holder-row-${highlighted}`);
@@ -1470,8 +2111,22 @@
     async function renderHistory() {
         const history = await loadHistory();
         const container = document.getElementById('historyList');
-        if (!history.length) { container.innerHTML = '<div class="loading">📜 История пуста</div>'; return; }
+        const massActions = document.getElementById('massActions');
+        
+        if (isAdmin) {
+            massActions.classList.add('visible');
+        } else {
+            massActions.classList.remove('visible');
+            selectedRaffleIds.clear();
+        }
+        
+        if (!history.length) {
+            container.innerHTML = `<div class="loading">${t('historyEmpty')}</div>`;
+            return;
+        }
+        
         container.innerHTML = history.map(h => {
+            const isChecked = selectedRaffleIds.has(h.id) ? 'checked' : '';
             let displayName = h.stamp_name;
             let statusIcon = '';
             if (h.reward_status === 'closed') {
@@ -1480,35 +2135,27 @@
                 statusIcon = ` 🎁 ${formatNumberWithSpaces(h.reward_amount)} DarAI`;
             }
             return `
-            <div class="history-item" data-id="${h.id}" data-stamp-name="${h.stamp_name.replace(/"/g, '&quot;')}" data-reward-amount="${h.reward_amount || 0}" data-reward-status="${h.reward_status || 'pending'}">
-                <div style="flex:1">
+            <div class="history-item" data-id="${h.id}">
+                ${isAdmin ? `<input type="checkbox" class="history-checkbox" data-id="${h.id}" ${isChecked}>` : ''}
+                <div class="history-content" onclick="onHistoryItemClick('${h.id}', '${h.stamp_name.replace(/"/g, '\\"')}', ${h.reward_amount || 0})">
                     <div>📅 ${getMoscowTime(new Date(h.created_at))}</div>
-                    <div>🏆 <strong>${displayName}</strong> | 📁 ${h.group_name}${statusIcon}</div>
+                    <div>🏆 <strong>${displayName}</strong> | 📁 ${translateGroup(h.group_name)}${statusIcon}</div>
                 </div>
-                <div style="display: flex; gap: 5px;">
-                    ${isAdmin && h.reward_status !== 'closed' && h.reward_amount > 0 ? `<button class="complete-raffle-btn" data-id="${h.id}" data-stamp-name="${h.stamp_name.replace(/"/g, '&quot;')}" data-reward-amount="${h.reward_amount}" title="Завершить и зафиксировать награду">✅</button>` : ''}
+                <div class="history-actions">
+                    ${isAdmin && h.reward_status !== 'closed' && h.reward_amount > 0 ? `<button class="complete-raffle-btn" data-id="${h.id}" data-stamp-name="${h.stamp_name.replace(/"/g, '&quot;')}" data-reward-amount="${h.reward_amount}" title="Завершить">✅</button>` : ''}
                     ${isAdmin ? `<button class="delete-raffle-btn" data-id="${h.id}" title="Удалить">🗑</button>` : ''}
                 </div>
             </div>
         `}).join('');
         
-        document.querySelectorAll('.history-item').forEach(item => {
-            item.addEventListener('click', async (e) => {
-                if (e.target.classList.contains('delete-raffle-btn') || e.target.classList.contains('complete-raffle-btn')) return;
-                const stampName = item.dataset.stampName;
-                const rewardAmount = parseInt(item.dataset.rewardAmount, 10);
-                let stamps = [];
-                if (stampName.includes(' + ')) {
-                    stamps = stampName.split(' + ');
+        document.querySelectorAll('.history-checkbox').forEach(cb => {
+            cb.addEventListener('change', (e) => {
+                const id = parseInt(e.target.dataset.id, 10);
+                if (e.target.checked) {
+                    selectedRaffleIds.add(id);
                 } else {
-                    stamps = [stampName];
+                    selectedRaffleIds.delete(id);
                 }
-                const data = await getCurrentHoldersForRaffle(stamps, rewardAmount > 0 ? rewardAmount : null);
-                if (!data) {
-                    alert('❌ Не удалось найти марку');
-                    return;
-                }
-                showHoldersModal(data);
             });
         });
         
@@ -1516,7 +2163,9 @@
             document.querySelectorAll('.delete-raffle-btn').forEach(btn => {
                 btn.addEventListener('click', async (e) => {
                     e.stopPropagation();
-                    if (confirm('Удалить розыгрыш?')) await deleteRaffle(btn.dataset.id);
+                    if (confirm(t('deleteConfirm'))) {
+                        await deleteRaffle(btn.dataset.id);
+                    }
                 });
             });
             document.querySelectorAll('.complete-raffle-btn').forEach(btn => {
@@ -1531,13 +2180,29 @@
                     } else {
                         stamps = [stampName];
                     }
-                    if (confirm(`Завершить розыгрыш и зафиксировать распределение ${formatNumberWithSpaces(rewardAmount)} DarAI?`)) {
+                    if (confirm(`${t('completeConfirm')}${formatNumberWithSpaces(rewardAmount)} DarAI?`)) {
                         await completeRaffle(id, stamps, rewardAmount);
                     }
                 });
             });
         }
     }
+    
+    window.onHistoryItemClick = function(id, stampName, rewardAmount) {
+        let stamps = [];
+        if (stampName.includes(' + ')) {
+            stamps = stampName.split(' + ');
+        } else {
+            stamps = [stampName];
+        }
+        getCurrentHoldersForRaffle(stamps, rewardAmount > 0 ? rewardAmount : null).then(data => {
+            if (!data) {
+                alert(t('noStampFound'));
+                return;
+            }
+            showHoldersModal(data);
+        });
+    };
     
     function showHoldersModal(data) {
         const modal = document.createElement('div');
@@ -1583,29 +2248,49 @@
             rewardAmount: data.rewardAmount || 0
         };
         
+        // Проверка прогресса пользователя
+        let progressHtml = '';
+        if (data.type === 'combo' && savedWallets.length > 0) {
+            const stamps = data.names || [];
+            progressHtml = `
+                <hr>
+                <div style="margin-top: 12px;">
+                    <h4>🧑‍💻 ${t('progress')}</h4>
+                    <div style="font-size: 12px; margin-top: 6px;">
+                        ${stamps.map(name => {
+                            const stamp = groupedStamps.find(s => s.name === name);
+                            const has = stamp ? checkUserHasStamp(stamp, savedWallets) : false;
+                            return `<div style="padding: 2px 0;">${name} ${has ? t('have') : t('notHave')}</div>`;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        
         modal.innerHTML = `<div class="modal-content"><button class="modal-close" onclick="this.closest('.modal').remove()">❌</button>
-            <h3>🏆 АКТУАЛЬНЫЕ ДЕРЖАТЕЛИ</h3>
+            <h3>${t('holdersTitle')}</h3>
             <p style="font-size:16px;font-weight:700;color:#e94560;margin:10px 0;">${resultText}</p>
-            <p>📁 Группа: ${data.group}</p>
-            <p>📊 Всего экземпляров: ${data.totalCount}</p>
-            <p>🔥 Сожжено: ${data.burned}</p>
-            <p>🏪 В Лавке: ${data.alchemy}</p>
-            ${hasReward ? `<p>💰 Награда: ${formatNumberWithSpaces(data.rewardAmount)} DarAI</p>` : ''}
+            <p>${t('group')}: ${translateGroup(data.group)}</p>
+            <p>${t('total')}: ${data.totalCount}</p>
+            <p>${t('burnedLabel')}: ${data.burned}</p>
+            <p>${t('shopLabel')}: ${data.alchemy}</p>
+            ${hasReward ? `<p>${t('reward')}: ${formatNumberWithSpaces(data.rewardAmount)} DarAI</p>` : ''}
+            ${progressHtml}
             <hr>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
-                <span>🏆 Держатели (${combinedData.length}):</span>
+                <span>🏆 ${t('holders')} (${combinedData.length}):</span>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                    <button id="copyHoldersBtn" style="background:#334155;border:none;padding:4px 12px;border-radius:20px;color:white;cursor:pointer;">📋 Копировать</button>
-                    ${isAdmin ? `<button id="copyPaymentBtn" class="btn-payment" style="border:none;padding:4px 12px;border-radius:20px;color:white;cursor:pointer;">💳 Для выплат</button>` : ''}
-                    ${isAdmin ? `<button id="sendSnapshotBtn" class="btn-snapshot" style="border:none;padding:4px 12px;border-radius:20px;color:white;cursor:pointer;">📤 Снимок в бот</button>` : ''}
+                    <button id="copyHoldersBtn" style="background:#334155;border:none;padding:4px 12px;border-radius:20px;color:white;cursor:pointer;">${t('copy')}</button>
+                    ${isAdmin ? `<button id="copyPaymentBtn" class="btn-payment" style="border:none;padding:4px 12px;border-radius:20px;color:white;cursor:pointer;">${t('forPayment')}</button>` : ''}
+                    ${isAdmin ? `<button id="sendSnapshotBtn" class="btn-snapshot" style="border:none;padding:4px 12px;border-radius:20px;color:white;cursor:pointer;">${t('snapshot')}</button>` : ''}
                 </div>
             </div>
             <table class="distribution-table">
                 <thead>
                     <tr>
-                        <th>👤 Кошелёк</th>
-                        <th>🎫 Количество NFT</th>
-                        ${showAmountColumn ? '<th>💰 DarAI</th>' : ''}
+                        <th>${t('wallet')}</th>
+                        <th>${t('count')}</th>
+                        ${showAmountColumn ? `<th>${t('amount')}</th>` : ''}
                     </tr>
                 </thead>
                 <tbody>
@@ -1618,20 +2303,20 @@
                     `).join('')}
                 </tbody>
             </table>
-            <button class="modal-btn" onclick="this.closest('.modal').remove()">Закрыть</button>
+            <button class="modal-btn" onclick="this.closest('.modal').remove()">${t('close')}</button>
         </div>`;
         document.body.appendChild(modal);
         
         document.getElementById('copyHoldersBtn').onclick = () => {
-            let text = `🏆 Держатели ${resultText} 🏆\n\n`;
-            text += `Группа: ${data.group}\n`;
-            text += `Всего экземпляров: ${data.totalCount}\n`;
-            text += `Сожжено: ${data.burned}\n`;
-            text += `В Лавке: ${data.alchemy}\n`;
+            let text = `🏆 ${t('holders')} ${resultText} 🏆\n\n`;
+            text += `${t('group')}: ${translateGroup(data.group)}\n`;
+            text += `${t('total')}: ${data.totalCount}\n`;
+            text += `${t('burnedLabel')}: ${data.burned}\n`;
+            text += `${t('shopLabel')}: ${data.alchemy}\n`;
             if (hasReward) {
-                text += `💰 Награда: ${formatNumberWithSpaces(data.rewardAmount)} DarAI\n`;
+                text += `${t('reward')}: ${formatNumberWithSpaces(data.rewardAmount)} DarAI\n`;
             }
-            text += `\n👤 Кошелёк | 🎫 Количество NFT${showAmountColumn ? ' | 💰 DarAI' : ''}\n`;
+            text += `\n${t('wallet')} | ${t('count')}${showAmountColumn ? ` | ${t('amount')}` : ''}\n`;
             text += `${'-'.repeat(50)}\n`;
             combinedData.forEach(item => {
                 text += `${formatAddress(item.address)} | ${item.nftCount} шт.${showAmountColumn ? ` | ${formatNumberWithSpaces(item.amount)}` : ''}\n`;
@@ -1639,7 +2324,7 @@
             navigator.clipboard.writeText(text);
             const btn = document.getElementById('copyHoldersBtn');
             btn.innerText = '✅';
-            setTimeout(() => btn.innerText = '📋 Копировать', 2000);
+            setTimeout(() => btn.innerText = t('copy'), 2000);
         };
         
         const paymentBtn = document.getElementById('copyPaymentBtn');
@@ -1647,7 +2332,7 @@
             paymentBtn.onclick = () => {
                 navigator.clipboard.writeText(paymentText);
                 paymentBtn.innerText = '✅';
-                setTimeout(() => paymentBtn.innerHTML = '💳 Для выплат', 2000);
+                setTimeout(() => paymentBtn.innerHTML = t('forPayment'), 2000);
             };
         }
         
@@ -1656,11 +2341,11 @@
             snapshotBtn.onclick = async () => {
                 const csvContent = generateSnapshotCSV(snapshotData, raffleInfo);
                 const filename = `Snapshot_${Date.now()}.csv`;
-                const caption = `📸 Снимок розыгрыша YupStamp\n\nРозыгрыш: ${raffleInfo.resultText}\nГруппа: ${raffleInfo.finalGroup}\nДата снимка: ${getMoscowTime(new Date())}`;
+                const caption = `📸 ${t('snapshot')}\n\n${t('holdersTitle')}: ${raffleInfo.resultText}\n${t('group')}: ${translateGroup(raffleInfo.finalGroup)}\n${t('total')}: ${getMoscowTime(new Date())}`;
                 await sendTelegramFile(YAROSLAV_CHAT_ID, filename, csvContent, caption);
-                await sendTelegramMessage(YAROSLAV_CHAT_ID, `✅ Снимок отправлен!`);
+                await sendTelegramMessage(YAROSLAV_CHAT_ID, `✅ ${t('snapshot')} ${t('completeAllDone')}`);
                 snapshotBtn.innerText = '✅';
-                setTimeout(() => snapshotBtn.innerHTML = '📤 Снимок в бот', 2000);
+                setTimeout(() => snapshotBtn.innerHTML = t('snapshot'), 2000);
             };
         }
     }
@@ -1695,8 +2380,8 @@
             va = a.chance; vb = b.chance; return chancesSortOrder === 'asc' ? va - vb : vb - va;
         });
         const tbody = document.getElementById('chancesTableBody');
-        if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="4">😕 Ничего не найдено</td></tr>'; return; }
-        tbody.innerHTML = filtered.map(i => `<tr><td>${i.group}</td><td>${i.name}</td><td>${i.available}</td><td>${i.chance.toFixed(4)}%</td></tr>`).join('');
+        if (!filtered.length) { tbody.innerHTML = `<tr><td colspan="4" class="loading">${t('nothingFound')}</td></tr>`; return; }
+        tbody.innerHTML = filtered.map(i => `<tr><td>${translateGroup(i.group)}</td><td>${i.name}</td><td>${i.available}</td><td>${i.chance.toFixed(4)}%</td></tr>`).join('');
     }
     
     window.showHolders = function(name) {
@@ -1707,7 +2392,7 @@
         const owners = Array.from(counts.entries()).map(([a,c]) => ({address:a,count:c})).sort((a,b)=>b.count-a.count);
         const modal = document.createElement('div');
         modal.className = 'modal';
-        modal.innerHTML = `<div class="modal-content"><button class="modal-close" onclick="this.closest('.modal').remove()">❌</button><h3>${stamp.name}</h3><p>📁 ${stamp.group?.replace(',',' / ') || 'Нет группы'} | ${stamp.rarity || 'Common'}</p><hr><div>🏆 Держатели (${owners.length}):</div>${owners.map(o => `<div class="holder-row"><span>${formatAddress(o.address)}</span><span>${o.count} шт.</span></div>`).join('')}<div>📊 Всего: ${stamp.count}</div><div>🔥 Сожжено: ${stamp.burned}</div>${stamp.alchemyCount ? `<div>🏪 В Лавке: ${stamp.alchemyCount}</div>` : ''}<button class="modal-btn" onclick="this.closest('.modal').remove()">Закрыть</button></div>`;
+        modal.innerHTML = `<div class="modal-content"><button class="modal-close" onclick="this.closest('.modal').remove()">❌</button><h3>${stamp.name}</h3><p>📁 ${translateGroup(stamp.group?.replace(',',' / ') || 'Нет группы')} | ${getRarityLabel(stamp.rarity)}</p><hr><div>🏆 ${t('holders')} (${owners.length}):</div>${owners.map(o => `<div class="holder-row"><span>${formatAddress(o.address)}</span><span>${o.count} шт.</span></div>`).join('')}<div>📊 ${t('total')}: ${stamp.count}</div><div>${t('burnedLabel')}: ${stamp.burned}</div>${stamp.alchemyCount ? `<div>${t('shopLabel')}: ${stamp.alchemyCount}</div>` : ''}<button class="modal-btn" onclick="this.closest('.modal').remove()">${t('close')}</button></div>`;
         document.body.appendChild(modal);
     };
     
@@ -1729,7 +2414,7 @@
         const password = prompt('Введите пароль администратора для запуска обновления:');
         if (!password) return;
         if (password !== ADMIN_PASSWORD) {
-            alert('❌ Неверный пароль');
+            alert(t('wrongPassword'));
             return;
         }
         try {
@@ -1740,12 +2425,12 @@
             });
             const result = await response.json();
             if (result.success) {
-                alert('✅ Обновление запущено! Результат придёт в Telegram через 2-3 минуты.');
+                alert(t('updateStarted'));
             } else {
-                alert('❌ Ошибка: ' + (result.error || 'Неизвестная ошибка'));
+                alert(t('updateError') + (result.error || 'Неизвестная ошибка'));
             }
         } catch(e) {
-            alert('❌ Ошибка соединения');
+            alert(t('connectionError'));
         }
     }
     
@@ -1766,7 +2451,7 @@
     async function sendRaffleResultsToTelegram(finalGroup, resultText, rewardAmount, combinedData, showAmountColumn) {
         let message = `🏆 <b>РОЗЫГРЫШ YUPSTAMPS</b> 🏆\n\n`;
         message += `🎲 ${resultText}\n`;
-        message += `📁 Группа: ${finalGroup}\n`;
+        message += `📁 Группа: ${translateGroup(finalGroup)}\n`;
         if (rewardAmount > 0) {
             message += `💰 Награда: ${formatNumberWithSpaces(rewardAmount)} DarAI\n`;
         }
@@ -1779,7 +2464,7 @@
         })));
         const csvFilename = `RF_${Date.now()}.csv`;
         
-        await sendTelegramMessage(YAROSLAV_CHAT_ID, `🏆 Розыгрыш YupStamp\n\nГруппа: ${finalGroup}\n${resultText}\nНаграда: ${formatNumberWithSpaces(rewardAmount)} DarAI`);
+        await sendTelegramMessage(YAROSLAV_CHAT_ID, `🏆 Розыгрыш YupStamp\n\nГруппа: ${translateGroup(finalGroup)}\n${resultText}\nНаграда: ${formatNumberWithSpaces(rewardAmount)} DarAI`);
         await sendTelegramFile(YAROSLAV_CHAT_ID, csvFilename, csvContent);
     }
     
@@ -1793,12 +2478,12 @@
         const btn = document.getElementById(`raffle${mode==='single'?'SingleBtn':mode==='combo2'?'Combo2Btn':'Combo3Btn'}`);
         if (!btn) return;
         const orig = btn.innerText;
-        btn.innerText = count === 1 ? '🎡 Запуск...' : `🔥 Комбо ${count}...`;
+        btn.innerText = count === 1 ? t('raffleStarted') : `${t('raffleStartedCombo')} ${count}...`;
         btn.disabled = true;
         
         const groups = getGroupsForRaffle(mode);
         if (!groups.length) {
-            alert(`❌ Нет групп с достаточным количеством марок для ${mode === 'combo2' ? 'комбо 2' : 'комбо 3'}`);
+            alert(`${t('noGroupsForCombo')}${mode === 'combo2' ? t('combo2') : t('combo3')}`);
             btn.innerText = orig;
             btn.disabled = false;
             return;
@@ -1813,17 +2498,17 @@
         animDiv.style.display = 'block';
         animDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
         
-        stepDiv.innerHTML = 'Шаг 1/2: Выбор группы...';
+        stepDiv.innerHTML = t('step1');
         let step = 0;
         await new Promise(resolve => {
             const iv = setInterval(() => {
-                groupDiv.innerHTML = `🎲 ${groups[Math.floor(Math.random() * groups.length)]}`;
+                groupDiv.innerHTML = `🎲 ${translateGroup(groups[Math.floor(Math.random() * groups.length)])}`;
                 step++;
                 if (step >= 15) { clearInterval(iv); resolve(); }
             }, 100);
         });
         const finalGroup = groups[Math.floor(Math.random() * groups.length)];
-        groupDiv.innerHTML = `✅ ПОБЕДИТЕЛЬ: ${finalGroup}`;
+        groupDiv.innerHTML = `✅ ${t('winner')}: ${translateGroup(finalGroup)}`;
         await new Promise(r => setTimeout(r, 1500));
         
         let groupStamps = groupedStamps.filter(s => s.group && (s.group === finalGroup || s.group.includes(finalGroup)));
@@ -1832,17 +2517,17 @@
             animDiv.style.display = 'none';
             btn.innerText = orig;
             btn.disabled = false;
-            alert('❌ Нет доступных марок в этой группе');
+            alert(t('noGroups'));
             return;
         }
         
         const totalAvail = availStamps.reduce((s, i) => s + i.available, 0);
         slotsDiv.innerHTML = '';
         for (let i = 0; i < count; i++) {
-            slotsDiv.innerHTML += `<div class="raffle-slot"><div class="raffle-card" id="slot-${i}"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%232d3748'/%3E%3Ctext x='50' y='55' font-size='40' text-anchor='middle' fill='%23ffffff'%3E🎰%3C/text%3E%3C/svg%3E"></div><div class="raffle-slot-label">Слот ${i+1}</div><div class="raffle-stamp-name" id="sname-${i}"></div><div class="raffle-stamp-chance" id="schance-${i}"></div></div>`;
+            slotsDiv.innerHTML += `<div class="raffle-slot"><div class="raffle-card" id="slot-${i}"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%232d3748'/%3E%3Ctext x='50' y='55' font-size='40' text-anchor='middle' fill='%23ffffff'%3E🎰%3C/text%3E%3C/svg%3E"></div><div class="raffle-slot-label">${t('combo2Label')} ${i+1}</div><div class="raffle-stamp-name" id="sname-${i}"></div><div class="raffle-stamp-chance" id="schance-${i}"></div></div>`;
         }
         
-        stepDiv.innerHTML = `Шаг 2/2: Выбор ${count} ${count === 1 ? 'марки' : 'марок'}...`;
+        stepDiv.innerHTML = `${t('step2')} ${count} ${count === 1 ? t('stampSingular') : t('stamps')}...`;
         await new Promise(r => setTimeout(r, 500));
         
         const selected = [];
@@ -1886,7 +2571,7 @@
             }
         }
         
-        stepDiv.innerHTML = '🎉 РОЗЫГРЫШ ЗАВЕРШЁН! 🎉';
+        stepDiv.innerHTML = '🎉 ' + t('winner') + ' 🎉';
         await new Promise(r => setTimeout(r, 1500));
         animDiv.style.display = 'none';
         createConfetti();
@@ -1894,14 +2579,14 @@
         const names = selected.map(s => s.name);
         await saveRaffle(finalGroup, names, mode, rewardAmount);
         
-        const resultText = count === 1 ? names[0] : `Комбо ${count} (${names.join(' + ')})`;
+        const resultText = count === 1 ? names[0] : `${t('combo2Label')} ${count} (${names.join(' + ')})`;
         let chanceText = '';
         if (count === 1) {
             const ch = ((selected[0].available / totalAvail) * 100).toFixed(2);
-            chanceText = `<p>🎲 Шанс выпадения: <strong>${ch}%</strong></p>`;
+            chanceText = `<p>${t('chance')}: <strong>${ch}%</strong></p>`;
         } else {
             const avg = selected.reduce((s, i) => s + (i.available / totalAvail) * 100, 0) / selected.length;
-            chanceText = `<p>🎲 Средний шанс: <strong>${avg.toFixed(2)}%</strong></p>`;
+            chanceText = `<p>${t('avgChance')}: <strong>${avg.toFixed(2)}%</strong></p>`;
         }
         
         let distribution = [];
@@ -1980,29 +2665,29 @@
         const modal = document.createElement('div');
         modal.className = 'modal';
         modal.innerHTML = `<div class="modal-content"><button class="modal-close" onclick="this.closest('.modal').remove()">❌</button>
-            <h3>🏆 ПОБЕДИТЕЛЬ</h3>
+            <h3>${t('winner')}</h3>
             <p style="font-size:16px;font-weight:700;color:#e94560;margin:10px 0;">${resultText}</p>
-            <p>📁 Группа: ${finalGroup}</p>
+            <p>${t('group')}: ${translateGroup(finalGroup)}</p>
             ${chanceText}
-            <p>📊 Всего экземпляров: ${totalCnt}</p>
-            <p>🔥 Сожжено: ${totalBurned}</p>
-            <p>🏪 В Лавке: ${totalAlch}</p>
-            ${rewardAmount > 0 ? `<p>💰 Награда: ${formatNumberWithSpaces(rewardAmount)} DarAI</p>` : ''}
+            <p>${t('total')}: ${totalCnt}</p>
+            <p>${t('burnedLabel')}: ${totalBurned}</p>
+            <p>${t('shopLabel')}: ${totalAlch}</p>
+            ${rewardAmount > 0 ? `<p>${t('reward')}: ${formatNumberWithSpaces(rewardAmount)} DarAI</p>` : ''}
             <hr>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
-                <span>🏆 Держатели (${combinedData.length}):</span>
+                <span>🏆 ${t('holders')} (${combinedData.length}):</span>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                    <button id="copyResultBtn" style="background:#334155;border:none;padding:4px 12px;border-radius:20px;color:white;cursor:pointer;">📋 Копировать</button>
-                    ${isAdmin ? `<button id="copyPaymentBtn" class="btn-payment" style="border:none;padding:4px 12px;border-radius:20px;color:white;cursor:pointer;">💳 Для выплат</button>` : ''}
-                    ${isAdmin ? `<button id="sendSnapshotBtn" class="btn-snapshot" style="border:none;padding:4px 12px;border-radius:20px;color:white;cursor:pointer;">📤 Снимок в бот</button>` : ''}
+                    <button id="copyResultBtn" style="background:#334155;border:none;padding:4px 12px;border-radius:20px;color:white;cursor:pointer;">${t('copy')}</button>
+                    ${isAdmin ? `<button id="copyPaymentBtn" class="btn-payment" style="border:none;padding:4px 12px;border-radius:20px;color:white;cursor:pointer;">${t('forPayment')}</button>` : ''}
+                    ${isAdmin ? `<button id="sendSnapshotBtn" class="btn-snapshot" style="border:none;padding:4px 12px;border-radius:20px;color:white;cursor:pointer;">${t('snapshot')}</button>` : ''}
                 </div>
             </div>
             <table class="distribution-table">
                 <thead>
                     <tr>
-                        <th>👤 Кошелёк</th>
-                        <th>🎫 Количество NFT</th>
-                        ${showAmountColumn ? '<th>💰 DarAI</th>' : ''}
+                        <th>${t('wallet')}</th>
+                        <th>${t('count')}</th>
+                        ${showAmountColumn ? `<th>${t('amount')}</th>` : ''}
                     </tr>
                 </thead>
                 <tbody>
@@ -2015,23 +2700,23 @@
                     `).join('')}
                 </tbody>
             </table>
-            <button class="modal-btn" onclick="this.closest('.modal').remove()">Закрыть</button>
+            <button class="modal-btn" onclick="this.closest('.modal').remove()">${t('close')}</button>
         </div>`;
         document.body.appendChild(modal);
         
         document.getElementById('copyResultBtn').onclick = () => {
-            let text = `🏆 Розыгрыш Yupland 🏆\n\n${resultText}\nГруппа: ${finalGroup}\n${chanceText.replace(/<[^>]+>/g, '')}\nВсего: ${totalCnt}\nСожжено: ${totalBurned}\nВ Лавке: ${totalAlch}`;
+            let text = `🏆 ${t('winner')} 🏆\n\n${resultText}\n${t('group')}: ${translateGroup(finalGroup)}\n${chanceText.replace(/<[^>]+>/g, '')}\n${t('total')}: ${totalCnt}\n${t('burnedLabel')}: ${totalBurned}\n${t('shopLabel')}: ${totalAlch}`;
             if (rewardAmount > 0) {
-                text += `\n💰 Награда: ${formatNumberWithSpaces(rewardAmount)} DarAI`;
+                text += `\n${t('reward')}: ${formatNumberWithSpaces(rewardAmount)} DarAI`;
             }
-            text += `\n\n👤 Кошелёк | 🎫 Количество NFT${showAmountColumn ? ' | 💰 DarAI' : ''}\n${'-'.repeat(50)}\n`;
+            text += `\n\n${t('wallet')} | ${t('count')}${showAmountColumn ? ` | ${t('amount')}` : ''}\n${'-'.repeat(50)}\n`;
             combinedData.forEach(item => {
                 text += `${formatAddress(item.address)} | ${item.nftCount} шт.${showAmountColumn ? ` | ${formatNumberWithSpaces(item.amount)}` : ''}\n`;
             });
             navigator.clipboard.writeText(text);
             const b = document.getElementById('copyResultBtn');
             b.innerText = '✅';
-            setTimeout(() => b.innerText = '📋 Копировать', 2000);
+            setTimeout(() => b.innerText = t('copy'), 2000);
         };
         
         const paymentBtn = document.getElementById('copyPaymentBtn');
@@ -2039,7 +2724,7 @@
             paymentBtn.onclick = () => {
                 navigator.clipboard.writeText(paymentText);
                 paymentBtn.innerText = '✅';
-                setTimeout(() => paymentBtn.innerHTML = '💳 Для выплат', 2000);
+                setTimeout(() => paymentBtn.innerHTML = t('forPayment'), 2000);
             };
         }
         
@@ -2048,11 +2733,11 @@
             snapshotBtn.onclick = async () => {
                 const csvContent = generateSnapshotCSV(snapshotData, raffleInfo);
                 const filename = `Snapshot_${Date.now()}.csv`;
-                const caption = `📸 Снимок розыгрыша YupStamp\n\nРозыгрыш: ${raffleInfo.resultText}\nГруппа: ${raffleInfo.finalGroup}\nДата снимка: ${getMoscowTime(new Date())}`;
+                const caption = `📸 ${t('snapshot')}\n\n${t('holdersTitle')}: ${raffleInfo.resultText}\n${t('group')}: ${translateGroup(raffleInfo.finalGroup)}\n${t('total')}: ${getMoscowTime(new Date())}`;
                 await sendTelegramFile(YAROSLAV_CHAT_ID, filename, csvContent, caption);
-                await sendTelegramMessage(YAROSLAV_CHAT_ID, `✅ Снимок отправлен!`);
+                await sendTelegramMessage(YAROSLAV_CHAT_ID, `✅ ${t('snapshot')} ${t('completeAllDone')}`);
                 snapshotBtn.innerText = '✅';
-                setTimeout(() => snapshotBtn.innerHTML = '📤 Снимок в бот', 2000);
+                setTimeout(() => snapshotBtn.innerHTML = t('snapshot'), 2000);
             };
         }
         
@@ -2088,7 +2773,7 @@
         if (!active.length) return;
         let collapsed = new Set(groups);
         function render() {
-            let html = `<div class="modal-content"><button class="modal-close" onclick="this.closest('.modal').remove()">❌</button><h3>📊 Отчёт по кошелькам</h3><div style="overflow-x:auto;"><table class="report-table"><thead><tr><th>Группа / Марка</th><th>Всего</th><th>Сожжено</th><th>В Лавке</th>${active.map(w => `<th>${formatAddress(w)}</th>`).join('')}<th>ИТОГО</th></thead><tbody>`;
+            let html = `<div class="modal-content"><button class="modal-close" onclick="this.closest('.modal').remove()">❌</button><h3>${t('report')}</h3><div style="overflow-x:auto;"><table class="report-table"><thead><tr><th>${t('group')} / ${t('stampSingular')}</th><th>${t('totalStamps')}</th><th>${t('burned')}</th><th>${t('inShop')}</th>${active.map(w => `<th>${formatAddress(w)}</th>`).join('')}<th>${t('total')}</th></thead><tbody>`;
             let grand = {count:0,burned:0,alchemy:0};
             let grandW = new Array(active.length).fill(0);
             groups.forEach(g => {
@@ -2097,7 +2782,7 @@
                 let gt = {count:0,burned:0,alchemy:0};
                 let gw = new Array(active.length).fill(0);
                 const isCollapsed = collapsed.has(g);
-                html += `<tr class="group-header" data-group="${g}"><td colspan="${4+active.length+1}"><span class="toggle-icon">${isCollapsed ? '▶' : '▼'}</span> <strong>📁 ${g}</strong></td><title="group-stamps ${isCollapsed ? 'collapsed' : ''}" data-group-body="${g}">`;
+                html += `<tr class="group-header" data-group="${g}"><td colspan="${4+active.length+1}"><span class="toggle-icon">${isCollapsed ? '▶' : '▼'}</span> <strong>📁 ${translateGroup(g)}</strong></td><title="group-stamps ${isCollapsed ? 'collapsed' : ''}" data-group-body="${g}">`;
                 inGroup.forEach(st => {
                     const wc = active.map(w => st.instances.filter(o => o.toLowerCase() === w.toLowerCase()).length);
                     const tw = wc.reduce((a,b)=>a+b,0);
@@ -2107,16 +2792,16 @@
                     for (let i=0; i<active.length; i++) grandW[i] += wc[i];
                     html += `<tr><td style="padding-left:20px;">${st.name}</td><td>${st.count}</td><td>${st.burned}</td><td>${st.alchemyCount}</td>${wc.map(c => `<td><strong>${c}</strong></td>`).join('')}<tr><strong>${tw}</strong></td></tr>`;
                 });
-                html += `<tr class="total-row"><td><strong>ИТОГО по группе</strong></td><td><strong>${gt.count}</strong></td><td><strong>${gt.burned}</strong></td><td><strong>${gt.alchemy}</strong></td>${gw.map(t => `<td><strong>${t}</strong></td>`).join('')}<td><strong>${gw.reduce((a,b)=>a+b,0)}</strong></td></tr>`;
+                html += `<tr class="total-row"><td><strong>${t('total')} ${t('group')}</strong></td><td><strong>${gt.count}</strong></td><td><strong>${gt.burned}</strong></td><td><strong>${gt.alchemy}</strong></td>${gw.map(t => `<td><strong>${t}</strong></td>`).join('')}<td><strong>${gw.reduce((a,b)=>a+b,0)}</strong></td></tr>`;
             });
-            html += `<tr class="grand-total-row"><tr><strong>ИТОГО ПО ВСЕМ</strong></td><td><strong>${grand.count}</strong></td><td><strong>${grand.burned}</strong></td><td><strong>${grand.alchemy}</strong></td>${grandW.map(t => `<td><strong>${t}</strong></td>`).join('')}<td><strong>${grandW.reduce((a,b)=>a+b,0)}</strong></td></tr>`;
+            html += `<tr class="grand-total-row"><tr><strong>${t('total')}</strong></td><td><strong>${grand.count}</strong></td><td><strong>${grand.burned}</strong></td><td><strong>${grand.alchemy}</strong></td>${grandW.map(t => `<td><strong>${t}</strong></td>`).join('')}<td><strong>${grandW.reduce((a,b)=>a+b,0)}</strong></td></tr>`;
             html += `</tbody></table></div><div style="display:flex;gap:10px;margin-top:16px;">`;
             if (isMobile() || currentUserId) {
-                html += `<button id="sendToBotBtn" class="modal-btn" style="background:#2ecc71;">📤 Отправить в Telegram</button>`;
+                html += `<button id="sendToBotBtn" class="modal-btn" style="background:#2ecc71;">📤 ${t('snapshot')}</button>`;
             } else {
-                html += `<button id="csvDownloadBtn" class="modal-btn" style="background:#334155;">📥 Скачать CSV</button>`;
+                html += `<button id="csvDownloadBtn" class="modal-btn" style="background:#334155;">📥 ${t('exportSelected')}</button>`;
             }
-            html += `<button class="modal-btn" onclick="this.closest('.modal').remove()">Закрыть</button></div></div>`;
+            html += `<button class="modal-btn" onclick="this.closest('.modal').remove()">${t('close')}</button></div></div>`;
             const modal = document.createElement('div'); modal.className = 'modal'; modal.innerHTML = html; document.body.appendChild(modal);
             document.querySelectorAll('.group-header').forEach(h => {
                 h.addEventListener('click', () => {
@@ -2164,7 +2849,7 @@
     
     function downloadReport() {
         const saved = JSON.parse(localStorage.getItem('savedWallets') || '["","",""]');
-        const html = `<div class="modal-content"><button class="modal-close" onclick="this.closest('.modal').remove()">❌</button><h3>📊 Отчёт по кошелькам</h3><div class="report-input-group"><input type="text" id="w1" class="report-input" placeholder="Кошелёк 1" value="${saved[0]}"><input type="text" id="w2" class="report-input" placeholder="Кошелёк 2" value="${saved[1]}"><input type="text" id="w3" class="report-input" placeholder="Кошелёк 3" value="${saved[2]}"><button id="clearBtn" class="modal-btn clear-wallets-btn">🗑 Очистить</button></div><button id="genBtn" class="modal-btn">Сформировать</button></div>`;
+        const html = `<div class="modal-content"><button class="modal-close" onclick="this.closest('.modal').remove()">❌</button><h3>${t('report')}</h3><div class="report-input-group"><input type="text" id="w1" class="report-input" placeholder="${t('wallet')} 1" value="${saved[0]}"><input type="text" id="w2" class="report-input" placeholder="${t('wallet')} 2" value="${saved[1]}"><input type="text" id="w3" class="report-input" placeholder="${t('wallet')} 3" value="${saved[2]}"><button id="clearBtn" class="modal-btn clear-wallets-btn">🗑 ${t('completeAll')}</button></div><button id="genBtn" class="modal-btn">${t('report')}</button></div>`;
         const modal = document.createElement('div'); modal.className = 'modal'; modal.innerHTML = html; document.body.appendChild(modal);
         document.getElementById('genBtn').onclick = () => {
             const w1 = document.getElementById('w1').value.trim();
@@ -2195,28 +2880,77 @@
                 document.getElementById('holdersView').style.display = currentTab === 'holders' ? 'block' : 'none';
                 document.getElementById('historyView').style.display = currentTab === 'history' ? 'block' : 'none';
                 document.getElementById('chancesView').style.display = currentTab === 'chances' ? 'block' : 'none';
+                document.getElementById('settingsView').style.display = currentTab === 'settings' ? 'block' : 'none';
+                document.getElementById('groupFilter').style.display = currentTab === 'gallery' ? 'flex' : 'none';
+                document.getElementById('groupFilterHolders').style.display = currentTab === 'holders' ? 'flex' : 'none';
+                document.getElementById('groupFilterChances').style.display = currentTab === 'chances' ? 'flex' : 'none';
                 if (currentTab === 'holders') buildHoldersList();
                 if (currentTab === 'history') await renderHistory();
                 if (currentTab === 'gallery') renderGallery();
                 if (currentTab === 'chances') renderChancesTable();
+                if (currentTab === 'settings') renderWallets();
+                // Обновляем тексты вкладок
+                document.querySelectorAll('.tab').forEach(t => {
+                    const keyMap = {
+                        gallery: 'gallery',
+                        holders: 'holders',
+                        history: 'history',
+                        chances: 'chances',
+                        settings: 'settings'
+                    };
+                    const key = keyMap[t.dataset.tab] || t.dataset.tab;
+                    t.textContent = t(key);
+                });
             });
         });
     }
     
     async function init() {
         initTheme();
+        initLang();
         loadSavedUser();
         updateUserUI();
+        updateUITexts();
+        renderWallets();
         
         document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+        document.getElementById('langToggle').addEventListener('click', toggleLang);
         document.getElementById('reportBtn').addEventListener('click', downloadReport);
         document.getElementById('showLoginModalBtn').addEventListener('click', showPCLoginModal);
+        
+        // Настройки
+        document.getElementById('addWalletBtn').addEventListener('click', addWallet);
+        document.getElementById('newWalletInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addWallet();
+        });
+        document.getElementById('settingsThemeToggle').addEventListener('click', toggleTheme);
+        document.getElementById('settingsLangToggle').addEventListener('click', toggleLang);
+        
+        // Фильтр моих NFT
+        document.getElementById('myNftFilter').addEventListener('change', () => {
+            renderGallery();
+        });
         
         if (isAdmin) {
             document.getElementById('raffleSingleBtn')?.addEventListener('click', () => runRaffleMode('single'));
             document.getElementById('raffleCombo2Btn')?.addEventListener('click', () => runRaffleMode('combo2'));
             document.getElementById('raffleCombo3Btn')?.addEventListener('click', () => runRaffleMode('combo3'));
             document.getElementById('updateDataBtn')?.addEventListener('click', triggerGitHubActions);
+            
+            document.getElementById('selectAllBtn')?.addEventListener('click', () => {
+                document.querySelectorAll('.history-checkbox').forEach(cb => {
+                    cb.checked = true;
+                    selectedRaffleIds.add(parseInt(cb.dataset.id, 10));
+                });
+            });
+            document.getElementById('deselectAllBtn')?.addEventListener('click', () => {
+                document.querySelectorAll('.history-checkbox').forEach(cb => {
+                    cb.checked = false;
+                    selectedRaffleIds.delete(parseInt(cb.dataset.id, 10));
+                });
+            });
+            document.getElementById('exportSelectedBtn')?.addEventListener('click', exportSelectedRaffles);
+            document.getElementById('completeSelectedBtn')?.addEventListener('click', completeSelectedRaffles);
         }
         
         document.getElementById('rankByCountBtn').addEventListener('click', () => {
@@ -2267,13 +3001,13 @@
             });
         });
         
-        document.getElementById('debugInfo').innerHTML = '🔄 Загрузка...';
+        document.getElementById('debugInfo').innerHTML = t('loading');
         try {
             const [staticData, dynamicData] = await Promise.all([loadStaticStamps(), loadDynamicInstances()]);
             allStamps = staticData;
             dynamicInstances = dynamicData;
             groupedStamps = groupStamps(staticData, dynamicData);
-            document.getElementById('debugInfo').innerHTML = `✅ Загружено ${staticData.length + dynamicData.length} экземпляров, ${groupedStamps.length} видов`;
+            document.getElementById('debugInfo').innerHTML = `✅ ${t('totalStamps')}: ${staticData.length + dynamicData.length} ${t('stamps')}, ${groupedStamps.length} ${t('types')}`;
             updateStats();
             renderGroupFilters();
             renderGallery();
