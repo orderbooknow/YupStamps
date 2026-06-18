@@ -2667,25 +2667,36 @@ function handleDelete(e) {
             let gt = { count: 0, burned: 0, alchemy: 0 };
             let gw = new Array(active.length).fill(0);
             const isCollapsed = collapsed.has(g);
+            
+            // ✅ СНАЧАЛА считаем ВСЕ данные (даже если группа свёрнута)
+            inGroup.forEach(st => {
+                const wc = active.map(w => st.instances.filter(o => o.toLowerCase() === w.toLowerCase()).length);
+                const tw = wc.reduce((a, b) => a + b, 0);
+                gt.count += st.count;
+                gt.burned += st.burned;
+                gt.alchemy += st.alchemyCount;
+                for (let i = 0; i < active.length; i++) gw[i] += wc[i];
+                // ✅ Добавляем в grand (ОБЩИЙ ИТОГ) ВСЕГДА!
+                grand.count += st.count;
+                grand.burned += st.burned;
+                grand.alchemy += st.alchemyCount;
+                for (let i = 0; i < active.length; i++) grandW[i] += wc[i];
+            });
+            
+            // Заголовок группы
             html += `<tr class="group-header" data-group="${g}"><td colspan="${4 + active.length + 1}"><span class="toggle-icon">${isCollapsed ? '▶' : '▼'}</span> <strong>📁 ${translateGroup(g)}</strong></td></tr>`;
+            
+            // ✅ ПОТОМ показываем строки группы (только если не свёрнута)
             if (!isCollapsed) {
                 inGroup.forEach(st => {
                     const wc = active.map(w => st.instances.filter(o => o.toLowerCase() === w.toLowerCase()).length);
                     const tw = wc.reduce((a, b) => a + b, 0);
-                    gt.count += st.count;
-                    gt.burned += st.burned;
-                    gt.alchemy += st.alchemyCount;
-                    for (let i = 0; i < active.length; i++) gw[i] += wc[i];
-                    grand.count += st.count;
-                    grand.burned += st.burned;
-                    grand.alchemy += st.alchemyCount;
-                    for (let i = 0; i < active.length; i++) grandW[i] += wc[i];
                     html += `<tr><td style="padding-left:20px;">${st.name}</td><td>${st.count}</td><td>${st.burned}</td><td>${st.alchemyCount}</td>${wc.map(c => `<td><strong>${c}</strong></td>`).join('')}<td><strong>${tw}</strong></td></tr>`;
                 });
                 html += `<tr class="total-row"><td><strong>${t('total')} ${t('group')}</strong></td><td><strong>${gt.count}</strong></td><td><strong>${gt.burned}</strong></td><td><strong>${gt.alchemy}</strong></td>${gw.map(t => `<td><strong>${t}</strong></td>`).join('')}<td><strong>${gw.reduce((a, b) => a + b, 0)}</strong></td></tr>`;
             }
         });
-        // ✅ ИСПРАВЛЕННАЯ СТРОКА ИТОГОВ
+        // Строка ИТОГО
         html += `<tr class="grand-total-row">`;
         html += `<td><strong>🏆 ${t('total')}</strong></td>`;
         html += `<td><strong>${grand.count}</strong></td>`;
