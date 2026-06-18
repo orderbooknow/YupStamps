@@ -1019,6 +1019,7 @@
             }
             savedWallets.push(wallet);
             localStorage.setItem('savedWallets', JSON.stringify(savedWallets));
+            input.value = ''; // <-- ОЧИЩАЕМ ПОЛЕ
             renderWalletModalContent(modal);
             renderGallery();
         };
