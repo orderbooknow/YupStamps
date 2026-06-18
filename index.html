@@ -984,30 +984,33 @@
     }
 
     function renderWalletModalContent(modal) {
-        const walletsHtml = savedWallets.length > 0
-            ? savedWallets.map(w => `
-                <div class="wallet-item">
-                    <span>${w}</span>
-                    <button onclick="removeWalletFromModal('${w}')">✖</button>
-                </div>
-            `).join('')
-            : `<div style="color: #94a3b8; font-size: 13px; padding: 8px 0;">${t('noWallets')}</div>`;
-
-        modal.innerHTML = `
-            <div class="modal-content">
-                <button class="modal-close" onclick="this.closest('.modal').remove()">❌</button>
-                <h3>${t('attachWallet')}</h3>
-                <div class="wallet-list">${walletsHtml}</div>
-                <div class="wallet-input-group">
-                    <input type="text" id="newWalletInput" placeholder="${t('enterWallet')}">
-                    <button id="addWalletBtn">${t('addWallet')}</button>
-                </div>
-                <button class="modal-btn" onclick="this.closest('.modal').remove()">${t('close')}</button>
+    const walletsHtml = savedWallets.length > 0
+        ? savedWallets.map(w => `
+            <div class="wallet-item">
+                <span>${w}</span>
+                <button onclick="removeWalletFromModal('${w}')">✖</button>
             </div>
-        `;
+        `).join('')
+        : `<div style="color: #94a3b8; font-size: 13px; padding: 8px 0;">${t('noWallets')}</div>`;
 
-        document.getElementById('addWalletBtn').onclick = () => {
-            const input = document.getElementById('newWalletInput');
+    modal.innerHTML = `
+        <div class="modal-content">
+            <button class="modal-close" onclick="this.closest('.modal').remove()">❌</button>
+            <h3>${t('attachWallet')}</h3>
+            <div class="wallet-list">${walletsHtml}</div>
+            <div class="wallet-input-group">
+                <input type="text" id="newWalletInput" placeholder="${t('enterWallet')}">
+                <button id="addWalletBtn">${t('addWallet')}</button>
+            </div>
+            <button class="modal-btn" onclick="this.closest('.modal').remove()">${t('close')}</button>
+        </div>
+    `;
+
+    const addBtn = document.getElementById('addWalletBtn');
+    const input = document.getElementById('newWalletInput');
+
+    if (addBtn) {
+        addBtn.onclick = () => {
             const wallet = input.value.trim();
             if (!wallet) return;
             if (savedWallets.includes(wallet)) {
@@ -1019,10 +1022,14 @@
             renderWalletModalContent(modal);
             renderGallery();
         };
-        document.getElementById('newWalletInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') document.getElementById('addWalletBtn').click();
+    }
+
+    if (input) {
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && addBtn) addBtn.click();
         });
     }
+}
 
     window.removeWalletFromModal = function(wallet) {
         savedWallets = savedWallets.filter(w => w !== wallet);
@@ -2649,35 +2656,37 @@
     }
 
     function setupTabs() {
-        document.querySelectorAll('.tab').forEach(tab => {
-            tab.addEventListener('click', async () => {
-                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                currentTab = tab.dataset.tab;
-                document.getElementById('galleryView').style.display = currentTab === 'gallery' ? 'block' : 'none';
-                document.getElementById('holdersView').style.display = currentTab === 'holders' ? 'block' : 'none';
-                document.getElementById('historyView').style.display = currentTab === 'history' ? 'block' : 'none';
-                document.getElementById('chancesView').style.display = currentTab === 'chances' ? 'block' : 'none';
-                document.getElementById('groupFilter').style.display = currentTab === 'gallery' ? 'flex' : 'none';
-                document.getElementById('groupFilterHolders').style.display = currentTab === 'holders' ? 'flex' : 'none';
-                document.getElementById('groupFilterChances').style.display = currentTab === 'chances' ? 'flex' : 'none';
-                if (currentTab === 'holders') buildHoldersList();
-                if (currentTab === 'history') await renderHistory();
-                if (currentTab === 'gallery') renderGallery();
-                if (currentTab === 'chances') renderChancesTable();
-                document.querySelectorAll('.tab').forEach(t => {
-                    const keyMap = {
-                        gallery: 'gallery',
-                        holders: 'holders',
-                        history: 'history',
-                        chances: 'chances'
-                    };
-                    const key = keyMap[t.dataset.tab] || t.dataset.tab;
-                    t.textContent = t(key);
-                });
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', async () => {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            currentTab = tab.dataset.tab;
+            document.getElementById('galleryView').style.display = currentTab === 'gallery' ? 'block' : 'none';
+            document.getElementById('holdersView').style.display = currentTab === 'holders' ? 'block' : 'none';
+            document.getElementById('historyView').style.display = currentTab === 'history' ? 'block' : 'none';
+            document.getElementById('chancesView').style.display = currentTab === 'chances' ? 'block' : 'none';
+            document.getElementById('groupFilter').style.display = currentTab === 'gallery' ? 'flex' : 'none';
+            document.getElementById('groupFilterHolders').style.display = currentTab === 'holders' ? 'flex' : 'none';
+            document.getElementById('groupFilterChances').style.display = currentTab === 'chances' ? 'flex' : 'none';
+            if (currentTab === 'holders') buildHoldersList();
+            if (currentTab === 'history') await renderHistory();
+            if (currentTab === 'gallery') renderGallery();
+            if (currentTab === 'chances') renderChancesTable();
+            
+            // Обновляем тексты вкладок
+            document.querySelectorAll('.tab').forEach(tab => {
+                const keyMap = {
+                    gallery: 'gallery',
+                    holders: 'holders',
+                    history: 'history',
+                    chances: 'chances'
+                };
+                const key = keyMap[tab.dataset.tab] || tab.dataset.tab;
+                tab.textContent = window.t ? window.t(key) : key;
             });
         });
-    }
+    });
+}
 
     async function init() {
         initTheme();
