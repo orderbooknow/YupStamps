@@ -2695,30 +2695,39 @@ function getUserStampCount(stamp, wallets) {
     }
 
     function downloadReport() {
-        const saved = JSON.parse(localStorage.getItem('savedWallets') || '["","",""]');
-        const html = `<div class="modal-content"><button class="modal-close" onclick="this.closest('.modal').remove()">❌</button><h3>${t('report')}</h3><div class="report-input-group"><input type="text" id="w1" class="report-input" placeholder="${t('wallet')} 1" value="${saved[0]}"><input type="text" id="w2" class="report-input" placeholder="${t('wallet')} 2" value="${saved[1]}"><input type="text" id="w3" class="report-input" placeholder="${t('wallet')} 3" value="${saved[2]}"><button id="clearBtn" class="modal-btn clear-wallets-btn">🗑 ${t('completeAll')}</button></div><button id="genBtn" class="modal-btn">${t('report')}</button></div>`;
-        const modal = document.createElement('div');
-        modal.className = 'modal';
-        modal.innerHTML = html;
-        document.body.appendChild(modal);
-        document.getElementById('genBtn').onclick = () => {
-            const w1 = document.getElementById('w1').value.trim();
-            const w2 = document.getElementById('w2').value.trim();
-            const w3 = document.getElementById('w3').value.trim();
-            const wallets = [w1, w2, w3].filter(w => w);
-            if (!wallets.length) { alert('Введите кошелёк'); return; }
-            localStorage.setItem('savedWallets', JSON.stringify([w1, w2, w3]));
-            modal.remove();
-            showReport(wallets, getUniqueGroups(), groupedStamps);
-        };
-        document.getElementById('clearBtn').onclick = () => {
-            localStorage.setItem('savedWallets', JSON.stringify(['', '', '']));
-            document.getElementById('w1').value = '';
-            document.getElementById('w2').value = '';
-            document.getElementById('w3').value = '';
-            alert('Очищено');
-        };
-    }
+    // Загружаем сохранённые кошельки
+    let saved = JSON.parse(localStorage.getItem('savedWallets') || '[]');
+    // Если меньше 3, дополняем пустыми строками для отображения
+    while (saved.length < 3) saved.push('');
+    
+    const html = `<div class="modal-content"><button class="modal-close" onclick="this.closest('.modal').remove()">❌</button><h3>${t('report')}</h3><div class="report-input-group"><input type="text" id="w1" class="report-input" placeholder="${t('wallet')} 1" value="${saved[0] || ''}"><input type="text" id="w2" class="report-input" placeholder="${t('wallet')} 2" value="${saved[1] || ''}"><input type="text" id="w3" class="report-input" placeholder="${t('wallet')} 3" value="${saved[2] || ''}"><button id="clearBtn" class="modal-btn clear-wallets-btn">🗑 ${t('completeAll')}</button></div><button id="genBtn" class="modal-btn">${t('report')}</button></div>`;
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = html;
+    document.body.appendChild(modal);
+    
+    document.getElementById('genBtn').onclick = () => {
+        const w1 = document.getElementById('w1').value.trim();
+        const w2 = document.getElementById('w2').value.trim();
+        const w3 = document.getElementById('w3').value.trim();
+        const wallets = [w1, w2, w3].filter(w => w);
+        if (!wallets.length) { alert('Введите кошелёк'); return; }
+        // Сохраняем ТОЛЬКО непустые кошельки
+        localStorage.setItem('savedWallets', JSON.stringify(wallets));
+        modal.remove();
+        showReport(wallets, getUniqueGroups(), groupedStamps);
+    };
+    
+    document.getElementById('clearBtn').onclick = () => {
+        localStorage.setItem('savedWallets', JSON.stringify([]));
+        document.getElementById('w1').value = '';
+        document.getElementById('w2').value = '';
+        document.getElementById('w3').value = '';
+        alert('Очищено');
+        // Обновляем галерею
+        renderGallery();
+    };
+}
 
     function setupTabs() {
     document.querySelectorAll('.tab').forEach(tab => {
@@ -2747,13 +2756,19 @@ function getUserStampCount(stamp, wallets) {
                     chances: 'chances'
                 };
                 const key = keyMap[tab.dataset.tab] || tab.dataset.tab;
-                tab.textContent = window.t ? window.t(key) : key;
+                tab.textContent = t(key);
             });
         });
     });
 }
 
     async function init() {
+         // ✅ ПРОВЕРКА: savedWallets - массив
+    if (!Array.isArray(savedWallets)) {
+        savedWallets = [];
+        localStorage.setItem('savedWallets', JSON.stringify([]));
+    }
+
         initTheme();
         initLang();
         loadSavedUser();
