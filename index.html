@@ -1026,7 +1026,7 @@ function renderWalletModal(modal) {
         });
     });
 
-    // Обработчик добавления
+    // ========== ИСПРАВЛЕННЫЙ ОБРАБОТЧИК ДОБАВЛЕНИЯ ==========
     const addBtn = document.getElementById('addWalletBtn');
     const input = document.getElementById('newWalletInput');
     
@@ -1047,11 +1047,20 @@ function renderWalletModal(modal) {
             localStorage.setItem('savedWallets', JSON.stringify(savedWallets));
             input.value = '';
             
-            // Обновляем список
+            // Обновляем список в модалке
             renderWalletList();
             
-            // Обновляем галерею и фильтр "мои NFT"
+            // Обновляем галерею
             renderGallery();
+            
+            // ✅ ОБНОВЛЯЕМ ЛЕЙБЛ ЧЕКБОКСА
+            updateMyNftLabel();
+            
+            // ✅ ЕСЛИ ЧЕКБОКС ВКЛЮЧЕН - ПЕРЕРИСОВЫВАЕМ ГАЛЕРЕЮ С ФИЛЬТРОМ
+            const myNftCheckbox = document.getElementById('myNftFilter');
+            if (myNftCheckbox && myNftCheckbox.checked) {
+                renderGallery();
+            }
         };
     }
     
@@ -1102,6 +1111,15 @@ function deleteWallet(wallet) {
     
     // Обновляем галерею
     renderGallery();
+    
+    // ✅ ОБНОВЛЯЕМ ЛЕЙБЛ ЧЕКБОКСА
+    updateMyNftLabel();
+    
+    // ✅ ЕСЛИ ЧЕКБОКС ВКЛЮЧЕН - ПЕРЕРИСОВЫВАЕМ ГАЛЕРЕЮ С ФИЛЬТРОМ
+    const myNftCheckbox = document.getElementById('myNftFilter');
+    if (myNftCheckbox && myNftCheckbox.checked) {
+        renderGallery();
+    }
 }
 
 function checkUserHasStamp(stamp, wallets) {
@@ -1776,46 +1794,61 @@ function getUserStampCount(stamp, wallets) {
     }
 
     function renderGallery() {
-        let filtered = groupedStamps;
-        const isSearchByOwner = searchQuery.includes('.near') || searchQuery.includes('.tg');
-        if (currentGroup !== 'all') filtered = filtered.filter(s => s.group && (s.group === currentGroup || s.group.includes(currentGroup)));
-        if (searchQuery) {
-            if (isSearchByOwner) filtered = filtered.filter(s => s.instances.some(o => o.toLowerCase().includes(searchQuery)));
-            else filtered = filtered.filter(s => s.name.toLowerCase().includes(searchQuery));
-        }
-        const myNftCheckbox = document.getElementById('myNftFilter');
-        if (myNftCheckbox && myNftCheckbox.checked && savedWallets.length > 0) {
-            filtered = filtered.filter(s => checkUserHasStamp(s, savedWallets));
-        }
-        if (!filtered.length) {
-            document.getElementById('gallery').innerHTML = `<div class="loading">${t('nothingFound')}</div>`;
-            return;
-        }
-        let myCount = 0;
-        if (savedWallets.length > 0) {
-            myCount = groupedStamps.filter(s => checkUserHasStamp(s, savedWallets)).length;
-        }
-        document.getElementById('gallery').innerHTML = filtered.map(s => {
-            const hasStamp = checkUserHasStamp(s, savedWallets);
-            const stampCount = getUserStampCount(s, savedWallets);
-            let extra = '';
-            if (isSearchByOwner && searchQuery) {
-                const cnt = s.instances.filter(o => o.toLowerCase().includes(searchQuery)).length;
-                if (cnt === 0) return '';
-                extra = ` | 👤 ${cnt} ${t('holdersPlural')}`;
-            }
-            const groupDisplay = s.group ? translateGroup(s.group).replace(',', ' / ') : 'Без группы';
-            const myMarker = hasStamp ? ` ✅ ${stampCount} шт.` : '';
-            return `<div class="stamp-card" onclick="showHolders('${s.name.replace(/'/g, "\\'")}')">
-                <img class="stamp-image" src="${s.image || 'https://placehold.co/80x80?text=🐉'}" onerror="this.src='https://placehold.co/80x80?text=🐉'">
-                <div>
-                    <div class="stamp-title">${s.name}<span class="stamp-badge ${getRarityClass(s.rarity)}">${getRarityLabel(s.rarity)}</span></div>
-                    <div class="stamp-group">📁 ${groupDisplay}</div>
-                    <div class="stamp-count">📊 ${s.count} ${t('stamps')} | ${t('burned')} ${s.burned}${s.alchemyCount ? ` | ${t('inShop')} ${s.alchemyCount}` : ''}${extra}${myMarker}</div>
-                </div>
-            </div>`;
-        }).join('');
+    let filtered = groupedStamps;
+    const isSearchByOwner = searchQuery.includes('.near') || searchQuery.includes('.tg');
+    if (currentGroup !== 'all') filtered = filtered.filter(s => s.group && (s.group === currentGroup || s.group.includes(currentGroup)));
+    if (searchQuery) {
+        if (isSearchByOwner) filtered = filtered.filter(s => s.instances.some(o => o.toLowerCase().includes(searchQuery)));
+        else filtered = filtered.filter(s => s.name.toLowerCase().includes(searchQuery));
     }
+    const myNftCheckbox = document.getElementById('myNftFilter');
+    if (myNftCheckbox && myNftCheckbox.checked && savedWallets.length > 0) {
+        filtered = filtered.filter(s => checkUserHasStamp(s, savedWallets));
+    }
+    if (!filtered.length) {
+        document.getElementById('gallery').innerHTML = `<div class="loading">${t('nothingFound')}</div>`;
+        // Обновляем лейбл даже если ничего не найдено
+        updateMyNftLabel();
+        return;
+    }
+    
+    // Обновляем лейбл чекбокса с количеством
+    updateMyNftLabel();
+    
+    document.getElementById('gallery').innerHTML = filtered.map(s => {
+        const hasStamp = checkUserHasStamp(s, savedWallets);
+        const stampCount = getUserStampCount(s, savedWallets);
+        let extra = '';
+        if (isSearchByOwner && searchQuery) {
+            const cnt = s.instances.filter(o => o.toLowerCase().includes(searchQuery)).length;
+            if (cnt === 0) return '';
+            extra = ` | 👤 ${cnt} ${t('holdersPlural')}`;
+        }
+        const groupDisplay = s.group ? translateGroup(s.group).replace(',', ' / ') : 'Без группы';
+        const myMarker = hasStamp ? ` ✅ ${stampCount} шт.` : '';
+        return `<div class="stamp-card" onclick="showHolders('${s.name.replace(/'/g, "\\'")}')">
+            <img class="stamp-image" src="${s.image || 'https://placehold.co/80x80?text=🐉'}" onerror="this.src='https://placehold.co/80x80?text=🐉'">
+            <div>
+                <div class="stamp-title">${s.name}<span class="stamp-badge ${getRarityClass(s.rarity)}">${getRarityLabel(s.rarity)}</span></div>
+                <div class="stamp-group">📁 ${groupDisplay}</div>
+                <div class="stamp-count">📊 ${s.count} ${t('stamps')} | ${t('burned')} ${s.burned}${s.alchemyCount ? ` | ${t('inShop')} ${s.alchemyCount}` : ''}${extra}${myMarker}</div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+// НОВАЯ ФУНКЦИЯ - добавляем её ПЕРЕД renderGallery() или после неё
+function updateMyNftLabel() {
+    const myNftLabel = document.querySelector('.my-nft-checkbox label');
+    if (!myNftLabel) return;
+    
+    if (savedWallets.length > 0) {
+        const myCount = groupedStamps.filter(s => checkUserHasStamp(s, savedWallets)).length;
+        myNftLabel.textContent = `${t('showOnlyMyNFT')} (${myCount} ${t('myNFT')})`;
+    } else {
+        myNftLabel.textContent = t('showOnlyMyNFT');
+    }
+}
 
     function buildHoldersList() {
         const holderMap = new Map();
@@ -2695,12 +2728,23 @@ function getUserStampCount(stamp, wallets) {
     }
 
     function downloadReport() {
-    // Загружаем сохранённые кошельки
+    // Показываем последние 3 кошелька из savedWallets для удобства
     let saved = JSON.parse(localStorage.getItem('savedWallets') || '[]');
-    // Если меньше 3, дополняем пустыми строками для отображения
+    if (!Array.isArray(saved)) saved = [];
+    // Дополняем до 3 для отображения
     while (saved.length < 3) saved.push('');
     
-    const html = `<div class="modal-content"><button class="modal-close" onclick="this.closest('.modal').remove()">❌</button><h3>${t('report')}</h3><div class="report-input-group"><input type="text" id="w1" class="report-input" placeholder="${t('wallet')} 1" value="${saved[0] || ''}"><input type="text" id="w2" class="report-input" placeholder="${t('wallet')} 2" value="${saved[1] || ''}"><input type="text" id="w3" class="report-input" placeholder="${t('wallet')} 3" value="${saved[2] || ''}"><button id="clearBtn" class="modal-btn clear-wallets-btn">🗑 ${t('completeAll')}</button></div><button id="genBtn" class="modal-btn">${t('report')}</button></div>`;
+    const html = `<div class="modal-content"><button class="modal-close" onclick="this.closest('.modal').remove()">❌</button>
+        <h3>${t('report')}</h3>
+        <div class="report-input-group">
+            <input type="text" id="w1" class="report-input" placeholder="${t('wallet')} 1" value="${saved[0] || ''}">
+            <input type="text" id="w2" class="report-input" placeholder="${t('wallet')} 2" value="${saved[1] || ''}">
+            <input type="text" id="w3" class="report-input" placeholder="${t('wallet')} 3" value="${saved[2] || ''}">
+            <button id="clearBtn" class="modal-btn clear-wallets-btn">🗑 Очистить поля</button>
+        </div>
+        <button id="genBtn" class="modal-btn">${t('report')}</button>
+    </div>`;
+    
     const modal = document.createElement('div');
     modal.className = 'modal';
     modal.innerHTML = html;
@@ -2712,20 +2756,22 @@ function getUserStampCount(stamp, wallets) {
         const w3 = document.getElementById('w3').value.trim();
         const wallets = [w1, w2, w3].filter(w => w);
         if (!wallets.length) { alert('Введите кошелёк'); return; }
-        // Сохраняем ТОЛЬКО непустые кошельки
-        localStorage.setItem('savedWallets', JSON.stringify(wallets));
+        
+        // ❌ НЕ ТРОГАЕМ savedWallets!
+        // Просто показываем отчёт с этими кошельками
+        
         modal.remove();
         showReport(wallets, getUniqueGroups(), groupedStamps);
     };
     
     document.getElementById('clearBtn').onclick = () => {
-        localStorage.setItem('savedWallets', JSON.stringify([]));
+        // ❌ НЕ ТРОГАЕМ savedWallets!
+        // Просто очищаем поля ввода
+        
         document.getElementById('w1').value = '';
         document.getElementById('w2').value = '';
         document.getElementById('w3').value = '';
-        alert('Очищено');
-        // Обновляем галерею
-        renderGallery();
+        alert('Поля очищены');
     };
 }
 
