@@ -935,34 +935,38 @@
     }
 
     function toggleLang() {
-        currentLang = currentLang === 'ru' ? 'en' : 'ru';
-        localStorage.setItem('lang', currentLang);
-        document.getElementById('langToggle').innerText = currentLang === 'ru' ? 'RU / EN' : 'EN / RU';
-        updateUITexts();
+    currentLang = currentLang === 'ru' ? 'en' : 'ru';
+    localStorage.setItem('lang', currentLang);
+    document.getElementById('langToggle').innerText = currentLang === 'ru' ? 'RU / EN' : 'EN / RU';
+    updateUITexts();
 
-        document.querySelectorAll('.tab').forEach(tab => {
-            const keyMap = {
-                gallery: 'gallery',
-                holders: 'holders',
-                history: 'history',
-                chances: 'chances'
-            };
-            const key = keyMap[tab.dataset.tab] || tab.dataset.tab;
-            tab.textContent = t(key);
-        });
+    document.querySelectorAll('.tab').forEach(tab => {
+        const keyMap = {
+            gallery: 'gallery',
+            holders: 'holders',
+            history: 'history',
+            chances: 'chances'
+        };
+        const key = keyMap[tab.dataset.tab] || tab.dataset.tab;
+        tab.textContent = t(key);
+    });
 
-        const myNftLabel = document.querySelector('.my-nft-checkbox label');
-        if (myNftLabel) myNftLabel.textContent = t('showOnlyMyNFT');
+    const myNftLabel = document.querySelector('.my-nft-checkbox label');
+    if (myNftLabel) myNftLabel.textContent = t('showOnlyMyNFT');
 
-        const reportBtn = document.getElementById('reportBtn');
-        if (reportBtn) reportBtn.textContent = t('report');
+    const reportBtn = document.getElementById('reportBtn');
+    if (reportBtn) reportBtn.textContent = t('report');
 
-        updateStats();
-        renderGallery();
-        renderChancesTable();
-        if (currentTab === 'holders') buildHoldersList();
-        if (currentTab === 'history') renderHistory();
-    }
+    updateStats();
+    
+    // ✅ ДОБАВЛЯЕМ ОБНОВЛЕНИЕ ФИЛЬТРОВ ГРУПП
+    renderGroupFilters();  // <--- ЭТО НОВАЯ СТРОКА!
+    
+    renderGallery();
+    renderChancesTable();
+    if (currentTab === 'holders') buildHoldersList();
+    if (currentTab === 'history') renderHistory();
+}
 
     function updateUITexts() {
         document.querySelectorAll('[data-lang-key]').forEach(el => {
