@@ -832,6 +832,14 @@
     const BOT_TOKEN = '8708530374:AAHhcWFtjLqXK_Yxl0qlCtYrwi0ORLcDHNQ';
     const GROUP_CHAT_ID = '-1002166870776';
     const YAROSLAV_CHAT_ID = '454371494';
+
+// ==================== SUPABASE ====================
+const SUPABASE_URL = 'https://obbujhdmegdgxzdtpbai.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_R0pbZnbuSEbkaCLHcZ_YhQ_J2ZRgIB8';
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const EXCLUDED_OWNERS = ['sendler-alchemy.near'];
+const BURNER_ACCOUNT = 'darai_duplo.near';
+const ALCHEMY_ACCOUNT = 'sendler-alchemy.near';
     
     // ==================== ПЕРЕВОД ====================
     let currentLang = localStorage.getItem('lang') || 'ru';
