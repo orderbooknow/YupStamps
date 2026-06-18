@@ -976,24 +976,27 @@
     }
 
     // ==================== КОШЕЛЬКИ ====================
-    function showWalletModal() {
-        const modal = document.createElement('div');
-        modal.className = 'modal wallet-modal';
-        renderWalletModalContent(modal);
-        document.body.appendChild(modal);
-    }
+function showWalletModal() {
+    const modal = document.createElement('div');
+    modal.className = 'modal wallet-modal';
+    renderWalletModalContent(modal);
+    document.body.appendChild(modal);
+}
 
-    function renderWalletModalContent(modal) {
+function renderWalletModalContent(modal) {
     const cleanWallets = savedWallets.filter(w => w && w.trim() !== '');
     
-    const walletsHtml = cleanWallets.length > 0
-        ? cleanWallets.map(w => `
+    let walletsHtml = '';
+    if (cleanWallets.length > 0) {
+        walletsHtml = cleanWallets.map(w => `
             <div class="wallet-item">
                 <span>${w}</span>
-                <button onclick="removeWalletFromModal('${w}')">✖</button>
+                <button onclick="removeWallet('${w}')">✖</button>
             </div>
-        `).join('')
-        : `<div style="color: #94a3b8; font-size: 13px; padding: 8px 0;">${t('noWallets')}</div>`;
+        `).join('');
+    } else {
+        walletsHtml = `<div style="color: #94a3b8; font-size: 13px; padding: 8px 0;">${t('noWallets')}</div>`;
+    }
 
     modal.innerHTML = `
         <div class="modal-content">
@@ -1008,7 +1011,6 @@
         </div>
     `;
 
-    // Навешиваем обработчик ПОСЛЕ того, как HTML вставлен в DOM
     const addBtn = document.getElementById('addWalletBtn');
     const input = document.getElementById('newWalletInput');
 
@@ -1027,7 +1029,6 @@
             savedWallets.push(wallet);
             localStorage.setItem('savedWallets', JSON.stringify(savedWallets));
             input.value = '';
-            // Перерисовываем модалку
             renderWalletModalContent(modal);
             renderGallery();
         };
@@ -1042,32 +1043,13 @@
     }
 }
 
-    window.removeWalletFromModal = function(wallet) {
-        savedWallets = savedWallets.filter(w => w !== wallet);
-        localStorage.setItem('savedWallets', JSON.stringify(savedWallets));
-        const modal = document.querySelector('.wallet-modal');
-        if (modal) renderWalletModalContent(modal);
-        renderGallery();
-    };
-
-    function checkUserHasStamp(stamp, wallets) {
-        if (!wallets || wallets.length === 0) return false;
-        for (const wallet of wallets) {
-            if (stamp.instances.some(owner => owner.toLowerCase() === wallet.toLowerCase())) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    function getUserStampCount(stamp, wallets) {
-        if (!wallets || wallets.length === 0) return 0;
-        let count = 0;
-        for (const wallet of wallets) {
-            count += stamp.instances.filter(owner => owner.toLowerCase() === wallet.toLowerCase()).length;
-        }
-        return count;
-    }
+function removeWallet(wallet) {
+    savedWallets = savedWallets.filter(w => w !== wallet);
+    localStorage.setItem('savedWallets', JSON.stringify(savedWallets));
+    const modal = document.querySelector('.wallet-modal');
+    if (modal) renderWalletModalContent(modal);
+    renderGallery();
+}
 
     // ==================== ОТПРАВКА В TELEGRAM ====================
     async function sendTelegramMessage(chatId, text, parseMode = 'HTML') {
