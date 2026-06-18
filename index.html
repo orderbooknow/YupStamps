@@ -975,7 +975,7 @@
         document.getElementById('debugInfo').innerHTML = t('loading');
     }
 
-    // ==================== КОШЕЛЬКИ ====================
+    // ==================== КОШЕЛЬКИ (ИСПРАВЛЕННАЯ ВЕРСИЯ) ====================
 
 function openWalletModal() {
     const oldModal = document.querySelector('.wallet-modal');
@@ -989,14 +989,15 @@ function openWalletModal() {
 }
 
 function renderWalletModal(modal) {
+    // Фильтруем пустые кошельки
     const cleanWallets = savedWallets.filter(w => w && w.trim() !== '');
     
     let walletsHtml = '';
     if (cleanWallets.length > 0) {
         walletsHtml = cleanWallets.map(w => `
-            <div class="wallet-item">
+            <div class="wallet-item" data-wallet="${w}">
                 <span>${w}</span>
-                <button onclick="deleteWallet('${w}')">✖</button>
+                <button class="delete-wallet-btn" data-wallet="${w}">✖</button>
             </div>
         `).join('');
     } else {
@@ -1016,6 +1017,16 @@ function renderWalletModal(modal) {
         </div>
     `;
 
+    // Добавляем обработчики для удаления
+    document.querySelectorAll('.delete-wallet-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const wallet = this.dataset.wallet;
+            deleteWallet(wallet);
+        });
+    });
+
+    // Обработчик добавления
     const addBtn = document.getElementById('addWalletBtn');
     const input = document.getElementById('newWalletInput');
     
@@ -1027,6 +1038,7 @@ function renderWalletModal(modal) {
                 alert('Введите адрес кошелька');
                 return;
             }
+            // Проверка на дубликат (регистронезависимая)
             if (savedWallets.some(w => w.toLowerCase() === wallet.toLowerCase())) {
                 alert('Кошелёк уже добавлен');
                 return;
@@ -1035,17 +1047,10 @@ function renderWalletModal(modal) {
             localStorage.setItem('savedWallets', JSON.stringify(savedWallets));
             input.value = '';
             
-            const list = document.getElementById('walletList');
-            const emptyMsg = list.querySelector('div[style]');
-            if (emptyMsg && emptyMsg.textContent.includes('Нет привязанных')) {
-                emptyMsg.remove();
-            }
+            // Обновляем список
+            renderWalletList();
             
-            const item = document.createElement('div');
-            item.className = 'wallet-item';
-            item.innerHTML = `<span>${wallet}</span><button onclick="deleteWallet('${wallet}')">✖</button>`;
-            list.appendChild(item);
-            
+            // Обновляем галерею и фильтр "мои NFT"
             renderGallery();
         };
     }
@@ -1060,26 +1065,42 @@ function renderWalletModal(modal) {
     }
 }
 
+function renderWalletList() {
+    const list = document.getElementById('walletList');
+    if (!list) return;
+    
+    const cleanWallets = savedWallets.filter(w => w && w.trim() !== '');
+    
+    if (cleanWallets.length === 0) {
+        list.innerHTML = `<div style="color: #94a3b8; font-size: 13px; padding: 8px 0;">${t('noWallets')}</div>`;
+        return;
+    }
+    
+    list.innerHTML = cleanWallets.map(w => `
+        <div class="wallet-item" data-wallet="${w}">
+            <span>${w}</span>
+            <button class="delete-wallet-btn" data-wallet="${w}">✖</button>
+        </div>
+    `).join('');
+    
+    // Перепривязываем обработчики удаления
+    document.querySelectorAll('.delete-wallet-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const wallet = this.dataset.wallet;
+            deleteWallet(wallet);
+        });
+    });
+}
+
 function deleteWallet(wallet) {
     savedWallets = savedWallets.filter(w => w !== wallet);
     localStorage.setItem('savedWallets', JSON.stringify(savedWallets));
     
-    const modal = document.querySelector('.wallet-modal');
-    if (modal) {
-        const list = document.getElementById('walletList');
-        if (list) {
-            const items = list.querySelectorAll('.wallet-item');
-            for (const item of items) {
-                if (item.querySelector('span').textContent === wallet) {
-                    item.remove();
-                    break;
-                }
-            }
-            if (list.querySelectorAll('.wallet-item').length === 0) {
-                list.innerHTML = `<div style="color: #94a3b8; font-size: 13px; padding: 8px 0;">${t('noWallets')}</div>`;
-            }
-        }
-    }
+    // Обновляем список в модалке
+    renderWalletList();
+    
+    // Обновляем галерею
     renderGallery();
 }
 
