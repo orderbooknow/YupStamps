@@ -977,6 +977,84 @@
 
     // ==================== КОШЕЛЬКИ (ИСПРАВЛЕННАЯ ВЕРСИЯ) ====================
 
+// 1. Сначала вспомогательные функции
+function checkUserHasStamp(stamp, wallets) {
+    if (!wallets || wallets.length === 0) return false;
+    for (const wallet of wallets) {
+        if (stamp.instances.some(owner => owner.toLowerCase() === wallet.toLowerCase())) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function getUserStampCount(stamp, wallets) {
+    if (!wallets || wallets.length === 0) return 0;
+    let count = 0;
+    for (const wallet of wallets) {
+        count += stamp.instances.filter(owner => owner.toLowerCase() === wallet.toLowerCase()).length;
+    }
+    return count;
+}
+
+// 2. Потом updateMyNftLabel (использует checkUserHasStamp)
+function updateMyNftLabel() {
+    const myNftLabel = document.querySelector('.my-nft-checkbox label');
+    if (!myNftLabel) return;
+    
+    if (savedWallets.length > 0) {
+        const myCount = groupedStamps.filter(s => checkUserHasStamp(s, savedWallets)).length;
+        myNftLabel.textContent = `${t('showOnlyMyNFT')} (${myCount} ${t('myNFT')})`;
+    } else {
+        myNftLabel.textContent = t('showOnlyMyNFT');
+    }
+}
+
+// 3. Потом renderWalletList (использует savedWallets)
+function renderWalletList() {
+    const list = document.getElementById('walletList');
+    if (!list) return;
+    
+    const cleanWallets = savedWallets.filter(w => w && w.trim() !== '');
+    
+    if (cleanWallets.length === 0) {
+        list.innerHTML = `<div style="color: #94a3b8; font-size: 13px; padding: 8px 0;">${t('noWallets')}</div>`;
+        return;
+    }
+    
+    list.innerHTML = cleanWallets.map(w => `
+        <div class="wallet-item" data-wallet="${w}">
+            <span>${w}</span>
+            <button class="delete-wallet-btn" data-wallet="${w}">✖</button>
+        </div>
+    `).join('');
+    
+    // Перепривязываем обработчики удаления
+    document.querySelectorAll('.delete-wallet-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const wallet = this.dataset.wallet;
+            deleteWallet(wallet);
+        });
+    });
+}
+
+// 4. Потом deleteWallet (использует renderWalletList, renderGallery, updateMyNftLabel)
+function deleteWallet(wallet) {
+    savedWallets = savedWallets.filter(w => w !== wallet);
+    localStorage.setItem('savedWallets', JSON.stringify(savedWallets));
+    
+    renderWalletList();
+    renderGallery();
+    updateMyNftLabel();
+    
+    const myNftCheckbox = document.getElementById('myNftFilter');
+    if (myNftCheckbox && myNftCheckbox.checked) {
+        renderGallery();
+    }
+}
+
+// 5. Потом openWalletModal
 function openWalletModal() {
     const oldModal = document.querySelector('.wallet-modal');
     if (oldModal) oldModal.remove();
@@ -988,8 +1066,8 @@ function openWalletModal() {
     document.body.appendChild(modal);
 }
 
+// 6. ПОТОМ renderWalletModal (использует ВСЕ предыдущие функции)
 function renderWalletModal(modal) {
-    // Фильтруем пустые кошельки
     const cleanWallets = savedWallets.filter(w => w && w.trim() !== '');
     
     let walletsHtml = '';
@@ -1026,7 +1104,7 @@ function renderWalletModal(modal) {
         });
     });
 
-    // ========== ИСПРАВЛЕННЫЙ ОБРАБОТЧИК ДОБАВЛЕНИЯ ==========
+    // Обработчик добавления
     const addBtn = document.getElementById('addWalletBtn');
     const input = document.getElementById('newWalletInput');
     
@@ -1038,7 +1116,6 @@ function renderWalletModal(modal) {
                 alert('Введите адрес кошелька');
                 return;
             }
-            // Проверка на дубликат (регистронезависимая)
             if (savedWallets.some(w => w.toLowerCase() === wallet.toLowerCase())) {
                 alert('Кошелёк уже добавлен');
                 return;
@@ -1047,16 +1124,10 @@ function renderWalletModal(modal) {
             localStorage.setItem('savedWallets', JSON.stringify(savedWallets));
             input.value = '';
             
-            // Обновляем список в модалке
             renderWalletList();
-            
-            // Обновляем галерею
             renderGallery();
-            
-            // ✅ ОБНОВЛЯЕМ ЛЕЙБЛ ЧЕКБОКСА
             updateMyNftLabel();
             
-            // ✅ ЕСЛИ ЧЕКБОКС ВКЛЮЧЕН - ПЕРЕРИСОВЫВАЕМ ГАЛЕРЕЮ С ФИЛЬТРОМ
             const myNftCheckbox = document.getElementById('myNftFilter');
             if (myNftCheckbox && myNftCheckbox.checked) {
                 renderGallery();
@@ -1072,73 +1143,6 @@ function renderWalletModal(modal) {
             }
         });
     }
-}
-
-function renderWalletList() {
-    const list = document.getElementById('walletList');
-    if (!list) return;
-    
-    const cleanWallets = savedWallets.filter(w => w && w.trim() !== '');
-    
-    if (cleanWallets.length === 0) {
-        list.innerHTML = `<div style="color: #94a3b8; font-size: 13px; padding: 8px 0;">${t('noWallets')}</div>`;
-        return;
-    }
-    
-    list.innerHTML = cleanWallets.map(w => `
-        <div class="wallet-item" data-wallet="${w}">
-            <span>${w}</span>
-            <button class="delete-wallet-btn" data-wallet="${w}">✖</button>
-        </div>
-    `).join('');
-    
-    // Перепривязываем обработчики удаления
-    document.querySelectorAll('.delete-wallet-btn').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            const wallet = this.dataset.wallet;
-            deleteWallet(wallet);
-        });
-    });
-}
-
-function deleteWallet(wallet) {
-    savedWallets = savedWallets.filter(w => w !== wallet);
-    localStorage.setItem('savedWallets', JSON.stringify(savedWallets));
-    
-    // Обновляем список в модалке
-    renderWalletList();
-    
-    // Обновляем галерею
-    renderGallery();
-    
-    // ✅ ОБНОВЛЯЕМ ЛЕЙБЛ ЧЕКБОКСА
-    updateMyNftLabel();
-    
-    // ✅ ЕСЛИ ЧЕКБОКС ВКЛЮЧЕН - ПЕРЕРИСОВЫВАЕМ ГАЛЕРЕЮ С ФИЛЬТРОМ
-    const myNftCheckbox = document.getElementById('myNftFilter');
-    if (myNftCheckbox && myNftCheckbox.checked) {
-        renderGallery();
-    }
-}
-
-function checkUserHasStamp(stamp, wallets) {
-    if (!wallets || wallets.length === 0) return false;
-    for (const wallet of wallets) {
-        if (stamp.instances.some(owner => owner.toLowerCase() === wallet.toLowerCase())) {
-            return true;
-        }
-    }
-    return false;
-}
-
-function getUserStampCount(stamp, wallets) {
-    if (!wallets || wallets.length === 0) return 0;
-    let count = 0;
-    for (const wallet of wallets) {
-        count += stamp.instances.filter(owner => owner.toLowerCase() === wallet.toLowerCase()).length;
-    }
-    return count;
 }
 
     // ==================== ОТПРАВКА В TELEGRAM ====================
