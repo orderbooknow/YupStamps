@@ -2667,9 +2667,7 @@ function handleDelete(e) {
             let gt = { count: 0, burned: 0, alchemy: 0 };
             let gw = new Array(active.length).fill(0);
             const isCollapsed = collapsed.has(g);
-            // ✅ ИСПРАВЛЕНО: убрал <title>, заменил на правильную строку
             html += `<tr class="group-header" data-group="${g}"><td colspan="${4 + active.length + 1}"><span class="toggle-icon">${isCollapsed ? '▶' : '▼'}</span> <strong>📁 ${translateGroup(g)}</strong></td></tr>`;
-            // ✅ Добавляем обёртку для строк группы
             if (!isCollapsed) {
                 inGroup.forEach(st => {
                     const wc = active.map(w => st.instances.filter(o => o.toLowerCase() === w.toLowerCase()).length);
@@ -2687,7 +2685,17 @@ function handleDelete(e) {
                 html += `<tr class="total-row"><td><strong>${t('total')} ${t('group')}</strong></td><td><strong>${gt.count}</strong></td><td><strong>${gt.burned}</strong></td><td><strong>${gt.alchemy}</strong></td>${gw.map(t => `<td><strong>${t}</strong></td>`).join('')}<td><strong>${gw.reduce((a, b) => a + b, 0)}</strong></td></tr>`;
             }
         });
-        html += `<tr class="grand-total-row"><td><strong>${t('total')}</strong></td><td><strong>${grand.count}</strong></td><td><strong>${grand.burned}</strong></td><td><strong>${grand.alchemy}</strong></td>${grandW.map(t => `<td><strong>${t}</strong></td>`).join('')}<td><strong>${grandW.reduce((a, b) => a + b, 0)}</strong></td></tr>`;
+        // ✅ ИСПРАВЛЕННАЯ СТРОКА ИТОГОВ
+        html += `<tr class="grand-total-row">`;
+        html += `<td><strong>🏆 ${t('total')}</strong></td>`;
+        html += `<td><strong>${grand.count}</strong></td>`;
+        html += `<td><strong>${grand.burned}</strong></td>`;
+        html += `<td><strong>${grand.alchemy}</strong></td>`;
+        grandW.forEach(val => {
+            html += `<td><strong>${val}</strong></td>`;
+        });
+        html += `<td><strong>${grandW.reduce((a, b) => a + b, 0)}</strong></td>`;
+        html += `</tr>`;
         html += `</tbody></table></div><div style="display:flex;gap:10px;margin-top:16px;">`;
         if (isMobile() || currentUserId) {
             html += `<button id="sendToBotBtn" class="modal-btn" style="background:#2ecc71;">📤 ${t('snapshot')}</button>`;
