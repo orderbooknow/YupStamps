@@ -976,14 +976,20 @@
     }
 
     // ==================== КОШЕЛЬКИ ====================
-function showWalletModal() {
+let savedWallets = JSON.parse(localStorage.getItem('savedWallets') || '[]');
+
+function openWalletModal() {
+    const oldModal = document.querySelector('.wallet-modal');
+    if (oldModal) oldModal.remove();
+    
     const modal = document.createElement('div');
     modal.className = 'modal wallet-modal';
-    renderWalletModalContent(modal);
+    
+    renderWalletModal(modal);
     document.body.appendChild(modal);
 }
 
-function renderWalletModalContent(modal) {
+function renderWalletModal(modal) {
     const cleanWallets = savedWallets.filter(w => w && w.trim() !== '');
     
     let walletsHtml = '';
@@ -991,7 +997,7 @@ function renderWalletModalContent(modal) {
         walletsHtml = cleanWallets.map(w => `
             <div class="wallet-item">
                 <span>${w}</span>
-                <button onclick="removeWallet('${w}')">✖</button>
+                <button onclick="deleteWallet('${w}')">✖</button>
             </div>
         `).join('');
     } else {
@@ -1002,7 +1008,7 @@ function renderWalletModalContent(modal) {
         <div class="modal-content">
             <button class="modal-close" onclick="this.closest('.modal').remove()">❌</button>
             <h3>${t('attachWallet')}</h3>
-            <div class="wallet-list">${walletsHtml}</div>
+            <div class="wallet-list" id="walletList">${walletsHtml}</div>
             <div class="wallet-input-group">
                 <input type="text" id="newWalletInput" placeholder="${t('enterWallet')}">
                 <button id="addWalletBtn">${t('addWallet')}</button>
@@ -1013,7 +1019,7 @@ function renderWalletModalContent(modal) {
 
     const addBtn = document.getElementById('addWalletBtn');
     const input = document.getElementById('newWalletInput');
-
+    
     if (addBtn) {
         addBtn.onclick = function(e) {
             e.preventDefault();
@@ -1029,26 +1035,72 @@ function renderWalletModalContent(modal) {
             savedWallets.push(wallet);
             localStorage.setItem('savedWallets', JSON.stringify(savedWallets));
             input.value = '';
-            renderWalletModalContent(modal);
+            
+            const list = document.getElementById('walletList');
+            const emptyMsg = list.querySelector('div[style]');
+            if (emptyMsg && emptyMsg.textContent.includes('Нет привязанных')) {
+                emptyMsg.remove();
+            }
+            
+            const item = document.createElement('div');
+            item.className = 'wallet-item';
+            item.innerHTML = `<span>${wallet}</span><button onclick="deleteWallet('${wallet}')">✖</button>`;
+            list.appendChild(item);
+            
             renderGallery();
         };
     }
-
+    
     if (input) {
         input.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && addBtn) {
-                addBtn.click();
+            if (e.key === 'Enter') {
+                const btn = document.getElementById('addWalletBtn');
+                if (btn) btn.click();
             }
         });
     }
 }
 
-function removeWallet(wallet) {
+function deleteWallet(wallet) {
     savedWallets = savedWallets.filter(w => w !== wallet);
     localStorage.setItem('savedWallets', JSON.stringify(savedWallets));
+    
     const modal = document.querySelector('.wallet-modal');
-    if (modal) renderWalletModalContent(modal);
+    if (modal) {
+        const list = document.getElementById('walletList');
+        if (list) {
+            const items = list.querySelectorAll('.wallet-item');
+            for (const item of items) {
+                if (item.querySelector('span').textContent === wallet) {
+                    item.remove();
+                    break;
+                }
+            }
+            if (list.querySelectorAll('.wallet-item').length === 0) {
+                list.innerHTML = `<div style="color: #94a3b8; font-size: 13px; padding: 8px 0;">${t('noWallets')}</div>`;
+            }
+        }
+    }
     renderGallery();
+}
+
+function checkUserHasStamp(stamp, wallets) {
+    if (!wallets || wallets.length === 0) return false;
+    for (const wallet of wallets) {
+        if (stamp.instances.some(owner => owner.toLowerCase() === wallet.toLowerCase())) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function getUserStampCount(stamp, wallets) {
+    if (!wallets || wallets.length === 0) return 0;
+    let count = 0;
+    for (const wallet of wallets) {
+        count += stamp.instances.filter(owner => owner.toLowerCase() === wallet.toLowerCase()).length;
+    }
+    return count;
 }
 
     // ==================== ОТПРАВКА В TELEGRAM ====================
@@ -2690,7 +2742,7 @@ function removeWallet(wallet) {
 
         document.getElementById('themeToggle').addEventListener('click', toggleTheme);
         document.getElementById('langToggle').addEventListener('click', toggleLang);
-        document.getElementById('walletToggle').addEventListener('click', showWalletModal);
+        document.getElementById('walletToggle').addEventListener('click', openWalletModal);
         document.getElementById('reportBtn').addEventListener('click', downloadReport);
         document.getElementById('showLoginModalBtn').addEventListener('click', showPCLoginModal);
 
