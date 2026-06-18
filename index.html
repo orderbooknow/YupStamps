@@ -984,8 +984,11 @@
     }
 
     function renderWalletModalContent(modal) {
-    const walletsHtml = savedWallets.length > 0
-        ? savedWallets.map(w => `
+    // Фильтруем пустые кошельки
+    const cleanWallets = savedWallets.filter(w => w && w.trim() !== '');
+    
+    const walletsHtml = cleanWallets.length > 0
+        ? cleanWallets.map(w => `
             <div class="wallet-item">
                 <span>${w}</span>
                 <button onclick="removeWalletFromModal('${w}')">✖</button>
@@ -1012,14 +1015,19 @@
     if (addBtn) {
         addBtn.onclick = () => {
             const wallet = input.value.trim();
-            if (!wallet) return;
-            if (savedWallets.includes(wallet)) {
+            if (!wallet) {
+                alert('Введите адрес кошелька');
+                return;
+            }
+            // Проверяем, есть ли уже такой кошелёк (без учёта регистра)
+            const exists = savedWallets.some(w => w.toLowerCase() === wallet.toLowerCase());
+            if (exists) {
                 alert('Кошелёк уже добавлен');
                 return;
             }
             savedWallets.push(wallet);
             localStorage.setItem('savedWallets', JSON.stringify(savedWallets));
-            input.value = ''; // <-- ОЧИЩАЕМ ПОЛЕ
+            input.value = ''; // Очищаем поле
             renderWalletModalContent(modal);
             renderGallery();
         };
