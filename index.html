@@ -1740,10 +1740,16 @@ function deleteWallet(wallet) {
     savedWallets = savedWallets.filter(w => w !== wallet);
     localStorage.setItem('savedWallets', JSON.stringify(savedWallets));
     
+    // Обновляем список в модалке
     renderWalletList();
+    
+    // Обновляем галерею
     renderGallery();
+    
+    // Обновляем лейбл
     updateMyNftLabel();
     
+    // Если чекбокс включен - перерисовываем
     const myNftCheckbox = document.getElementById('myNftFilter');
     if (myNftCheckbox && myNftCheckbox.checked) {
         renderGallery();
@@ -1791,54 +1797,66 @@ function renderWalletModal(modal) {
         </div>
     `;
 
-    // Добавляем обработчики для удаления
-    document.querySelectorAll('.delete-wallet-btn').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            const wallet = this.dataset.wallet;
-            deleteWallet(wallet);
+    // Ждём рендера DOM
+    setTimeout(() => {
+        // ====== ОБРАБОТЧИКИ УДАЛЕНИЯ ======
+        document.querySelectorAll('.delete-wallet-btn').forEach(btn => {
+            // Убираем старые обработчики (если были)
+            btn.removeEventListener('click', handleDelete);
+            // Добавляем новый
+            btn.addEventListener('click', handleDelete);
         });
-    });
 
-    // Обработчик добавления
-    const addBtn = document.getElementById('addWalletBtn');
-    const input = document.getElementById('newWalletInput');
-    
-    if (addBtn) {
-        addBtn.onclick = function(e) {
-            e.preventDefault();
-            const wallet = input.value.trim();
-            if (!wallet) {
-                alert('Введите адрес кошелька');
-                return;
-            }
-            if (savedWallets.some(w => w.toLowerCase() === wallet.toLowerCase())) {
-                alert('Кошелёк уже добавлен');
-                return;
-            }
-            savedWallets.push(wallet);
-            localStorage.setItem('savedWallets', JSON.stringify(savedWallets));
-            input.value = '';
-            
-            renderWalletList();
-            renderGallery();
-            updateMyNftLabel();
-            
-            const myNftCheckbox = document.getElementById('myNftFilter');
-            if (myNftCheckbox && myNftCheckbox.checked) {
+        // ====== ОБРАБОТЧИК ДОБАВЛЕНИЯ ======
+        const addBtn = document.getElementById('addWalletBtn');
+        const input = document.getElementById('newWalletInput');
+        
+        if (addBtn) {
+            // Убираем старый обработчик
+            addBtn.onclick = null;
+            // Добавляем новый
+            addBtn.onclick = function(e) {
+                e.preventDefault();
+                const wallet = input.value.trim();
+                if (!wallet) {
+                    alert('Введите адрес кошелька');
+                    return;
+                }
+                if (savedWallets.some(w => w.toLowerCase() === wallet.toLowerCase())) {
+                    alert('Кошелёк уже добавлен');
+                    return;
+                }
+                savedWallets.push(wallet);
+                localStorage.setItem('savedWallets', JSON.stringify(savedWallets));
+                input.value = '';
+                
+                renderWalletList();
                 renderGallery();
-            }
-        };
-    }
-    
-    if (input) {
-        input.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                const btn = document.getElementById('addWalletBtn');
-                if (btn) btn.click();
-            }
-        });
-    }
+                updateMyNftLabel();
+                
+                const myNftCheckbox = document.getElementById('myNftFilter');
+                if (myNftCheckbox && myNftCheckbox.checked) {
+                    renderGallery();
+                }
+            };
+        }
+        
+        if (input) {
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    const btn = document.getElementById('addWalletBtn');
+                    if (btn) btn.click();
+                }
+            });
+        }
+    }, 50);
+}
+
+// ====== ВЫНОСИМ ОБРАБОТЧИК УДАЛЕНИЯ В ОТДЕЛЬНУЮ ФУНКЦИЮ ======
+function handleDelete(e) {
+    e.stopPropagation();
+    const wallet = this.dataset.wallet;
+    deleteWallet(wallet);
 }
 
     function buildHoldersList() {
