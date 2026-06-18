@@ -984,7 +984,6 @@
     }
 
     function renderWalletModalContent(modal) {
-    // Фильтруем пустые кошельки
     const cleanWallets = savedWallets.filter(w => w && w.trim() !== '');
     
     const walletsHtml = cleanWallets.length > 0
@@ -1009,33 +1008,36 @@
         </div>
     `;
 
+    // Навешиваем обработчик ПОСЛЕ того, как HTML вставлен в DOM
     const addBtn = document.getElementById('addWalletBtn');
     const input = document.getElementById('newWalletInput');
 
     if (addBtn) {
-        addBtn.onclick = () => {
+        addBtn.onclick = function(e) {
+            e.preventDefault();
             const wallet = input.value.trim();
             if (!wallet) {
                 alert('Введите адрес кошелька');
                 return;
             }
-            // Проверяем, есть ли уже такой кошелёк (без учёта регистра)
-            const exists = savedWallets.some(w => w.toLowerCase() === wallet.toLowerCase());
-            if (exists) {
+            if (savedWallets.some(w => w.toLowerCase() === wallet.toLowerCase())) {
                 alert('Кошелёк уже добавлен');
                 return;
             }
             savedWallets.push(wallet);
             localStorage.setItem('savedWallets', JSON.stringify(savedWallets));
-            input.value = ''; // Очищаем поле
+            input.value = '';
+            // Перерисовываем модалку
             renderWalletModalContent(modal);
             renderGallery();
         };
     }
 
     if (input) {
-        input.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && addBtn) addBtn.click();
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && addBtn) {
+                addBtn.click();
+            }
         });
     }
 }
