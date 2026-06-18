@@ -840,6 +840,22 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const EXCLUDED_OWNERS = ['sendler-alchemy.near'];
 const BURNER_ACCOUNT = 'darai_duplo.near';
 const ALCHEMY_ACCOUNT = 'sendler-alchemy.near';
+
+// ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
+let currentRankMode = 'count';
+let currentGroupHolders = 'all';
+let currentChancesGroup = 'all';
+let chancesSortBy = 'chance';
+let chancesSortOrder = 'desc';
+let chancesSearchQuery = '';
+let currentUserId = null;
+let currentUserFirstName = null;
+let isAdmin = false;
+let currentGroup = 'all';
+let currentTab = 'gallery';
+let searchQuery = '';
+let allStamps = [], dynamicInstances = [], groupedStamps = [];
+let selectedRaffleIds = new Set();
     
     // ==================== ПЕРЕВОД ====================
     let currentLang = localStorage.getItem('lang') || 'ru';
