@@ -1088,57 +1088,83 @@
     }
 
     async function exportSelectedRaffles() {
-        if (!isAdmin) return;
-        const selected = getSelectedRaffleIds();
-        if (selected.length === 0) {
-            alert(t('noSelected'));
-            return;
-        }
+    if (!isAdmin) return;
+    const selected = getSelectedRaffleIds();
+    if (selected.length === 0) {
+        alert(t('noSelected'));
+        return;
+    }
 
-        const history = await loadHistory();
-        const rafflesData = [];
-        for (const id of selected) {
-            const raffle = history.find(h => h.id === id);
-            if (!raffle) continue;
-            let stamps = [];
-            if (raffle.stamp_name.includes(' + ')) {
-                stamps = raffle.stamp_name.split(' + ');
-            } else {
-                stamps = [raffle.stamp_name];
-            }
-            const data = await getCurrentHoldersForRaffle(stamps, raffle.reward_amount || 0);
-            if (data) {
-                const combinedData = data.owners.map(owner => ({
-                    address: owner.address,
-                    count: owner.count
+    const history = await loadHistory();
+    const rafflesData = [];
+    for (const id of selected) {
+        const raffle = history.find(h => h.id === id);
+        if (!raffle) continue;
+        let stamps = [];
+        if (raffle.stamp_name.includes(' + ')) {
+            stamps = raffle.stamp_name.split(' + ');
+        } else {
+            stamps = [raffle.stamp_name];
+        }
+        const data = await getCurrentHoldersForRaffle(stamps, raffle.reward_amount || 0);
+        if (data) {
+            const combinedData = data.owners.map(owner => ({
+                address: owner.address,
+                count: owner.count
+            }));
+            // Добавляем распределение сумм
+            let distribution = [];
+            if (raffle.reward_amount > 0) {
+                const totalCount = combinedData.reduce((sum, h) => sum + h.count, 0);
+                distribution = combinedData.map(item => ({
+                    address: item.address,
+                    count: item.count,
+                    amount: Math.floor((item.count / totalCount) * raffle.reward_amount)
                 }));
-                rafflesData.push({
-                    resultText: raffle.stamp_name,
-                    finalGroup: raffle.group_name,
-                    rewardAmount: raffle.reward_amount || 0,
-                    holders: combinedData,
-                    raffleDate: raffle.created_at
-                });
             }
+            rafflesData.push({
+                resultText: raffle.stamp_name,
+                finalGroup: raffle.group_name,
+                rewardAmount: raffle.reward_amount || 0,
+                holders: combinedData,
+                distribution: distribution,
+                raffleDate: raffle.created_at
+            });
         }
+    }
 
-        if (rafflesData.length === 0) {
-            alert(t('noData'));
-            return;
+    if (rafflesData.length === 0) {
+        alert(t('noData'));
+        return;
+    }
+
+    const csv = generateMultiExportCSV(rafflesData);
+    const filename = `Raffles_${Date.now()}.csv`;
+    
+    // ✅ ЕСЛИ МОБИЛЬНОЕ УСТРОЙСТВО - ОТПРАВЛЯЕМ В TELEGRAM
+    if (isMobile() || window.innerWidth < 768) {
+        // Отправляем файл в Telegram (Ярославу или в группу)
+        const caption = `📊 Выгрузка розыгрышей (${rafflesData.length} шт.)\n\n📅 ${getMoscowTime(new Date())}`;
+        const sent = await sendTelegramFile(YAROSLAV_CHAT_ID, filename, csv, caption);
+        if (sent) {
+            alert('✅ Файл отправлен в Telegram!');
+        } else {
+            alert('❌ Ошибка отправки. Попробуйте на ПК.');
         }
-
-        const csv = generateMultiExportCSV(rafflesData);
+    } else {
+        // НА ПК - СКАЧИВАЕМ
         const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         link.href = url;
-        link.download = `Raffles_${Date.now()}.csv`;
+        link.download = filename;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
         alert(t('exportSuccess'));
     }
+}
 
     function getSelectedRaffleIds() {
         return Array.from(selectedRaffleIds);
