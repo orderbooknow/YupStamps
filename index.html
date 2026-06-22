@@ -2101,163 +2101,139 @@ function handleDelete(e) {
     };
 
     function showHoldersModal(data) {
-        const modal = document.createElement('div');
-        modal.className = 'modal';
-        let resultText = '';
-        if (data.type === 'single') {
-            resultText = data.name;
-        } else {
-            resultText = `КОМБО (${data.names.join(' + ')})`;
-        }
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    let resultText = '';
+    if (data.type === 'single') {
+        resultText = data.name;
+    } else {
+        resultText = `КОМБО (${data.names.join(' + ')})`;
+    }
 
-        let combinedData = [];
-        if (data.distribution && data.distribution.length > 0) {
-            const distMap = new Map();
-            data.distribution.forEach(d => {
-                distMap.set(d.address, { nftCount: d.nftCount, amount: d.amount });
-            });
-            combinedData = data.owners.map(owner => ({
-                address: owner.address,
-                nftCount: owner.count,
-                amount: distMap.has(owner.address) ? distMap.get(owner.address).amount : 0
-            }));
-        } else {
-            combinedData = data.owners.map(owner => ({
-                address: owner.address,
-                nftCount: owner.count,
-                amount: null
-            }));
-        }
-        combinedData.sort((a, b) => b.nftCount - a.nftCount);
-
-        const hasReward = data.rewardAmount && data.rewardAmount > 0;
-        const showAmountColumn = hasReward && data.distribution && data.distribution.length > 0;
-        const paymentText = combinedData.map(item => `${item.address} ${item.nftCount}`).join('\n');
-
-        const snapshotData = combinedData.map(item => ({
-            address: item.address,
-            count: item.nftCount
+    let combinedData = [];
+    if (data.distribution && data.distribution.length > 0) {
+        const distMap = new Map();
+        data.distribution.forEach(d => {
+            distMap.set(d.address, { nftCount: d.nftCount, amount: d.amount });
+        });
+        combinedData = data.owners.map(owner => ({
+            address: owner.address,
+            nftCount: owner.count,
+            amount: distMap.has(owner.address) ? distMap.get(owner.address).amount : 0
         }));
-        const raffleInfo = {
-            resultText: resultText,
-            finalGroup: data.group,
-            rewardAmount: data.rewardAmount || 0
-        };
+    } else {
+        combinedData = data.owners.map(owner => ({
+            address: owner.address,
+            nftCount: owner.count,
+            amount: null
+        }));
+    }
+    combinedData.sort((a, b) => b.nftCount - a.nftCount);
 
-        let progressHtml = '';
-        if (savedWallets.length > 0) {
-            let stamps = [];
-            if (data.type === 'single') {
-                stamps = [data.name];
-            } else if (data.type === 'combo') {
-                stamps = data.names || [];
-            }
-            if (stamps.length > 0) {
-                progressHtml = `
-                    <hr>
-                    <div style="margin-top: 12px;">
-                        <h4>🧑‍💻 ${t('progress')}</h4>
-                        <div style="font-size: 12px; margin-top: 6px;">
-                            ${stamps.map(name => {
-                                const stamp = groupedStamps.find(s => s.name === name);
-                                let count = 0;
-                                if (stamp) {
-                                    for (const wallet of savedWallets) {
-                                        const instances = stamp.instances.filter(o => o.toLowerCase() === wallet.toLowerCase());
-                                        count += instances.length;
-                                    }
+    const hasReward = data.rewardAmount && data.rewardAmount > 0;
+    const showAmountColumn = hasReward && data.distribution && data.distribution.length > 0;
+    const paymentText = combinedData.map(item => `${item.address} ${item.nftCount}`).join('\n');
+
+    const snapshotData = combinedData.map(item => ({
+        address: item.address,
+        count: item.nftCount
+    }));
+    const raffleInfo = {
+        resultText: resultText,
+        finalGroup: data.group,
+        rewardAmount: data.rewardAmount || 0
+    };
+
+    let progressHtml = '';
+    if (savedWallets.length > 0) {
+        let stamps = [];
+        if (data.type === 'single') {
+            stamps = [data.name];
+        } else if (data.type === 'combo') {
+            stamps = data.names || [];
+        }
+        if (stamps.length > 0) {
+            progressHtml = `
+                <hr>
+                <div style="margin-top: 12px;">
+                    <h4>🧑‍💻 ${t('progress')}</h4>
+                    <div style="font-size: 12px; margin-top: 6px;">
+                        ${stamps.map(name => {
+                            const stamp = groupedStamps.find(s => s.name === name);
+                            let count = 0;
+                            if (stamp) {
+                                for (const wallet of savedWallets) {
+                                    const instances = stamp.instances.filter(o => o.toLowerCase() === wallet.toLowerCase());
+                                    count += instances.length;
                                 }
-                                const has = count > 0;
-                                return `<div style="padding: 2px 0;">${name} ${has ? `✅ ${count} шт.` : '❌ 0 шт.'}</div>`;
-                            }).join('')}
-                        </div>
+                            }
+                            const has = count > 0;
+                            return `<div style="padding: 2px 0;">${name} ${has ? `✅ ${count} шт.` : '❌ 0 шт.'}</div>`;
+                        }).join('')}
                     </div>
-                `;
-            }
-        }
-
-        modal.innerHTML = `<div class="modal-content"><button class="modal-close" onclick="this.closest('.modal').remove()">❌</button>
-            <h3>${t('holdersTitle')}</h3>
-            <p style="font-size:16px;font-weight:700;color:#e94560;margin:10px 0;">${resultText}</p>
-            <p>${t('group')}: ${translateGroup(data.group)}</p>
-            <p>${t('total')}: ${data.totalCount}</p>
-            <p>${t('burnedLabel')}: ${data.burned}</p>
-            <p>${t('shopLabel')}: ${data.alchemy}</p>
-            ${hasReward ? `<p>${t('reward')}: ${formatNumberWithSpaces(data.rewardAmount)} DarAI</p>` : ''}
-            ${progressHtml}
-            <hr>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
-                <span>🏆 ${t('holders')} (${combinedData.length}):</span>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                    <button id="copyHoldersBtn" style="background:#334155;border:none;padding:4px 12px;border-radius:20px;color:white;cursor:pointer;">${t('copy')}</button>
-                    ${isAdmin ? `<button id="copyPaymentBtn" class="btn-payment" style="border:none;padding:4px 12px;border-radius:20px;color:white;cursor:pointer;">${t('forPayment')}</button>` : ''}
-                    ${isAdmin ? `<button id="sendSnapshotBtn" class="btn-snapshot" style="border:none;padding:4px 12px;border-radius:20px;color:white;cursor:pointer;">${t('snapshot')}</button>` : ''}
                 </div>
-            </div>
-            <table class="distribution-table">
-                <thead>
-                    <tr>
-                        <th>${t('wallet')}</th>
-                        <th>${t('count')}</th>
-                        ${showAmountColumn ? `<th>${t('amount')}</th>` : ''}
-                    </tr>
-                </thead>
-                <tbody>
-                    ${combinedData.map(item => `
-                        <tr>
-                            <td>${formatAddress(item.address)}</td>
-                            <td>${item.nftCount} шт.</td>
-                            ${showAmountColumn ? `<td><strong>${formatNumberWithSpaces(item.amount)}</strong></td>` : ''}
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-            <button class="modal-btn" onclick="this.closest('.modal').remove()">${t('close')}</button>
-        </div>`;
-        document.body.appendChild(modal);
-
-        document.getElementById('copyHoldersBtn').onclick = () => {
-            let text = `🏆 ${t('holders')} ${resultText} 🏆\n\n`;
-            text += `${t('group')}: ${translateGroup(data.group)}\n`;
-            text += `${t('total')}: ${data.totalCount}\n`;
-            text += `${t('burnedLabel')}: ${data.burned}\n`;
-            text += `${t('shopLabel')}: ${data.alchemy}\n`;
-            if (hasReward) {
-                text += `${t('reward')}: ${formatNumberWithSpaces(data.rewardAmount)} DarAI\n`;
-            }
-            text += `\n${t('wallet')} | ${t('count')}${showAmountColumn ? ` | ${t('amount')}` : ''}\n`;
-            text += `${'-'.repeat(50)}\n`;
-            combinedData.forEach(item => {
-                text += `${formatAddress(item.address)} | ${item.nftCount} шт.${showAmountColumn ? ` | ${formatNumberWithSpaces(item.amount)}` : ''}\n`;
-            });
-            navigator.clipboard.writeText(text);
-            const btn = document.getElementById('copyHoldersBtn');
-            btn.innerText = '✅';
-            setTimeout(() => btn.innerText = t('copy'), 2000);
-        };
-
-        const paymentBtn = document.getElementById('copyPaymentBtn');
-        if (paymentBtn) {
-            paymentBtn.onclick = () => {
-                navigator.clipboard.writeText(paymentText);
-                paymentBtn.innerText = '✅';
-                setTimeout(() => paymentBtn.innerHTML = t('forPayment'), 2000);
-            };
-        }
-
-        const snapshotBtn = document.getElementById('sendSnapshotBtn');
-        if (snapshotBtn) {
-            snapshotBtn.onclick = async () => {
-                const csvContent = generateSnapshotCSV(snapshotData, raffleInfo);
-                const filename = `Snapshot_${Date.now()}.csv`;
-                const caption = `📸 ${t('snapshot')}\n\n${t('holdersTitle')}: ${raffleInfo.resultText}\n${t('group')}: ${translateGroup(raffleInfo.finalGroup)}\n${t('total')}: ${getMoscowTime(new Date())}`;
-                await sendTelegramFile(YAROSLAV_CHAT_ID, filename, csvContent, caption);
-                await sendTelegramMessage(YAROSLAV_CHAT_ID, `✅ ${t('snapshot')} ${t('completeAllDone')}`);
-                snapshotBtn.innerText = '✅';
-                setTimeout(() => snapshotBtn.innerHTML = t('snapshot'), 2000);
-            };
+            `;
         }
     }
+
+    modal.innerHTML = `<div class="modal-content"><button class="modal-close" onclick="this.closest('.modal').remove()">❌</button>
+        <h3>${t('holdersTitle')}</h3>
+        <p style="font-size:16px;font-weight:700;color:#e94560;margin:10px 0;">${resultText}</p>
+        <p>${t('group')}: ${translateGroup(data.group)}</p>
+        <p>${t('total')}: ${data.totalCount}</p>
+        <p>${t('burnedLabel')}: ${data.burned}</p>
+        <p>${t('shopLabel')}: ${data.alchemy}</p>
+        ${hasReward ? `<p>${t('reward')}: ${formatNumberWithSpaces(data.rewardAmount)} DarAI</p>` : ''}
+        ${progressHtml}
+        <hr>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+            <span>🏆 ${t('holders')} (${combinedData.length}):</span>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button id="copyHoldersBtn" style="background:#334155;border:none;padding:4px 12px;border-radius:20px;color:white;cursor:pointer;">${t('copy')}</button>
+            </div>
+        </div>
+        <table class="distribution-table">
+            <thead>
+                <tr>
+                    <th>${t('wallet')}</th>
+                    <th>${t('count')}</th>
+                    ${showAmountColumn ? `<th>${t('amount')}</th>` : ''}
+                </tr>
+            </thead>
+            <tbody>
+                ${combinedData.map(item => `
+                    <tr>
+                        <td>${formatAddress(item.address)}</td>
+                        <td>${item.nftCount} шт.</td>
+                        ${showAmountColumn ? `<td><strong>${formatNumberWithSpaces(item.amount)}</strong></td>` : ''}
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+        <button class="modal-btn" onclick="this.closest('.modal').remove()">${t('close')}</button>
+    </div>`;
+    document.body.appendChild(modal);
+
+    document.getElementById('copyHoldersBtn').onclick = () => {
+        let text = `🏆 ${t('holders')} ${resultText} 🏆\n\n`;
+        text += `${t('group')}: ${translateGroup(data.group)}\n`;
+        text += `${t('total')}: ${data.totalCount}\n`;
+        text += `${t('burnedLabel')}: ${data.burned}\n`;
+        text += `${t('shopLabel')}: ${data.alchemy}\n`;
+        if (hasReward) {
+            text += `${t('reward')}: ${formatNumberWithSpaces(data.rewardAmount)} DarAI\n`;
+        }
+        text += `\n${t('wallet')} | ${t('count')}${showAmountColumn ? ` | ${t('amount')}` : ''}\n`;
+        text += `${'-'.repeat(50)}\n`;
+        combinedData.forEach(item => {
+            text += `${formatAddress(item.address)} | ${item.nftCount} шт.${showAmountColumn ? ` | ${formatNumberWithSpaces(item.amount)}` : ''}\n`;
+        });
+        navigator.clipboard.writeText(text);
+        const btn = document.getElementById('copyHoldersBtn');
+        btn.innerText = '✅';
+        setTimeout(() => btn.innerText = t('copy'), 2000);
+    };
+}
 
     function renderChancesTable() {
         const groups = getUniqueGroups();
