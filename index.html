@@ -1033,22 +1033,36 @@
     }
 
     function generateMultiExportCSV(rafflesData) {
-        let csv = '';
-        for (let i = 0; i < rafflesData.length; i++) {
-            const data = rafflesData[i];
-            if (i > 0) csv += '\n\n';
-            csv += `Снимок Розыгрыша YupStamp\n`;
-            csv += `Дата и время: ${getMoscowTime(new Date(data.raffleDate || Date.now()))}\n`;
-            csv += `Розыгрыш: ${data.resultText}\n`;
-            csv += `Группа: ${data.finalGroup}\n`;
-            if (data.rewardAmount > 0) {
-                csv += `Награда: ${formatNumberWithSpaces(data.rewardAmount)} DarAI\n`;
-            }
-            csv += `\nwallet,count\n`;
-            data.holders.forEach(item => { csv += `${item.address},${item.count}\n`; });
+    let csv = '';
+    for (let i = 0; i < rafflesData.length; i++) {
+        const data = rafflesData[i];
+        if (i > 0) csv += '\n\n';
+        
+        // Заголовок розыгрыша
+        csv += `Снимок Розыгрыша YupStamp\n`;
+        csv += `Дата и время: ${getMoscowTime(new Date(data.raffleDate || Date.now()))}\n`;
+        csv += `Розыгрыш: ${data.resultText}\n`;
+        csv += `Группа: ${data.finalGroup}\n`;
+        if (data.rewardAmount > 0) {
+            csv += `Награда: ${formatNumberWithSpaces(data.rewardAmount)} DarAI\n`;
         }
-        return csv;
+        
+        // ✅ НОВЫЙ ФОРМАТ: Кошелек, Сумма выигрыша, Количество
+        csv += `\nКошелек, Сумма выигрыша (DarAI), Количество\n`;
+        
+        // Считаем общее количество NFT
+        const totalCount = data.holders.reduce((sum, h) => sum + h.count, 0);
+        
+        data.holders.forEach(item => {
+            // Считаем сумму для каждого кошелька
+            const amount = data.rewardAmount > 0 
+                ? Math.floor((item.count / totalCount) * data.rewardAmount)
+                : 0;
+            csv += `${item.address}, ${formatNumberWithSpaces(amount)}, ${item.count}\n`;
+        });
     }
+    return csv;
+}
 
     // ==================== МАССОВЫЕ ОПЕРАЦИИ ====================
     async function completeSelectedRaffles() {
