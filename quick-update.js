@@ -99,7 +99,7 @@ async function updateDynamicStamps(allTokens) {
 }
 
 // ============================================================
-// 🆕 НОВАЯ ФУНКЦИЯ 1: СОХРАНЕНИЕ ПОЛНОЙ СТАТИСТИКИ
+// 🆕 НОВАЯ ФУНКЦИЯ: СОХРАНЕНИЕ ПОЛНОЙ СТАТИСТИКИ
 // ============================================================
 async function saveFullContractStats(allTokens) {
     console.log('📊 Сохраняем полную статистику контракта...');
@@ -166,61 +166,64 @@ async function saveFullContractStats(allTokens) {
     } else {
         console.log(`✅ Сохранена ежедневная статистика за ${today}`);
     }
-    
-    // Отправляем в Telegram
-    await sendTelegramReport(stats);
 }
 
 // ============================================================
-// 🆕 НОВАЯ ФУНКЦИЯ 2: ОТПРАВКА В TELEGRAM
+// 🆕 НОВАЯ ФУНКЦИЯ: ОТПРАВКА В TELEGRAM (ТЕБЕ В ЛИЧКУ)
 // ============================================================
-async function sendTelegramReport(stats) {
-    const TELEGRAM_BOT_TOKEN = '8708530374:AAHhcWFtjLqXK_Yxl0qlCtYrwi0ORLcDHNQ';
-    const TELEGRAM_CHAT_ID = '-1002166870776';
-    
-    const top5 = Object.entries(stats.topHolders)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5);
-    
-    const message = `📊 <b>СТАТИСТИКА КОНТРАКТА</b>\n\n` +
-        `📈 Всего NFT: <b>${stats.total.toLocaleString()}</b>\n` +
-        `👥 Холдеров: <b>${stats.holders.size.toLocaleString()}</b>\n` +
-        `🔥 Сожжено: <b>${stats.burned.toLocaleString()}</b>\n` +
-        `🏪 В лавке: <b>${stats.shop.toLocaleString()}</b>\n` +
-        `📁 Коллекций: <b>${Object.keys(stats.collections).length}</b>\n\n` +
-        `🏆 <b>Топ-5 холдеров:</b>\n` +
-        top5.map(([addr, count], i) => 
-            `  ${i+1}. <code>${addr.slice(0,12)}...</code> → ${count} NFT`
-        ).join('\n') +
-        `\n\n🔄 Обновлено: ${new Date().toLocaleString('ru-RU')}`;
+async function sendTelegramMessage(text) {
+    const token = '8708530374:AAHhcWFtjLqXK_Yxl0qlCtYrwi0ORLcDHNQ';
+    const chatId = '454371494'; // Твой ID
     
     try {
-        const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+        const url = `https://api.telegram.org/bot${token}/sendMessage`;
         await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                chat_id: TELEGRAM_CHAT_ID,
-                text: message,
+                chat_id: chatId,
+                text: text,
                 parse_mode: 'HTML'
             })
         });
-        console.log('📨 Отправлено в Telegram');
+        console.log('📨 Отправлено в Telegram (личка)');
     } catch (e) {
         console.error('❌ Ошибка отправки в Telegram:', e);
     }
 }
 
 // ============================================================
-// ГЛАВНАЯ ФУНКЦИЯ (ТОЛЬКО ДОБАВЛЕН ВЫЗОВ saveFullContractStats)
+// ГЛАВНАЯ ФУНКЦИЯ
 // ============================================================
 async function main() {
-    const allTokens = await fetchAllTokens();
-    console.log(`\n📊 Всего токенов в API: ${allTokens.length}`);
-    await updateStampsIncremental(allTokens);
-    await updateDynamicStamps(allTokens);
-    await saveFullContractStats(allTokens); // 👈 ТОЛЬКО ЭТО ДОБАВЛЕНО
-    console.log('\n🎉 ОБНОВЛЕНИЕ ЗАВЕРШЕНО!');
+    console.log('🚀 ЗАПУСК ОБНОВЛЕНИЯ ДАННЫХ');
+    console.log('═'.repeat(50));
+    
+    try {
+        const allTokens = await fetchAllTokens();
+        console.log(`\n📊 Всего токенов в API: ${allTokens.length}`);
+        console.log('═'.repeat(50));
+        
+        await updateStampsIncremental(allTokens);
+        await updateDynamicStamps(allTokens);
+        await saveFullContractStats(allTokens);
+        
+        console.log('═'.repeat(50));
+        console.log('🎉 ОБНОВЛЕНИЕ ЗАВЕРШЕНО!');
+        console.log(`📅 ${new Date().toLocaleString('ru-RU')}`);
+        
+        // Отправляем уведомление в Telegram
+        await sendTelegramMessage(
+            `✅ <b>Обновление данных завершено!</b>\n\n` +
+            `📊 Всего NFT: <b>${allTokens.length.toLocaleString()}</b>\n` +
+            `👥 Холдеров: <b>${new Set(allTokens.map(t => t.owner_id).filter(Boolean)).size.toLocaleString()}</b>\n` +
+            `📅 ${new Date().toLocaleString('ru-RU')}`
+        );
+        
+    } catch (error) {
+        console.error('❌ КРИТИЧЕСКАЯ ОШИБКА:', error);
+        process.exit(1);
+    }
 }
 
 main().catch(console.error);
