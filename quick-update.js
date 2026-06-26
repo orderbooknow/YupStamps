@@ -1,16 +1,10 @@
 const { createClient } = require('@supabase/supabase-js');
-const WebSocket = require('ws');
 
 const SUPABASE_URL = 'https://obbujhdmegdgxzdtpbai.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_R0pbZnbuSEbkaCLHcZ_YhQ_J2ZRgIB8';
 const API_KEY = 'pR7xQnL2mV9cYfK4uD8sTjH1wB5eZaCgX0oNiUyE6lA';
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
-    realtime: {
-        transport: WebSocket
-    }
-});
-
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 const API_URL = 'https://api.sendler.xyz/nft/list/?contract_address=yuplandshop.mintbase1.near&limit=10000';
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
@@ -105,7 +99,7 @@ async function updateDynamicStamps(allTokens) {
 }
 
 // ============================================================
-// 🆕 СОХРАНЕНИЕ ПОЛНОЙ СТАТИСТИКИ КОНТРАКТА
+// 🆕 НОВАЯ ФУНКЦИЯ 1: СОХРАНЕНИЕ ПОЛНОЙ СТАТИСТИКИ
 // ============================================================
 async function saveFullContractStats(allTokens) {
     console.log('📊 Сохраняем полную статистику контракта...');
@@ -136,28 +130,96 @@ async function saveFullContractStats(allTokens) {
         .slice(0, 100)
         .map(([address, count]) => ({ address, count }));
     
-    await supabase.from('contract_stats').insert({
-        recorded_at: new Date().toISOString(),
-        total_nft: stats.total,
-        total_holders: stats.holders.size,
-        collections: stats.collections,
-        top_holders: topHolders,
-        burned_count: stats.burned,
-        shop_count: stats.shop
-    });
+    // Сохраняем в contract_stats
+    const { error } = await supabase
+        .from('contract_stats')
+        .insert({
+            recorded_at: new Date().toISOString(),
+            total_nft: stats.total,
+            total_holders: stats.holders.size,
+            collections: stats.collections,
+            top_holders: topHolders,
+            burned_count: stats.burned,
+            shop_count: stats.shop
+        });
     
-    console.log(`✅ Сохранено: ${stats.total} NFT, ${stats.holders.size} холдеров`);
+    if (error) {
+        console.error('❌ Ошибка сохранения статистики:', error);
+    } else {
+        console.log(`✅ Сохранено: ${stats.total} NFT, ${stats.holders.size} холдеров`);
+    }
+    
+    // Сохраняем ежедневную статистику
+    const today = new Date().toISOString().split('T')[0];
+    const { error: dailyError } = await supabase
+        .from('daily_contract_stats')
+        .upsert({
+            date: today,
+            total_nft: stats.total,
+            holders: stats.holders.size,
+            burned: stats.burned,
+            in_shop: stats.shop
+        }, { onConflict: 'date' });
+    
+    if (dailyError) {
+        console.error('❌ Ошибка сохранения ежедневной статистики:', dailyError);
+    } else {
+        console.log(`✅ Сохранена ежедневная статистика за ${today}`);
+    }
+    
+    // Отправляем в Telegram
+    await sendTelegramReport(stats);
 }
 
 // ============================================================
-// ГЛАВНАЯ
+// 🆕 НОВАЯ ФУНКЦИЯ 2: ОТПРАВКА В TELEGRAM
+// ============================================================
+async function sendTelegramReport(stats) {
+    const TELEGRAM_BOT_TOKEN = '8708530374:AAHhcWFtjLqXK_Yxl0qlCtYrwi0ORLcDHNQ';
+    const TELEGRAM_CHAT_ID = '-1002166870776';
+    
+    const top5 = Object.entries(stats.topHolders)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
+    
+    const message = `📊 <b>СТАТИСТИКА КОНТРАКТА</b>\n\n` +
+        `📈 Всего NFT: <b>${stats.total.toLocaleString()}</b>\n` +
+        `👥 Холдеров: <b>${stats.holders.size.toLocaleString()}</b>\n` +
+        `🔥 Сожжено: <b>${stats.burned.toLocaleString()}</b>\n` +
+        `🏪 В лавке: <b>${stats.shop.toLocaleString()}</b>\n` +
+        `📁 Коллекций: <b>${Object.keys(stats.collections).length}</b>\n\n` +
+        `🏆 <b>Топ-5 холдеров:</b>\n` +
+        top5.map(([addr, count], i) => 
+            `  ${i+1}. <code>${addr.slice(0,12)}...</code> → ${count} NFT`
+        ).join('\n') +
+        `\n\n🔄 Обновлено: ${new Date().toLocaleString('ru-RU')}`;
+    
+    try {
+        const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+        await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: TELEGRAM_CHAT_ID,
+                text: message,
+                parse_mode: 'HTML'
+            })
+        });
+        console.log('📨 Отправлено в Telegram');
+    } catch (e) {
+        console.error('❌ Ошибка отправки в Telegram:', e);
+    }
+}
+
+// ============================================================
+// ГЛАВНАЯ ФУНКЦИЯ (ТОЛЬКО ДОБАВЛЕН ВЫЗОВ saveFullContractStats)
 // ============================================================
 async function main() {
     const allTokens = await fetchAllTokens();
     console.log(`\n📊 Всего токенов в API: ${allTokens.length}`);
     await updateStampsIncremental(allTokens);
     await updateDynamicStamps(allTokens);
-    await saveFullContractStats(allTokens);
+    await saveFullContractStats(allTokens); // 👈 ТОЛЬКО ЭТО ДОБАВЛЕНО
     console.log('\n🎉 ОБНОВЛЕНИЕ ЗАВЕРШЕНО!');
 }
 
