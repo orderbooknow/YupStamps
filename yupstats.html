@@ -717,8 +717,8 @@
         let currentLang = 'ru';
         let currentPeriod = 'week';
         let currentTab = 'analytics';
-        let allInstances = [];
         let allData = [];
+        let dailyData = [];
         let mainChart = null;
         let burnChart = null;
         let currentPeriodData = {};
@@ -856,51 +856,37 @@
         }
         
         // ================================================================
-        // ==================== ЗАГРУЗКА ДАННЫХ (С ПАГИНАЦИЕЙ) ==========
+        // ==================== ЗАГРУЗКА ДАННЫХ ==========================
         // ================================================================
         
         async function loadAllData() {
             try {
-                // Загружаем ВСЕ экземпляры с пагинацией
-                let instances = [];
-                let from = 0;
-                const limit = 1000;
-                let hasMore = true;
+                // Загружаем ежедневную статистику
+                const { data: daily, error: dailyError } = await supabaseClient
+                    .from('daily_contract_stats')
+                    .select('*')
+                    .order('date', { ascending: true });
                 
-                while (hasMore) {
-                    const { data, error } = await supabaseClient
-                        .from('stamp_instances')
-                        .select('*')
-                        .range(from, from + limit - 1)
-                        .order('last_updated', { ascending: true });
-                    
-                    if (error) throw error;
-                    
-                    if (data && data.length > 0) {
-                        instances = instances.concat(data);
-                        from += limit;
-                        hasMore = data.length === limit;
-                    } else {
-                        hasMore = false;
-                    }
+                if (dailyError) throw dailyError;
+                dailyData = daily || [];
+                console.log(`✅ Загружено ${dailyData.length} дней статистики`);
+                
+                // Загружаем последнюю полную статистику
+                const { data: stats, error: statsError } = await supabaseClient
+                    .from('contract_stats')
+                    .select('*')
+                    .order('recorded_at', { ascending: false })
+                    .limit(1);
+                
+                if (statsError) throw statsError;
+                
+                if (stats && stats.length > 0) {
+                    const latest = stats[0];
+                    document.getElementById('updateInfo').textContent = 
+                        `🔄 Данные обновлены: ${new Date(latest.recorded_at).toLocaleString('ru-RU')}`;
+                    document.getElementById('updateTime').textContent = 
+                        `🔄 ${new Date(latest.recorded_at).toLocaleString('ru-RU')}`;
                 }
-                
-                console.log(`✅ Загружено ${instances.length} NFT`);
-                allInstances = instances;
-                
-                // Обрабатываем данные
-                allData = processInstances(allInstances);
-                
-                // Обновляем время
-                const now = new Date().toLocaleString('ru-RU', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-                document.getElementById('updateInfo').textContent = `🔄 Данные обновлены: ${now}`;
-                document.getElementById('updateTime').textContent = `🔄 ${now}`;
                 
                 // Строим график с периодом по умолчанию
                 buildMainChart('week');
@@ -914,91 +900,11 @@
         }
         
         // ================================================================
-        // ==================== ОБРАБОТКА ДАННЫХ =========================
-        // ================================================================
-        
-        function processInstances(instances) {
-            const days = {};
-            
-            instances.forEach(item => {
-                const date = new Date(item.last_updated);
-                const key = date.toISOString().split('T')[0];
-                
-                if (!days[key]) {
-                    days[key] = {
-                        date: key,
-                        total: 0,
-                        burned: 0,
-                        shop: 0,
-                        holders: new Set(),
-                        movements: 0,
-                        owners: []
-                    };
-                }
-                
-                days[key].total++;
-                
-                if (item.owner_id === BURNER_ACCOUNT) {
-                    days[key].burned++;
-                }
-                
-                if (item.owner_id === ALCHEMY_ACCOUNT) {
-                    days[key].shop++;
-                }
-                
-                if (item.owner_id && !EXCLUDED_OWNERS.includes(item.owner_id)) {
-                    days[key].holders.add(item.owner_id);
-                    days[key].owners.push(item.owner_id);
-                }
-            });
-            
-            // Считаем движения
-            const dates = Object.keys(days).sort();
-            const nftOwners = {};
-            
-            instances.forEach(item => {
-                const tokenId = item.token_id;
-                if (!nftOwners[tokenId]) nftOwners[tokenId] = [];
-                nftOwners[tokenId].push({
-                    date: item.last_updated,
-                    owner: item.owner_id
-                });
-            });
-            
-            dates.forEach(date => {
-                let movements = 0;
-                for (const [tokenId, history] of Object.entries(nftOwners)) {
-                    for (let i = 0; i < history.length - 1; i++) {
-                        const current = new Date(history[i].date).toISOString().split('T')[0];
-                        const next = new Date(history[i + 1].date).toISOString().split('T')[0];
-                        if (current === date && history[i].owner !== history[i + 1].owner) {
-                            movements++;
-                        }
-                    }
-                }
-                days[date].movements = movements;
-            });
-            
-            const result = [];
-            for (const [key, value] of Object.entries(days)) {
-                result.push({
-                    date: key,
-                    total: value.total,
-                    burned: value.burned,
-                    shop: value.shop,
-                    holders: value.holders.size,
-                    movements: value.movements || 0
-                });
-            }
-            
-            return result.sort((a, b) => a.date.localeCompare(b.date));
-        }
-        
-        // ================================================================
         // ==================== ФИЛЬТРАЦИЯ ПО ПЕРИОДУ ====================
         // ================================================================
         
         function filterDataByPeriod(data, period) {
+            if (!data || data.length === 0) return [];
             if (period === 'all') return data;
             
             const now = new Date();
@@ -1032,18 +938,18 @@
             const last = data[data.length - 1];
             const prev = data.length > 1 ? data[data.length - 2] : null;
             
-            document.getElementById('metricTotal').textContent = formatNumber(last.total);
+            document.getElementById('metricTotal').textContent = formatNumber(last.total_nft);
             document.getElementById('metricBurned').textContent = formatNumber(last.burned);
-            document.getElementById('metricShop').textContent = formatNumber(last.shop);
+            document.getElementById('metricShop').textContent = formatNumber(last.in_shop);
             document.getElementById('metricHolders').textContent = formatNumber(last.holders);
-            document.getElementById('metricMovements').textContent = formatNumber(last.movements);
+            document.getElementById('metricMovements').textContent = formatNumber(last.movements || 0);
             
             if (prev) {
-                updateChange('metricTotalChange', last.total, prev.total);
+                updateChange('metricTotalChange', last.total_nft, prev.total_nft);
                 updateChange('metricBurnedChange', last.burned, prev.burned);
-                updateChange('metricShopChange', last.shop, prev.shop);
+                updateChange('metricShopChange', last.in_shop, prev.in_shop);
                 updateChange('metricHoldersChange', last.holders, prev.holders);
-                updateChange('metricMovementsChange', last.movements, prev.movements);
+                updateChange('metricMovementsChange', last.movements || 0, prev.movements || 0);
             }
         }
         
@@ -1084,7 +990,7 @@
         // ================================================================
         
         function buildMainChart(period) {
-            const filtered = filterDataByPeriod(allData, period);
+            const filtered = filterDataByPeriod(dailyData, period);
             currentPeriodData = filtered;
             
             if (!filtered || filtered.length === 0) {
@@ -1094,11 +1000,11 @@
             }
             
             const labels = filtered.map(d => formatDate(d.date));
-            const totalData = filtered.map(d => d.total);
+            const totalData = filtered.map(d => d.total_nft);
             const burnedData = filtered.map(d => d.burned);
-            const shopData = filtered.map(d => d.shop);
+            const shopData = filtered.map(d => d.in_shop);
             const holdersData = filtered.map(d => d.holders);
-            const movementsData = filtered.map(d => d.movements);
+            const movementsData = filtered.map(d => d.movements || 0);
             
             const isLight = document.body.classList.contains('light');
             const textColor = isLight ? '#1e293b' : '#e2e8f0';
@@ -1230,11 +1136,11 @@
             tbody.innerHTML = data.map(d => `
                 <tr>
                     <td>${formatDate(d.date)}</td>
-                    <td><strong>${formatNumber(d.total)}</strong></td>
+                    <td><strong>${formatNumber(d.total_nft)}</strong></td>
                     <td>${formatNumber(d.burned)}</td>
-                    <td>${formatNumber(d.shop)}</td>
+                    <td>${formatNumber(d.in_shop)}</td>
                     <td>${formatNumber(d.holders)}</td>
-                    <td>${formatNumber(d.movements)}</td>
+                    <td>${formatNumber(d.movements || 0)}</td>
                 </tr>
             `).join('');
         }
@@ -1291,191 +1197,17 @@
         }
         
         // ================================================================
-        // ==================== КОМБО ДУПЛО ==============================
+        // ==================== КОМБО ДУПЛО (заглушка) ==================
         // ================================================================
         
         async function buildBurnTable(period) {
-            try {
-                const burned = allInstances.filter(item => item.owner_id === BURNER_ACCOUNT);
-                
-                if (burned.length === 0) {
-                    document.getElementById('burnTableBody').innerHTML = 
-                        `<tr><td colspan="5" style="text-align:center;color:#94a3b8;">Нет сожженных NFT</td></tr>`;
-                    updateBurnStats([]);
-                    return;
-                }
-                
-                const senders = {};
-                
-                for (const nft of burned) {
-                    const previous = allInstances.filter(item => 
-                        item.token_id === nft.token_id && 
-                        new Date(item.last_updated) < new Date(nft.last_updated) &&
-                        item.owner_id !== BURNER_ACCOUNT
-                    );
-                    
-                    previous.sort((a, b) => new Date(b.last_updated) - new Date(a.last_updated));
-                    
-                    let sender = 'unknown';
-                    if (previous.length > 0) {
-                        sender = previous[0].owner_id || 'unknown';
-                    }
-                    
-                    const date = new Date(nft.last_updated);
-                    const dateStr = date.toISOString().split('T')[0];
-                    
-                    const filtered = filterDataByPeriod([{ date: dateStr }], period);
-                    if (filtered.length === 0) continue;
-                    
-                    if (!senders[sender]) {
-                        senders[sender] = {
-                            address: sender,
-                            count: 0,
-                            firstBurn: date,
-                            lastBurn: date
-                        };
-                    }
-                    
-                    senders[sender].count++;
-                    if (date < senders[sender].firstBurn) senders[sender].firstBurn = date;
-                    if (date > senders[sender].lastBurn) senders[sender].lastBurn = date;
-                }
-                
-                const sorted = Object.values(senders).sort((a, b) => b.count - a.count);
-                
-                updateBurnStats(sorted);
-                
-                if (sorted.length === 0) {
-                    document.getElementById('burnTableBody').innerHTML = 
-                        `<tr><td colspan="5" style="text-align:center;color:#94a3b8;">Нет данных за выбранный период</td></tr>`;
-                } else {
-                    document.getElementById('burnTableBody').innerHTML = sorted.map((s, i) => `
-                        <tr>
-                            <td>${i + 1}</td>
-                            <td><strong>${s.address}</strong></td>
-                            <td class="highlight">${s.count}</td>
-                            <td>${s.firstBurn.toLocaleDateString('ru-RU')}</td>
-                            <td>${s.lastBurn.toLocaleDateString('ru-RU')}</td>
-                        </tr>
-                    `).join('');
-                }
-                
-                buildBurnChart(sorted, period);
-                
-            } catch (error) {
-                console.error('❌ Ошибка загрузки сжиганий:', error);
-                document.getElementById('burnTableBody').innerHTML = 
-                    `<tr><td colspan="5" style="text-align:center;color:#ef4444;">Ошибка загрузки</td></tr>`;
-            }
-        }
-        
-        function updateBurnStats(senders) {
-            const total = senders.reduce((sum, s) => sum + s.count, 0);
-            const unique = senders.length;
-            const top = senders.length > 0 ? senders[0].address : '—';
-            const avg = unique > 0 ? Math.round(total / unique) : 0;
-            
-            document.getElementById('burnTotal').textContent = formatNumber(total);
-            document.getElementById('burnSenders').textContent = unique;
-            document.getElementById('burnTopSender').textContent = top.length > 12 ? top.slice(0, 10) + '…' : top;
-            document.getElementById('burnAvg').textContent = formatNumber(avg);
-        }
-        
-        function buildBurnChart(senders, period) {
-            const dailyBurns = {};
-            
-            const burned = allInstances.filter(item => item.owner_id === BURNER_ACCOUNT);
-            
-            for (const nft of burned) {
-                const date = new Date(nft.last_updated);
-                const key = date.toISOString().split('T')[0];
-                
-                const filtered = filterDataByPeriod([{ date: key }], period);
-                if (filtered.length === 0) continue;
-                
-                if (!dailyBurns[key]) dailyBurns[key] = 0;
-                dailyBurns[key]++;
-            }
-            
-            const sortedDates = Object.keys(dailyBurns).sort();
-            const labels = sortedDates.map(d => formatDate(d));
-            const data = sortedDates.map(d => dailyBurns[d]);
-            
-            const isLight = document.body.classList.contains('light');
-            const textColor = isLight ? '#1e293b' : '#e2e8f0';
-            const gridColor = isLight ? '#e2e8f0' : '#334155';
-            
-            const ctx = document.getElementById('burnChart').getContext('2d');
-            
-            if (burnChart) burnChart.destroy();
-            
-            if (labels.length === 0) {
-                burnChart = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: ['Нет данных'],
-                        datasets: [{
-                            data: [0],
-                            backgroundColor: '#334155'
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: {
-                            x: { ticks: { color: textColor } },
-                            y: { ticks: { color: textColor }, beginAtZero: true }
-                        }
-                    }
-                });
-                return;
-            }
-            
-            burnChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: '🔥 Сожжено NFT',
-                        data: data,
-                        backgroundColor: 'rgba(239, 68, 68, 0.7)',
-                        borderColor: '#ef4444',
-                        borderWidth: 1,
-                        borderRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: isLight ? 'white' : '#1e293b',
-                            titleColor: isLight ? '#1e293b' : '#e2e8f0',
-                            bodyColor: isLight ? '#1e293b' : '#e2e8f0',
-                            borderColor: isLight ? '#e2e8f0' : '#334155',
-                            borderWidth: 1,
-                            callbacks: {
-                                label: function(context) {
-                                    return 'Сожжено: ' + formatNumber(context.parsed.y);
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            ticks: { color: textColor, maxTicksLimit: 15 },
-                            grid: { color: gridColor }
-                        },
-                        y: {
-                            ticks: { color: textColor, callback: function(value) { return formatNumber(value); } },
-                            grid: { color: gridColor },
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
+            // Заглушка — позже добавим реальные данные
+            document.getElementById('burnTableBody').innerHTML = 
+                `<tr><td colspan="5" style="text-align:center;color:#94a3b8;">Данные загружаются...</td></tr>`;
+            document.getElementById('burnTotal').textContent = '—';
+            document.getElementById('burnSenders').textContent = '—';
+            document.getElementById('burnTopSender').textContent = '—';
+            document.getElementById('burnAvg').textContent = '—';
         }
         
         function setupDuploPeriods() {
@@ -1483,8 +1215,7 @@
                 btn.addEventListener('click', function() {
                     document.querySelectorAll('.duplo-period').forEach(b => b.classList.remove('active'));
                     this.classList.add('active');
-                    const period = this.dataset.period;
-                    buildBurnTable(period);
+                    buildBurnTable(this.dataset.period);
                 });
             });
         }
