@@ -1,10 +1,16 @@
 const { createClient } = require('@supabase/supabase-js');
+const WebSocket = require('ws');
 
 const SUPABASE_URL = 'https://obbujhdmegdgxzdtpbai.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_R0pbZnbuSEbkaCLHcZ_YhQ_J2ZRgIB8';
 const API_KEY = 'pR7xQnL2mV9cYfK4uD8sTjH1wB5eZaCgX0oNiUyE6lA';
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+    realtime: {
+        transport: WebSocket
+    }
+});
+
 const API_URL = 'https://api.sendler.xyz/nft/list/?contract_address=yuplandshop.mintbase1.near&limit=10000';
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
@@ -99,7 +105,7 @@ async function updateDynamicStamps(allTokens) {
 }
 
 // ============================================================
-// 🆕 НОВАЯ ФУНКЦИЯ: СОХРАНЕНИЕ ПОЛНОЙ СТАТИСТИКИ КОНТРАКТА
+// 🆕 СОХРАНЕНИЕ ПОЛНОЙ СТАТИСТИКИ КОНТРАКТА
 // ============================================================
 async function saveFullContractStats(allTokens) {
     console.log('📊 Сохраняем полную статистику контракта...');
@@ -114,80 +120,44 @@ async function saveFullContractStats(allTokens) {
     };
     
     for (const token of allTokens) {
-        // Холдеры
         if (token.owner_id) {
             stats.holders.add(token.owner_id);
             stats.topHolders[token.owner_id] = (stats.topHolders[token.owner_id] || 0) + 1;
         }
+        if (token.owner_id === 'darai_duplo.near') stats.burned++;
+        if (token.owner_id === 'sendler-alchemy.near') stats.shop++;
         
-        // Сожжено (на кошельке darai_duplo.near)
-        if (token.owner_id === 'darai_duplo.near') {
-            stats.burned++;
-        }
-        
-        // В лавке (на кошельке sendler-alchemy.near)
-        if (token.owner_id === 'sendler-alchemy.near') {
-            stats.shop++;
-        }
-        
-        // Коллекции
         const collection = token.collection || token.collection_name || 'unknown';
         stats.collections[collection] = (stats.collections[collection] || 0) + 1;
     }
     
-    // Топ-100 холдеров
     const topHolders = Object.entries(stats.topHolders)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 100)
         .map(([address, count]) => ({ address, count }));
     
-    // Сохраняем в contract_stats
-    const { error: insertError } = await supabase
-        .from('contract_stats')
-        .insert({
-            recorded_at: new Date().toISOString(),
-            total_nft: stats.total,
-            total_holders: stats.holders.size,
-            collections: stats.collections,
-            top_holders: topHolders,
-            burned_count: stats.burned,
-            shop_count: stats.shop
-        });
+    await supabase.from('contract_stats').insert({
+        recorded_at: new Date().toISOString(),
+        total_nft: stats.total,
+        total_holders: stats.holders.size,
+        collections: stats.collections,
+        top_holders: topHolders,
+        burned_count: stats.burned,
+        shop_count: stats.shop
+    });
     
-    if (insertError) {
-        console.error('❌ Ошибка сохранения статистики:', insertError);
-    } else {
-        console.log(`✅ Сохранено: ${stats.total} NFT, ${stats.holders.size} холдеров`);
-    }
-    
-    // Сохраняем ежедневную статистику
-    const today = new Date().toISOString().split('T')[0];
-    const { error: dailyError } = await supabase
-        .from('daily_contract_stats')
-        .upsert({
-            date: today,
-            total_nft: stats.total,
-            holders: stats.holders.size,
-            burned: stats.burned,
-            in_shop: stats.shop
-        }, { onConflict: 'date' });
-    
-    if (dailyError) {
-        console.error('❌ Ошибка сохранения ежедневной статистики:', dailyError);
-    } else {
-        console.log(`✅ Сохранена ежедневная статистика за ${today}`);
-    }
+    console.log(`✅ Сохранено: ${stats.total} NFT, ${stats.holders.size} холдеров`);
 }
 
 // ============================================================
-// ГЛАВНАЯ ФУНКЦИЯ
+// ГЛАВНАЯ
 // ============================================================
 async function main() {
     const allTokens = await fetchAllTokens();
     console.log(`\n📊 Всего токенов в API: ${allTokens.length}`);
     await updateStampsIncremental(allTokens);
     await updateDynamicStamps(allTokens);
-    await saveFullContractStats(allTokens); // 👈 НОВАЯ СТРОКА
+    await saveFullContractStats(allTokens);
     console.log('\n🎉 ОБНОВЛЕНИЕ ЗАВЕРШЕНО!');
 }
 
