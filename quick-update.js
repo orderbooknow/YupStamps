@@ -99,7 +99,7 @@ async function updateDynamicStamps(allTokens) {
 }
 
 // ============================================================
-// 🆕 НОВАЯ ФУНКЦИЯ: СОХРАНЕНИЕ ПОЛНОЙ СТАТИСТИКИ
+// 🆕 СОХРАНЕНИЕ ПОЛНОЙ СТАТИСТИКИ С ДВИЖЕНИЯМИ
 // ============================================================
 async function saveFullContractStats(allTokens) {
     console.log('📊 Сохраняем полную статистику контракта...');
@@ -110,28 +110,64 @@ async function saveFullContractStats(allTokens) {
         burned: 0,
         shop: 0,
         collections: {},
-        topHolders: {}
+        topHolders: {},
+        movements: {} // { date: count }
     };
     
+    // Собираем данные по движениям
+    const ownerHistory = {};
+    
     for (const token of allTokens) {
+        // Холдеры
         if (token.owner_id) {
             stats.holders.add(token.owner_id);
             stats.topHolders[token.owner_id] = (stats.topHolders[token.owner_id] || 0) + 1;
         }
-        if (token.owner_id === 'darai_duplo.near') stats.burned++;
-        if (token.owner_id === 'sendler-alchemy.near') stats.shop++;
         
+        // Сожжено
+        if (token.owner_id === 'darai_duplo.near') {
+            stats.burned++;
+        }
+        
+        // В лавке
+        if (token.owner_id === 'sendler-alchemy.near') {
+            stats.shop++;
+        }
+        
+        // Коллекции
         const collection = token.collection || token.collection_name || 'unknown';
         stats.collections[collection] = (stats.collections[collection] || 0) + 1;
+        
+        // История владельцев для движений
+        const tokenId = token.token_id;
+        if (!ownerHistory[tokenId]) ownerHistory[tokenId] = [];
+        ownerHistory[tokenId].push({
+            date: token.last_updated || token.created_at || new Date().toISOString(),
+            owner: token.owner_id
+        });
     }
     
+    // Считаем движения по дням
+    for (const [tokenId, history] of Object.entries(ownerHistory)) {
+        // Сортируем по дате
+        history.sort((a, b) => new Date(a.date) - new Date(b.date));
+        
+        for (let i = 1; i < history.length; i++) {
+            if (history[i].owner !== history[i-1].owner) {
+                const date = new Date(history[i].date).toISOString().split('T')[0];
+                stats.movements[date] = (stats.movements[date] || 0) + 1;
+            }
+        }
+    }
+    
+    // Топ-100 холдеров
     const topHolders = Object.entries(stats.topHolders)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 100)
         .map(([address, count]) => ({ address, count }));
     
     // Сохраняем в contract_stats
-    const { error } = await supabase
+    const { error: insertError } = await supabase
         .from('contract_stats')
         .insert({
             recorded_at: new Date().toISOString(),
@@ -143,13 +179,13 @@ async function saveFullContractStats(allTokens) {
             shop_count: stats.shop
         });
     
-    if (error) {
-        console.error('❌ Ошибка сохранения статистики:', error);
+    if (insertError) {
+        console.error('❌ Ошибка сохранения статистики:', insertError);
     } else {
         console.log(`✅ Сохранено: ${stats.total} NFT, ${stats.holders.size} холдеров`);
     }
     
-    // Сохраняем ежедневную статистику
+    // Сохраняем ежедневную статистику с движениями
     const today = new Date().toISOString().split('T')[0];
     const { error: dailyError } = await supabase
         .from('daily_contract_stats')
@@ -158,18 +194,20 @@ async function saveFullContractStats(allTokens) {
             total_nft: stats.total,
             holders: stats.holders.size,
             burned: stats.burned,
-            in_shop: stats.shop
+            in_shop: stats.shop,
+            movements: stats.movements[today] || 0
         }, { onConflict: 'date' });
     
     if (dailyError) {
         console.error('❌ Ошибка сохранения ежедневной статистики:', dailyError);
     } else {
         console.log(`✅ Сохранена ежедневная статистика за ${today}`);
+        console.log(`🔄 Движений за сегодня: ${stats.movements[today] || 0}`);
     }
 }
 
 // ============================================================
-// 🆕 НОВАЯ ФУНКЦИЯ: ОТПРАВКА В TELEGRAM (ТЕБЕ В ЛИЧКУ)
+// 🆕 ОТПРАВКА В TELEGRAM (ТЕБЕ В ЛИЧКУ)
 // ============================================================
 async function sendTelegramMessage(text) {
     const token = '8708530374:AAHhcWFtjLqXK_Yxl0qlCtYrwi0ORLcDHNQ';
