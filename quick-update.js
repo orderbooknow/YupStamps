@@ -1,16 +1,13 @@
 const { createClient } = require('@supabase/supabase-js');
 
 const SUPABASE_URL = 'https://obbujhdmegdgxzdtpbai.supabase.co';
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || 'sb_publishable_R0pbZnbuSEbkaCLHcZ_YhQ_J2ZRgIB8';
-const API_KEY = process.env.SENDLER_API_KEY || 'pR7xQnL2mV9cYfK4uD8sTjH1wB5eZaCgX0oNiUyE6lA';
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+const SUPABASE_KEY = 'sb_publishable_R0pbZnbuSEbkaCLHcZ_YhQ_J2ZRgIB8';
+const API_KEY = 'pR7xQnL2mV9cYfK4uD8sTjH1wB5eZaCgX0oNiUyE6lA';
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 const API_URL = 'https://api.sendler.xyz/nft/list/?contract_address=yuplandshop.mintbase1.near&limit=10000';
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-
 const DYNAMIC_NAMES = [
     'Stamp (legendary - 1 Lv)',
     'Stamp (legendary - 2 Lv)',
@@ -22,9 +19,6 @@ const DYNAMIC_NAMES = [
     'Old stamp (legendary)'
 ];
 
-// ============================================================
-// 1. ЗАГРУЗКА ВСЕХ ТОКЕНОВ ИЗ API
-// ============================================================
 async function fetchAllTokens() {
     console.log('🔄 Загрузка данных из API...');
     let allTokens = [], cursor = null, page = 0;
@@ -42,11 +36,7 @@ async function fetchAllTokens() {
     return allTokens;
 }
 
-// ============================================================
-// 2. ОБНОВЛЕНИЕ ТАБЛИЦЫ stamps (ТОЛЬКО ВЛАДЕЛЬЦЫ)
-// ============================================================
 async function updateStampsIncremental(allTokens) {
-    console.log('📊 Обновление таблицы stamps...');
     let oldTokens = [];
     let from = 0;
     const limit = 1000;
@@ -86,11 +76,7 @@ async function updateStampsIncremental(allTokens) {
     console.log(`✅ Обновлено ${updated} записей, ошибок: ${errors}`);
 }
 
-// ============================================================
-// 3. ОБНОВЛЕНИЕ ТАБЛИЦЫ stamp_instances (ДИНАМИЧЕСКИЕ МАРКИ)
-// ============================================================
 async function updateDynamicStamps(allTokens) {
-    console.log('📊 Обновление таблицы stamp_instances...');
     const dynamicTokens = allTokens.filter(t => DYNAMIC_NAMES.includes(t.title));
     console.log(`📊 Динамических токенов: ${dynamicTokens.length}`);
     
@@ -113,7 +99,7 @@ async function updateDynamicStamps(allTokens) {
 }
 
 // ============================================================
-// 4. 🆕 СОХРАНЕНИЕ ПОЛНОЙ СТАТИСТИКИ КОНТРАКТА
+// 🆕 НОВАЯ ФУНКЦИЯ: СОХРАНЕНИЕ ПОЛНОЙ СТАТИСТИКИ КОНТРАКТА
 // ============================================================
 async function saveFullContractStats(allTokens) {
     console.log('📊 Сохраняем полную статистику контракта...');
@@ -124,8 +110,7 @@ async function saveFullContractStats(allTokens) {
         burned: 0,
         shop: 0,
         collections: {},
-        topHolders: {},
-        timestamp: new Date().toISOString()
+        topHolders: {}
     };
     
     for (const token of allTokens) {
@@ -160,7 +145,7 @@ async function saveFullContractStats(allTokens) {
     const { error: insertError } = await supabase
         .from('contract_stats')
         .insert({
-            recorded_at: stats.timestamp,
+            recorded_at: new Date().toISOString(),
             total_nft: stats.total,
             total_holders: stats.holders.size,
             collections: stats.collections,
@@ -171,10 +156,9 @@ async function saveFullContractStats(allTokens) {
     
     if (insertError) {
         console.error('❌ Ошибка сохранения статистики:', insertError);
-        return;
+    } else {
+        console.log(`✅ Сохранено: ${stats.total} NFT, ${stats.holders.size} холдеров`);
     }
-    
-    console.log(`✅ Сохранено: ${stats.total} NFT, ${stats.holders.size} холдеров`);
     
     // Сохраняем ежедневную статистику
     const today = new Date().toISOString().split('T')[0];
@@ -193,80 +177,18 @@ async function saveFullContractStats(allTokens) {
     } else {
         console.log(`✅ Сохранена ежедневная статистика за ${today}`);
     }
-    
-    // Отправляем в Telegram
-    await sendTelegramReport(stats);
 }
 
 // ============================================================
-// 5. 🆕 ОТПРАВКА В TELEGRAM
-// ============================================================
-async function sendTelegramReport(stats) {
-    if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
-        console.log('⚠️ Telegram не настроен, пропускаем');
-        return;
-    }
-    
-    const top5 = Object.entries(stats.topHolders)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5);
-    
-    const message = `📊 <b>СТАТИСТИКА КОНТРАКТА</b>\n\n` +
-        `📈 Всего NFT: <b>${stats.total.toLocaleString()}</b>\n` +
-        `👥 Холдеров: <b>${stats.holders.size.toLocaleString()}</b>\n` +
-        `🔥 Сожжено: <b>${stats.burned.toLocaleString()}</b>\n` +
-        `🏪 В лавке: <b>${stats.shop.toLocaleString()}</b>\n` +
-        `📁 Коллекций: <b>${Object.keys(stats.collections).length}</b>\n\n` +
-        `🏆 <b>Топ-5 холдеров:</b>\n` +
-        top5.map(([addr, count], i) => 
-            `  ${i+1}. <code>${addr.slice(0,12)}...</code> → ${count} NFT`
-        ).join('\n') +
-        `\n\n🔄 Обновлено: ${new Date(stats.timestamp).toLocaleString('ru-RU')}`;
-    
-    try {
-        const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-        await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                chat_id: TELEGRAM_CHAT_ID,
-                text: message,
-                parse_mode: 'HTML'
-            })
-        });
-        console.log('📨 Отправлено в Telegram');
-    } catch (e) {
-        console.error('❌ Ошибка отправки в Telegram:', e);
-    }
-}
-
-// ============================================================
-// 6. ГЛАВНАЯ ФУНКЦИЯ
+// ГЛАВНАЯ ФУНКЦИЯ
 // ============================================================
 async function main() {
-    console.log('🚀 ЗАПУСК ОБНОВЛЕНИЯ ДАННЫХ');
-    console.log('═'.repeat(50));
-    
-    try {
-        const allTokens = await fetchAllTokens();
-        console.log(`\n📊 Всего токенов в API: ${allTokens.length}`);
-        console.log('═'.repeat(50));
-        
-        // ОБНОВЛЯЕМ СУЩЕСТВУЮЩИЕ ТАБЛИЦЫ (НЕ ТРОГАЕМ!)
-        await updateStampsIncremental(allTokens);
-        await updateDynamicStamps(allTokens);
-        
-        // 🆕 СОХРАНЯЕМ ПОЛНУЮ СТАТИСТИКУ (НОВАЯ ТАБЛИЦА)
-        await saveFullContractStats(allTokens);
-        
-        console.log('═'.repeat(50));
-        console.log('🎉 ОБНОВЛЕНИЕ ЗАВЕРШЕНО!');
-        console.log(`📅 ${new Date().toLocaleString('ru-RU')}`);
-        
-    } catch (error) {
-        console.error('❌ КРИТИЧЕСКАЯ ОШИБКА:', error);
-        process.exit(1);
-    }
+    const allTokens = await fetchAllTokens();
+    console.log(`\n📊 Всего токенов в API: ${allTokens.length}`);
+    await updateStampsIncremental(allTokens);
+    await updateDynamicStamps(allTokens);
+    await saveFullContractStats(allTokens); // 👈 НОВАЯ СТРОКА
+    console.log('\n🎉 ОБНОВЛЕНИЕ ЗАВЕРШЕНО!');
 }
 
 main().catch(console.error);
