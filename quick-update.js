@@ -210,7 +210,24 @@ async function saveFullContractStats(allTokens) {
         console.log(`✅ Сохранена ежедневная статистика за ${today}`);
         console.log(`🔄 Движений за сегодня: ${stats.movements[today] || 0}`);
     }
+
+const { error: historyError } = await supabase
+    .from('contract_stats_history')
+    .insert({
+        recorded_at: new Date().toISOString(),
+        total_nft: stats.total,
+        holders: stats.holders.size,
+        burned: stats.burned,
+        in_shop: stats.shop,
+        movements: stats.movements[today] || 0
+    });
+
+if (historyError) {
+    console.error('❌ Ошибка сохранения истории:', historyError);
+} else {
+    console.log(`✅ Сохранена история за ${new Date().toISOString()}`);
 }
+
 
 // ============================================================
 // 🆕 ОТПРАВКА В TELEGRAM (ТЕБЕ В ЛИЧКУ)
@@ -237,6 +254,7 @@ async function sendTelegramMessage(text) {
     }
     console.log('📨 Отправлено в Telegram');
 }
+
 
 // ============================================================
 // ГЛАВНАЯ ФУНКЦИЯ
