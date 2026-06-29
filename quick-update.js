@@ -25,6 +25,10 @@ const DYNAMIC_NAMES = [
     'Old stamp (legendary)'
 ];
 
+function formatNumber(num) {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}
+
 async function fetchAllTokens() {
     console.log('🔄 Загрузка данных из API...');
     let allTokens = [], cursor = null, page = 0;
@@ -80,6 +84,7 @@ async function updateStampsIncremental(allTokens) {
         }
     }
     console.log(`✅ Обновлено ${updated} записей, ошибок: ${errors}`);
+    return updated;
 }
 
 async function updateDynamicStamps(allTokens) {
@@ -211,30 +216,77 @@ async function saveFullContractStats(allTokens) {
         console.log(`🔄 Движений за сегодня: ${stats.movements[today] || 0}`);
     }
 
-const { error: historyError } = await supabase
-    .from('contract_stats_history')
-    .insert({
-        recorded_at: new Date().toISOString(),
-        total_nft: stats.total,
-        holders: stats.holders.size,
-        burned: stats.burned,
-        in_shop: stats.shop,
-        movements: stats.movements[today] || 0
-    });
+    const { error: historyError } = await supabase
+        .from('contract_stats_history')
+        .insert({
+            recorded_at: new Date().toISOString(),
+            total_nft: stats.total,
+            holders: stats.holders.size,
+            burned: stats.burned,
+            in_shop: stats.shop,
+            movements: stats.movements[today] || 0
+        });
 
-if (historyError) {
-    console.error('❌ Ошибка сохранения истории:', historyError);
-} else {
-    console.log(`✅ Сохранена история за ${new Date().toISOString()}`);
+    if (historyError) {
+        console.error('❌ Ошибка сохранения истории:', historyError);
+    } else {
+        console.log(`✅ Сохранена история за ${new Date().toISOString()}`);
+    }
 }
 
-
 // ============================================================
-// 🆕 ОТПРАВКА В TELEGRAM (ТЕБЕ В ЛИЧКУ)
+// 🆕 ОТПРАВКА В TELEGRAM (ПОЛНОЕ СООБЩЕНИЕ)
 // ============================================================
-async function sendTelegramMessage(text) {
+async function sendTelegramReport(stats, allTokens, dynamicCount, updatedCount, startTime) {
     const token = '8708530374:AAHhcWFtjLqXK_Yxl0qlCtYrwi0ORLcDHNQ';
     const chatIds = ['454371494', '724771751']; // Ярослав и ты
+    
+    const dynamicNames = [
+        'Stamp (legendary - 1 Lv)',
+        'Stamp (legendary - 2 Lv)',
+        'Stamp (legendary - 3 Lv)',
+        'Stamp (legendary - 4 Lv)',
+        'Stamp (legendary - 5 Lv)',
+        'Stamp (legendary - 6 Lv)',
+        'Stamp (legendary - 7 Lv)',
+        'Old stamp (legendary)'
+    ];
+    
+    const dynamicTokens = allTokens.filter(t => dynamicNames.includes(t.title));
+    const dynamicHolders = new Set(dynamicTokens.map(t => t.owner_id).filter(Boolean));
+    
+    const otherTokens = allTokens.filter(t => !dynamicNames.includes(t.title));
+    const otherHolders = new Set(otherTokens.map(t => t.owner_id).filter(Boolean));
+    
+    const dynamicBurned = dynamicTokens.filter(t => t.owner_id === 'darai_duplo.near').length;
+    const dynamicShop = dynamicTokens.filter(t => t.owner_id === 'sendler-alchemy.near').length;
+    const otherBurned = otherTokens.filter(t => t.owner_id === 'darai_duplo.near').length;
+    const otherShop = otherTokens.filter(t => t.owner_id === 'sendler-alchemy.near').length;
+    
+    const endTime = Date.now();
+    const elapsed = ((endTime - startTime) / 1000).toFixed(1);
+    
+    const message = 
+        `🏆 <b>Yupland Stamps Update</b> 🏆\n\n` +
+        
+        `📮 <b>МАРКИ (Postage + Dynamic):</b>\n` +
+        `   📊 Всего: ${formatNumber(dynamicTokens.length)}\n` +
+        `   🔥 Сожжено: ${formatNumber(dynamicBurned)}\n` +
+        `   👥 Держателей: ${formatNumber(dynamicHolders.size)}\n` +
+        `   🏪 В Лавке: ${formatNumber(dynamicShop)}\n\n` +
+        
+        `📦 <b>ПРОЧИЕ NFT (не марки):</b>\n` +
+        `   📊 Всего: ${formatNumber(otherTokens.length)}\n` +
+        `   🔥 Сожжено: ${formatNumber(otherBurned)}\n` +
+        `   👥 Держателей: ${formatNumber(otherHolders.size)}\n` +
+        `   🏪 В Лавке: ${formatNumber(otherShop)}\n\n` +
+        
+        `📊 <b>ВСЕГО NFT на контракте:</b>\n` +
+        `   📊 Всего: ${formatNumber(allTokens.length)}\n\n` +
+        
+        `🔄 Обновлено владельцев: ${formatNumber(updatedCount)}\n` +
+        `✨ Динамических марок: ${formatNumber(dynamicCount)}\n\n` +
+        `⏱️ Время: ${elapsed} сек`;
     
     for (const chatId of chatIds) {
         try {
@@ -244,17 +296,16 @@ async function sendTelegramMessage(text) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     chat_id: chatId,
-                    text: text,
+                    text: message,
                     parse_mode: 'HTML'
                 })
             });
+            console.log(`📨 Отправлено в Telegram (${chatId})`);
         } catch (e) {
             console.error(`❌ Ошибка отправки для ${chatId}:`, e);
         }
     }
-    console.log('📨 Отправлено в Telegram');
 }
-
 
 // ============================================================
 // ГЛАВНАЯ ФУНКЦИЯ
@@ -263,25 +314,39 @@ async function main() {
     console.log('🚀 ЗАПУСК ОБНОВЛЕНИЯ ДАННЫХ');
     console.log('═'.repeat(50));
     
+    const startTime = Date.now();
+    
     try {
         const allTokens = await fetchAllTokens();
         console.log(`\n📊 Всего токенов в API: ${allTokens.length}`);
         console.log('═'.repeat(50));
         
-        await updateStampsIncremental(allTokens);
+        const updatedCount = await updateStampsIncremental(allTokens);
         await updateDynamicStamps(allTokens);
         await saveFullContractStats(allTokens);
+        
+        const dynamicNames = [
+            'Stamp (legendary - 1 Lv)',
+            'Stamp (legendary - 2 Lv)',
+            'Stamp (legendary - 3 Lv)',
+            'Stamp (legendary - 4 Lv)',
+            'Stamp (legendary - 5 Lv)',
+            'Stamp (legendary - 6 Lv)',
+            'Stamp (legendary - 7 Lv)',
+            'Old stamp (legendary)'
+        ];
+        const dynamicCount = allTokens.filter(t => dynamicNames.includes(t.title)).length;
         
         console.log('═'.repeat(50));
         console.log('🎉 ОБНОВЛЕНИЕ ЗАВЕРШЕНО!');
         console.log(`📅 ${new Date().toLocaleString('ru-RU')}`);
         
-        // Отправляем уведомление в Telegram
-        await sendTelegramMessage(
-            `✅ <b>Обновление данных завершено!</b>\n\n` +
-            `📊 Всего NFT: <b>${allTokens.length.toLocaleString()}</b>\n` +
-            `👥 Холдеров: <b>${new Set(allTokens.map(t => t.owner_id).filter(Boolean)).size.toLocaleString()}</b>\n` +
-            `📅 ${new Date().toLocaleString('ru-RU')}`
+        await sendTelegramReport(
+            null,
+            allTokens,
+            dynamicCount,
+            updatedCount,
+            startTime
         );
         
     } catch (error) {
