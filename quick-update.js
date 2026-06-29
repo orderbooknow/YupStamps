@@ -217,23 +217,25 @@ async function saveFullContractStats(allTokens) {
 // ============================================================
 async function sendTelegramMessage(text) {
     const token = '8708530374:AAHhcWFtjLqXK_Yxl0qlCtYrwi0ORLcDHNQ';
-    const chatId = '454371494'; // Твой ID
+    const chatIds = ['454371494', '724771751']; // Ярослав и ты
     
-    try {
-        const url = `https://api.telegram.org/bot${token}/sendMessage`;
-        await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                chat_id: chatId,
-                text: text,
-                parse_mode: 'HTML'
-            })
-        });
-        console.log('📨 Отправлено в Telegram (личка)');
-    } catch (e) {
-        console.error('❌ Ошибка отправки в Telegram:', e);
+    for (const chatId of chatIds) {
+        try {
+            const url = `https://api.telegram.org/bot${token}/sendMessage`;
+            await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: chatId,
+                    text: text,
+                    parse_mode: 'HTML'
+                })
+            });
+        } catch (e) {
+            console.error(`❌ Ошибка отправки для ${chatId}:`, e);
+        }
     }
+    console.log('📨 Отправлено в Telegram');
 }
 
 // ============================================================
