@@ -639,7 +639,6 @@
                 <button class="period-btn" data-period="all">Всё</button>
             </div>
 
-            <!-- ===== СРАВНЕНИЕ ПЕРИОДОВ ===== -->
             <div class="compare-section">
                 <span style="font-weight:600;font-size:13px;">📊 Сравнить:</span>
                 <select id="comparePeriod">
@@ -721,7 +720,6 @@
         <!-- ==================== ВКЛАДКА: ХОЛДЕРЫ ======================== -->
         <!-- ============================================================ -->
         <div class="tab-content" id="tab-holders">
-            <!-- Концентрация -->
             <div class="concentration-grid" id="concentrationGrid">
                 <div class="concentration-card">
                     <div class="concentration-value" id="concTop10">—</div>
@@ -740,7 +738,6 @@
                 </div>
             </div>
 
-            <!-- Фильтры -->
             <div class="period-section">
                 <span class="period-label">📅 Период:</span>
                 <button class="period-btn holders-period" data-period="day">День</button>
@@ -752,7 +749,6 @@
                 <button class="period-btn holders-period" data-period="all">Всё</button>
             </div>
 
-            <!-- Топ-100 холдеров -->
             <div class="table-container">
                 <h3>🏆 Топ-100 холдеров</h3>
                 <div class="table-scroll" id="holdersList">
@@ -760,7 +756,6 @@
                 </div>
             </div>
 
-            <!-- Новые холдеры и активность -->
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
                 <div class="table-container">
                     <h3>👤 Новые холдеры (за неделю)</h3>
@@ -818,6 +813,7 @@
                 </div>
             </div>
 
+            <!-- Таблица: Кто сжигал NFT -->
             <div class="table-container">
                 <h3>📋 Кто сжигал NFT</h3>
                 <div class="table-scroll">
@@ -835,6 +831,14 @@
                             <tr><td colspan="5" style="text-align:center;color:#94a3b8;">Загрузка...</td></tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- 🆕 Топ-сжигателей за день -->
+            <div class="table-container">
+                <h3>🏆 Топ-сжигателей за день</h3>
+                <div class="table-scroll" id="burnersList">
+                    <div style="text-align:center;padding:20px;color:#94a3b8;">Загрузка...</div>
                 </div>
             </div>
         </div>
@@ -1060,7 +1064,6 @@
                     document.getElementById('updateTime').textContent = 
                         `🔄 ${new Date(latest.recorded_at).toLocaleString('ru-RU')}`;
                     
-                    // Метрики
                     const avg = latest.total_holders > 0 ? Math.round(latest.total_nft / latest.total_holders) : 0;
                     document.getElementById('metricTotal').textContent = formatNumber(latest.total_nft);
                     document.getElementById('metricBurned').textContent = formatNumber(latest.burned_count);
@@ -1068,7 +1071,6 @@
                     document.getElementById('metricHolders').textContent = formatNumber(latest.total_holders);
                     document.getElementById('metricAvgNFT').textContent = formatNumber(avg);
                     
-                    // Топ-холдеры
                     if (latest.top_holders) {
                         topHolders = latest.top_holders;
                         renderHolders(topHolders);
@@ -1093,6 +1095,9 @@
                 updateComparison('week');
                 findNewHolders();
                 findActiveHolders();
+                
+                // 🆕 Загружаем топ-сжигателей
+                loadBurners();
                 
             } catch (error) {
                 console.error('❌ Ошибка загрузки:', error);
@@ -1173,7 +1178,6 @@
         async function findNewHolders() {
             const container = document.getElementById('newHoldersList');
             try {
-                // Загружаем последние 2 снимка
                 const { data: snapshots } = await supabaseClient
                     .from('contract_snapshots')
                     .select('*')
@@ -1233,7 +1237,6 @@
         async function findActiveHolders() {
             const container = document.getElementById('activeHoldersList');
             try {
-                // Загружаем последние 2 снимка
                 const { data: snapshots } = await supabaseClient
                     .from('contract_snapshots')
                     .select('*')
@@ -1358,6 +1361,48 @@
                 <span>👥 Холдеры: <span class="${holdersClass}">${diffHolders}</span></span>
                 <span>🔄 Движения: <span class="${movementsClass}">${diffMovements}</span></span>
             `;
+        }
+        
+        // ================================================================
+        // ==================== ТОП-СЖИГАТЕЛЕЙ ==========================
+        // ================================================================
+        
+        async function loadBurners() {
+            const container = document.getElementById('burnersList');
+            try {
+                const { data, error } = await supabaseClient
+                    .from('burners_history')
+                    .select('*')
+                    .order('date', { ascending: false })
+                    .limit(50);
+                
+                if (error) throw error;
+                
+                if (!data || data.length === 0) {
+                    container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">Нет данных о сжиганиях</div>`;
+                    return;
+                }
+                
+                let html = `<table class="stats-table"><thead><tr>
+                    <th>📅 Дата</th>
+                    <th>👤 Кошелек</th>
+                    <th>🔥 Сожжено</th>
+                </tr></thead><tbody>`;
+                
+                data.forEach(row => {
+                    html += `<tr>
+                        <td>${formatDate(row.date)}</td>
+                        <td>${row.address}</td>
+                        <td><strong>${formatNumber(row.count)}</strong></td>
+                    </tr>`;
+                });
+                
+                html += `</tbody></table>`;
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('Ошибка загрузки сжигателей:', error);
+                container.innerHTML = `<div style="text-align:center;padding:20px;color:#ef4444;">Ошибка загрузки</div>`;
+            }
         }
         
         // ================================================================
@@ -1631,6 +1676,9 @@
                         findNewHolders();
                         findActiveHolders();
                     }
+                    if (currentTab === 'duplo') {
+                        loadBurners();
+                    }
                 });
             });
         }
@@ -1654,7 +1702,6 @@
                 btn.addEventListener('click', function() {
                     document.querySelectorAll('.holders-period').forEach(b => b.classList.remove('active'));
                     this.classList.add('active');
-                    // Перезагружаем данные для холдеров
                     findNewHolders();
                     findActiveHolders();
                 });
@@ -1690,6 +1737,7 @@
                     document.querySelectorAll('.duplo-period').forEach(b => b.classList.remove('active'));
                     this.classList.add('active');
                     buildBurnTable(this.dataset.period);
+                    loadBurners();
                 });
             });
         }
