@@ -32,27 +32,7 @@ function formatNumber(num) {
 }
 
 // ============================================================
-// 2. ЗАГРУЗКА НАЗВАНИЙ ВСЕХ МАРОК ИЗ SUPABASE
-// ============================================================
-let STAMP_NAMES = [];
-
-async function loadStampNames() {
-    console.log('📋 Загружаем список марок из Supabase...');
-    const { data, error } = await supabase
-        .from('stamps')
-        .select('base_name');
-    
-    if (error) {
-        console.error('❌ Ошибка загрузки марок:', error);
-        return;
-    }
-    
-    STAMP_NAMES = data.map(s => s.base_name).filter(Boolean);
-    console.log(`✅ Загружено ${STAMP_NAMES.length} названий марок`);
-}
-
-// ============================================================
-// 3. ЗАГРУЗКА ВСЕХ ТОКЕНОВ ИЗ API
+// 2. ЗАГРУЗКА ВСЕХ ТОКЕНОВ ИЗ API
 // ============================================================
 async function fetchAllTokens() {
     console.log('🔄 Загрузка данных из API...');
@@ -72,7 +52,7 @@ async function fetchAllTokens() {
 }
 
 // ============================================================
-// 4. ОБНОВЛЕНИЕ ТАБЛИЦЫ stamps (ТОЛЬКО ВЛАДЕЛЬЦЫ)
+// 3. ОБНОВЛЕНИЕ ТАБЛИЦЫ stamps (ТОЛЬКО ВЛАДЕЛЬЦЫ)
 // ============================================================
 async function updateStampsIncremental(allTokens) {
     let oldTokens = [];
@@ -116,7 +96,7 @@ async function updateStampsIncremental(allTokens) {
 }
 
 // ============================================================
-// 5. ОБНОВЛЕНИЕ ТАБЛИЦЫ stamp_instances (ДИНАМИЧЕСКИЕ МАРКИ)
+// 4. ОБНОВЛЕНИЕ ТАБЛИЦЫ stamp_instances (ДИНАМИЧЕСКИЕ МАРКИ)
 // ============================================================
 async function updateDynamicStamps(allTokens) {
     const dynamicTokens = allTokens.filter(t => DYNAMIC_NAMES.includes(t.title));
@@ -141,7 +121,7 @@ async function updateDynamicStamps(allTokens) {
 }
 
 // ============================================================
-// 6. СОХРАНЕНИЕ СНИМКА КОНТРАКТА (для движений)
+// 5. СОХРАНЕНИЕ СНИМКА КОНТРАКТА (для движений)
 // ============================================================
 async function saveSnapshot(allTokens) {
     console.log('📸 Сохраняем снимок контракта...');
@@ -172,7 +152,7 @@ async function saveSnapshot(allTokens) {
 }
 
 // ============================================================
-// 7. СОХРАНЕНИЕ ПОЛНОЙ СТАТИСТИКИ
+// 6. СОХРАНЕНИЕ ПОЛНОЙ СТАТИСТИКИ
 // ============================================================
 async function saveFullContractStats(allTokens) {
     console.log('📊 Сохраняем полную статистику контракта...');
@@ -279,25 +259,24 @@ async function saveFullContractStats(allTokens) {
 }
 
 // ============================================================
-// 8. ОТПРАВКА В TELEGRAM (ПОЛНОЕ СООБЩЕНИЕ)
+// 7. ОТПРАВКА В TELEGRAM (ПОЛНОЕ СООБЩЕНИЕ)
 // ============================================================
 async function sendTelegramReport(allTokens, updatedCount, startTime) {
     const token = '8708530374:AAHhcWFtjLqXK_Yxl0qlCtYrwi0ORLcDHNQ';
     const chatIds = ['454371494', '724771751'];
     
-    // Ждём, пока загрузятся названия марок
-    if (STAMP_NAMES.length === 0) {
-        await loadStampNames();
-    }
-    
-    // Марки (Postage + Dynamic) — используем список из Supabase
-    const stampTokens = allTokens.filter(t => STAMP_NAMES.includes(t.title));
+    // ✅ Марки: всё, что содержит "Postage Stamp" или входит в DYNAMIC_NAMES
+    const stampTokens = allTokens.filter(t => 
+        t.title?.includes('Postage Stamp') || DYNAMIC_NAMES.includes(t.title)
+    );
     const stampHolders = new Set(stampTokens.map(t => t.owner_id).filter(Boolean));
     const stampBurned = stampTokens.filter(t => t.owner_id === 'darai_duplo.near').length;
     const stampShop = stampTokens.filter(t => t.owner_id === 'sendler-alchemy.near').length;
     
     // Прочие NFT
-    const otherTokens = allTokens.filter(t => !STAMP_NAMES.includes(t.title));
+    const otherTokens = allTokens.filter(t => 
+        !t.title?.includes('Postage Stamp') && !DYNAMIC_NAMES.includes(t.title)
+    );
     const otherHolders = new Set(otherTokens.map(t => t.owner_id).filter(Boolean));
     const otherBurned = otherTokens.filter(t => t.owner_id === 'darai_duplo.near').length;
     const otherShop = otherTokens.filter(t => t.owner_id === 'sendler-alchemy.near').length;
@@ -350,7 +329,7 @@ async function sendTelegramReport(allTokens, updatedCount, startTime) {
 }
 
 // ============================================================
-// 9. ГЛАВНАЯ ФУНКЦИЯ
+// 8. ГЛАВНАЯ ФУНКЦИЯ
 // ============================================================
 async function main() {
     console.log('🚀 ЗАПУСК ОБНОВЛЕНИЯ ДАННЫХ');
@@ -359,9 +338,6 @@ async function main() {
     const startTime = Date.now();
     
     try {
-        // Загружаем названия марок из Supabase
-        await loadStampNames();
-        
         const allTokens = await fetchAllTokens();
         console.log(`\n📊 Всего токенов в API: ${allTokens.length}`);
         console.log('═'.repeat(50));
