@@ -28,6 +28,9 @@ function formatNumber(num) {
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 
+// ============================================================
+// 2. ЗАГРУЗКА ВСЕХ ТОКЕНОВ ИЗ API
+// ============================================================
 async function fetchAllTokens() {
     console.log('🔄 Загрузка данных из API...');
     let allTokens = [], cursor = null, page = 0;
@@ -45,6 +48,9 @@ async function fetchAllTokens() {
     return allTokens;
 }
 
+// ============================================================
+// 3. ОБНОВЛЕНИЕ ТАБЛИЦЫ stamps (ТОЛЬКО ВЛАДЕЛЬЦЫ)
+// ============================================================
 async function updateStampsIncremental(allTokens) {
     let oldTokens = [];
     let from = 0;
@@ -86,6 +92,9 @@ async function updateStampsIncremental(allTokens) {
     return updated;
 }
 
+// ============================================================
+// 4. ОБНОВЛЕНИЕ ТАБЛИЦЫ stamp_instances (ДИНАМИЧЕСКИЕ МАРКИ)
+// ============================================================
 async function updateDynamicStamps(allTokens) {
     const dynamicTokens = allTokens.filter(t => DYNAMIC_NAMES.includes(t.title));
     console.log(`📊 Динамических токенов: ${dynamicTokens.length}`);
@@ -108,6 +117,9 @@ async function updateDynamicStamps(allTokens) {
     console.log(`✅ Добавлено ${added} динамических экземпляров`);
 }
 
+// ============================================================
+// 5. СОХРАНЕНИЕ СНИМКА КОНТРАКТА (для движений)
+// ============================================================
 async function saveSnapshot(allTokens) {
     console.log('📸 Сохраняем снимок контракта...');
     
@@ -136,6 +148,9 @@ async function saveSnapshot(allTokens) {
     console.log(`✅ Снимок сохранён (${snapshots.length} записей)`);
 }
 
+// ============================================================
+// 6. СОХРАНЕНИЕ ПОЛНОЙ СТАТИСТИКИ (С ДВИЖЕНИЯМИ И ХОЛДЕРАМИ)
+// ============================================================
 async function saveFullContractStats(allTokens) {
     console.log('📊 Сохраняем полную статистику контракта...');
     
@@ -173,6 +188,7 @@ async function saveFullContractStats(allTokens) {
         .order('snapshot_date', { ascending: false })
         .limit(2);
     
+    let movementsToday = 0;
     if (snapError) {
         console.error('❌ Ошибка загрузки снимков:', snapError);
     } else if (snapshots.length >= 2) {
@@ -189,18 +205,17 @@ async function saveFullContractStats(allTokens) {
             currOwners[item.token_id] = item.owner_id;
         }
         
-        let movements = 0;
         const today = new Date().toISOString().split('T')[0];
         
         for (const [tokenId, owner] of Object.entries(currOwners)) {
             const prevOwner = prevOwners[tokenId];
             if (prevOwner && prevOwner !== owner) {
-                movements++;
+                movementsToday++;
             }
         }
         
-        stats.movements[today] = movements;
-        console.log(`🔄 Движений за сегодня: ${movements}`);
+        stats.movements[today] = movementsToday;
+        console.log(`🔄 Движений за сегодня: ${movementsToday}`);
     } else {
         console.log('⚠️ Недостаточно снимков для подсчёта движений (нужно минимум 2)');
     }
@@ -209,6 +224,98 @@ async function saveFullContractStats(allTokens) {
         .sort((a, b) => b[1] - a[1])
         .slice(0, 100)
         .map(([address, count]) => ({ address, count }));
+    
+    // ============================================================
+    // 🆕 СОХРАНЯЕМ ИСТОРИЮ ХОЛДЕРОВ
+    // ============================================================
+    console.log('📋 Сохраняем историю холдеров...');
+    
+    // Загружаем предыдущий топ-100 для сравнения
+    const { data: prevTopData } = await supabase
+        .from('holders_history')
+        .select('address, count')
+        .order('recorded_at', { ascending: false })
+        .limit(100);
+    
+    const prevMap = {};
+    if (prevTopData) {
+        for (const item of prevTopData) {
+            prevMap[item.address] = item.count;
+        }
+    }
+    
+    // Сохраняем текущий топ-100
+    const holderHistory = topHolders.map((h, i) => ({
+        recorded_at: new Date().toISOString(),
+        rank: i + 1,
+        address: h.address,
+        count: h.count,
+        previous_count: prevMap[h.address] || 0
+    }));
+    
+    if (holderHistory.length > 0) {
+        const batchSize = 100;
+        let saved = 0;
+        for (let i = 0; i < holderHistory.length; i += batchSize) {
+            const batch = holderHistory.slice(i, i + batchSize);
+            const { error } = await supabase
+                .from('holders_history')
+                .insert(batch);
+            if (error) {
+                console.error('❌ Ошибка сохранения истории холдеров:', error);
+            } else {
+                saved += batch.length;
+            }
+        }
+        console.log(`✅ Сохранено ${saved} записей истории холдеров`);
+    }
+    
+    // ============================================================
+    // 🆕 СОХРАНЯЕМ АКТИВНОСТЬ ХОЛДЕРОВ (движения по кошелькам)
+    // ============================================================
+    if (snapshots && snapshots.length >= 2 && movementsToday > 0) {
+        console.log('🔥 Сохраняем активность холдеров...');
+        
+        const prev = snapshots[1];
+        const curr = snapshots[0];
+        
+        const prevMapActivity = {};
+        const currMapActivity = {};
+        for (const s of prev) prevMapActivity[s.token_id] = s.owner_id;
+        for (const s of curr) currMapActivity[s.token_id] = s.owner_id;
+        
+        const activity = {};
+        for (const [tokenId, owner] of Object.entries(currMapActivity)) {
+            const prevOwner = prevMapActivity[tokenId];
+            if (prevOwner && prevOwner !== owner) {
+                activity[owner] = (activity[owner] || 0) + 1;
+            }
+        }
+        
+        const activityData = Object.entries(activity)
+            .map(([address, movements]) => ({
+                recorded_at: new Date().toISOString(),
+                address,
+                movements
+            }))
+            .sort((a, b) => b.movements - a.movements)
+            .slice(0, 50);
+        
+        if (activityData.length > 0) {
+            const { error } = await supabase
+                .from('holders_activity')
+                .insert(activityData);
+            if (error) {
+                console.error('❌ Ошибка сохранения активности холдеров:', error);
+            } else {
+                console.log(`✅ Сохранена активность ${activityData.length} холдеров`);
+            }
+        }
+    }
+    
+    // ============================================================
+    // СОХРАНЯЕМ СТАТИСТИКУ
+    // ============================================================
     
     const { error: insertError } = await supabase
         .from('contract_stats')
@@ -265,6 +372,9 @@ async function saveFullContractStats(allTokens) {
     }
 }
 
+// ============================================================
+// 7. ОТПРАВКА В TELEGRAM (ПОЛНОЕ СООБЩЕНИЕ)
+// ============================================================
 async function sendTelegramReport(allTokens, updatedCount, startTime) {
     const token = '8708530374:AAHhcWFtjLqXK_Yxl0qlCtYrwi0ORLcDHNQ';
     const chatIds = ['454371494', '724771751'];
@@ -329,6 +439,9 @@ async function sendTelegramReport(allTokens, updatedCount, startTime) {
     }
 }
 
+// ============================================================
+// 8. ГЛАВНАЯ ФУНКЦИЯ
+// ============================================================
 async function main() {
     console.log('🚀 ЗАПУСК ОБНОВЛЕНИЯ ДАННЫХ');
     console.log('═'.repeat(50));
