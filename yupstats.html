@@ -1180,54 +1180,40 @@
         // ================================================================
         
         function renderHolders(holders) {
-            const container = document.getElementById('holdersList');
-            if (!holders || holders.length === 0) {
-                container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">Нет данных</div>`;
-                return;
-            }
-            
-            const display = holders.slice(0, 100);
-            const prevMap = {};
-            prevTopHolders.forEach(h => { prevMap[h.address] = h.count; });
-            
-            let html = `<table class="stats-table"><thead><tr>
-                <th>#</th>
-                <th>👤 Кошелек</th>
-                <th>🎫 NFT</th>
-                <th>📊 Изменение</th>
-            </tr></thead><tbody>`;   for (const s of prev) prevMap[s.token_id] = s.owner_id;
-        for (const s of curr) currMap[s.token_id] = s.owner_id;
+    const container = document.getElementById('holdersList');
+    if (!holders || holders.length === 0) {
+        container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">Нет данных</div>`;
+        return;
+    }
+    
+    const display = holders.slice(0, 100);
+    const prevMap = {};
+    prevTopHolders.forEach(h => { prevMap[h.address] = h.count; });
+    
+    let html = `<table class="stats-table"><thead><tr>
+        <th>#</th>
+        <th>👤 Кошелек</th>
+        <th>🎫 NFT</th>
+        <th>📊 Изменение</th>
+    </tr></thead><tbody>`;
+    
+    display.forEach((h, i) => {
+        const prevCount = prevMap[h.address] || 0;
+        const change = getChangeText(h.count, prevCount);
+        const changeClass = getChangeClass(h.count, prevCount);
+        const icon = getChangeIcon(h.count, prevCount);
         
-        const movements = {};
-        for (const [tokenId, owner] of Object.entries(currMap)) {
-            const prevOwner = prevMap[tokenId];
-            if (prevOwner && prevOwner !== owner && !isExcluded(owner)) {
-                movements[owner] = (movements[owner] || 0) + 1;
-            }
-        }
-        
-        const active = Object.entries(movements)
-            .map(([address, count]) => ({ address, count }))
-            .sort((a, b) => b.count - a.count)
-            .slice(0, 20);
-            
-            display.forEach((h, i) => {
-                const prevCount = prevMap[h.address] || 0;
-                const change = getChangeText(h.count, prevCount);
-                const changeClass = getChangeClass(h.count, prevCount);
-                const icon = getChangeIcon(h.count, prevCount);
-                
-                html += `<tr>
-                    <td>${i + 1}</td>
-                    <td>${h.address}</td>
-                    <td><strong>${formatNumber(h.count)}</strong></td>
-                    <td class="change-${changeClass}">${icon} ${change}</td>
-                </tr>`;
-            });
-            
-            html += `</tbody></table>`;
-            container.innerHTML = html;
-        }
+        html += `<tr>
+            <td>${i + 1}</td>
+            <td>${h.address}</td>
+            <td><strong>${formatNumber(h.count)}</strong></td>
+            <td class="change-${changeClass}">${icon} ${change}</td>
+        </tr>`;
+    });
+    
+    html += `</tbody></table>`;
+    container.innerHTML = html;
+}
         
         // ================================================================
         // ==================== НОВЫЕ ХОЛДЕРЫ ============================
