@@ -329,6 +329,42 @@ async function saveFullContractStats(allTokens) {
     }
     
     // ============================================================
+    // 🆕 СОХРАНЯЕМ ТОП-СЖИГАТЕЛЕЙ ЗА ДЕНЬ (ВСЕ NFT)
+    // ============================================================
+    console.log('🔥 Сохраняем топ-сжигателей...');
+    
+    const burners = {};
+    for (const token of allTokens) {
+        if (token.owner_id === 'darai_duplo.near') {
+            const prevOwner = token.previous_owner_id || 'unknown';
+            burners[prevOwner] = (burners[prevOwner] || 0) + 1;
+        }
+    }
+    
+    const today = new Date().toISOString().split('T')[0];
+    const topBurners = Object.entries(burners)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 50)
+        .map(([address, count]) => ({ 
+            date: today,
+            address, 
+            count 
+        }));
+    
+    if (topBurners.length > 0) {
+        const { error: burnersError } = await supabase
+            .from('burners_history')
+            .insert(topBurners);
+        if (burnersError) {
+            console.error('❌ Ошибка сохранения топ-сжигателей:', burnersError);
+        } else {
+            console.log(`✅ Сохранено ${topBurners.length} записей топ-сжигателей`);
+        }
+    } else {
+        console.log('⚠️ Сжиганий за сегодня нет');
+    }
+    
+    // ============================================================
     // СОХРАНЯЕМ СТАТИСТИКУ
     // ============================================================
     
@@ -350,7 +386,6 @@ async function saveFullContractStats(allTokens) {
         console.log(`✅ Сохранено: ${stats.total} NFT, ${stats.holders.size} холдеров`);
     }
     
-    const today = new Date().toISOString().split('T')[0];
     const { error: dailyError } = await supabase
         .from('daily_contract_stats')
         .upsert({
