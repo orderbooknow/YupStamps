@@ -13,9 +13,6 @@ const API_URL = 'https://api.sendler.xyz/nft/list/?contract_address=yuplandshop.
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
-// ============================================================
-// 1. ДИНАМИЧЕСКИЕ МАРКИ (для таблицы stamp_instances)
-// ============================================================
 const DYNAMIC_NAMES = [
     'Stamp (legendary - 1 Lv)',
     'Stamp (legendary - 2 Lv)',
@@ -31,9 +28,6 @@ function formatNumber(num) {
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 
-// ============================================================
-// 2. ЗАГРУЗКА ВСЕХ ТОКЕНОВ ИЗ API
-// ============================================================
 async function fetchAllTokens() {
     console.log('🔄 Загрузка данных из API...');
     let allTokens = [], cursor = null, page = 0;
@@ -51,9 +45,6 @@ async function fetchAllTokens() {
     return allTokens;
 }
 
-// ============================================================
-// 3. ОБНОВЛЕНИЕ ТАБЛИЦЫ stamps (ТОЛЬКО ВЛАДЕЛЬЦЫ)
-// ============================================================
 async function updateStampsIncremental(allTokens) {
     let oldTokens = [];
     let from = 0;
@@ -95,9 +86,6 @@ async function updateStampsIncremental(allTokens) {
     return updated;
 }
 
-// ============================================================
-// 4. ОБНОВЛЕНИЕ ТАБЛИЦЫ stamp_instances (ДИНАМИЧЕСКИЕ МАРКИ)
-// ============================================================
 async function updateDynamicStamps(allTokens) {
     const dynamicTokens = allTokens.filter(t => DYNAMIC_NAMES.includes(t.title));
     console.log(`📊 Динамических токенов: ${dynamicTokens.length}`);
@@ -120,9 +108,6 @@ async function updateDynamicStamps(allTokens) {
     console.log(`✅ Добавлено ${added} динамических экземпляров`);
 }
 
-// ============================================================
-// 5. СОХРАНЕНИЕ СНИМКА КОНТРАКТА (для движений)
-// ============================================================
 async function saveSnapshot(allTokens) {
     console.log('📸 Сохраняем снимок контракта...');
     
@@ -151,9 +136,6 @@ async function saveSnapshot(allTokens) {
     console.log(`✅ Снимок сохранён (${snapshots.length} записей)`);
 }
 
-// ============================================================
-// 6. СОХРАНЕНИЕ ПОЛНОЙ СТАТИСТИКИ
-// ============================================================
 async function saveFullContractStats(allTokens) {
     console.log('📊 Сохраняем полную статистику контракта...');
     
@@ -167,8 +149,7 @@ async function saveFullContractStats(allTokens) {
         movements: {}
     };
     
-    const ownerHistory = {};
-    
+    // Собираем базовую статистику
     for (const token of allTokens) {
         if (token.owner_id) {
             stats.holders.add(token.owner_id);
@@ -179,23 +160,49 @@ async function saveFullContractStats(allTokens) {
         
         const collection = token.collection || token.collection_name || 'unknown';
         stats.collections[collection] = (stats.collections[collection] || 0) + 1;
-        
-        const tokenId = token.token_id;
-        if (!ownerHistory[tokenId]) ownerHistory[tokenId] = [];
-        ownerHistory[tokenId].push({
-            date: token.last_updated || token.created_at || new Date().toISOString(),
-            owner: token.owner_id
-        });
     }
     
-    for (const [tokenId, history] of Object.entries(ownerHistory)) {
-        history.sort((a, b) => new Date(a.date) - new Date(b.date));
-        for (let i = 1; i < history.length; i++) {
-            if (history[i].owner !== history[i-1].owner) {
-                const date = new Date(history[i].date).toISOString().split('T')[0];
-                stats.movements[date] = (stats.movements[date] || 0) + 1;
+    // ============================================================
+    // 🆕 СЧИТАЕМ ДВИЖЕНИЯ ИЗ СНИМКОВ
+    // ============================================================
+    console.log('🔄 Считаем движения из снимков...');
+    
+    const { data: snapshots, error: snapError } = await supabase
+        .from('contract_snapshots')
+        .select('*')
+        .order('snapshot_date', { ascending: false })
+        .limit(2);
+    
+    if (snapError) {
+        console.error('❌ Ошибка загрузки снимков:', snapError);
+    } else if (snapshots.length >= 2) {
+        const prev = snapshots[1];
+        const curr = snapshots[0];
+        
+        const prevOwners = {};
+        const currOwners = {};
+        
+        for (const item of prev) {
+            prevOwners[item.token_id] = item.owner_id;
+        }
+        for (const item of curr) {
+            currOwners[item.token_id] = item.owner_id;
+        }
+        
+        let movements = 0;
+        const today = new Date().toISOString().split('T')[0];
+        
+        for (const [tokenId, owner] of Object.entries(currOwners)) {
+            const prevOwner = prevOwners[tokenId];
+            if (prevOwner && prevOwner !== owner) {
+                movements++;
             }
         }
+        
+        stats.movements[today] = movements;
+        console.log(`🔄 Движений за сегодня: ${movements}`);
+    } else {
+        console.log('⚠️ Недостаточно снимков для подсчёта движений (нужно минимум 2)');
     }
     
     const topHolders = Object.entries(stats.topHolders)
@@ -258,14 +265,10 @@ async function saveFullContractStats(allTokens) {
     }
 }
 
-// ============================================================
-// 7. ОТПРАВКА В TELEGRAM (ПОЛНОЕ СООБЩЕНИЕ)
-// ============================================================
 async function sendTelegramReport(allTokens, updatedCount, startTime) {
     const token = '8708530374:AAHhcWFtjLqXK_Yxl0qlCtYrwi0ORLcDHNQ';
     const chatIds = ['454371494', '724771751'];
     
-    // ✅ Марки: всё, что содержит "Postage Stamp" или входит в DYNAMIC_NAMES
     const stampTokens = allTokens.filter(t => 
         t.title?.includes('Postage Stamp') || DYNAMIC_NAMES.includes(t.title)
     );
@@ -273,7 +276,6 @@ async function sendTelegramReport(allTokens, updatedCount, startTime) {
     const stampBurned = stampTokens.filter(t => t.owner_id === 'darai_duplo.near').length;
     const stampShop = stampTokens.filter(t => t.owner_id === 'sendler-alchemy.near').length;
     
-    // Прочие NFT
     const otherTokens = allTokens.filter(t => 
         !t.title?.includes('Postage Stamp') && !DYNAMIC_NAMES.includes(t.title)
     );
@@ -281,7 +283,6 @@ async function sendTelegramReport(allTokens, updatedCount, startTime) {
     const otherBurned = otherTokens.filter(t => t.owner_id === 'darai_duplo.near').length;
     const otherShop = otherTokens.filter(t => t.owner_id === 'sendler-alchemy.near').length;
     
-    // Динамические марки (для строки ✨)
     const dynamicCount = allTokens.filter(t => DYNAMIC_NAMES.includes(t.title)).length;
     
     const endTime = Date.now();
@@ -328,9 +329,6 @@ async function sendTelegramReport(allTokens, updatedCount, startTime) {
     }
 }
 
-// ============================================================
-// 8. ГЛАВНАЯ ФУНКЦИЯ
-// ============================================================
 async function main() {
     console.log('🚀 ЗАПУСК ОБНОВЛЕНИЯ ДАННЫХ');
     console.log('═'.repeat(50));
@@ -344,11 +342,7 @@ async function main() {
         
         const updatedCount = await updateStampsIncremental(allTokens);
         await updateDynamicStamps(allTokens);
-        
-        // Сохраняем снимок контракта (для движений)
         await saveSnapshot(allTokens);
-        
-        // Сохраняем статистику
         await saveFullContractStats(allTokens);
         
         console.log('═'.repeat(50));
