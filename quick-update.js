@@ -178,46 +178,59 @@ async function saveFullContractStats(allTokens) {
     }
     
     // ============================================================
-    // 🆕 СЧИТАЕМ ДВИЖЕНИЯ ИЗ СНИМКОВ
+    // 🆕 СЧИТАЕМ ДВИЖЕНИЯ ИЗ СНИМКОВ (ИСПРАВЛЕНО)
     // ============================================================
     console.log('🔄 Считаем движения из снимков...');
     
-    const { data: snapshots, error: snapError } = await supabase
+    // Загружаем все снимки за последние 2 даты
+    const { data: allSnapshots, error: snapError } = await supabase
         .from('contract_snapshots')
         .select('*')
-        .order('snapshot_date', { ascending: false })
-        .limit(2);
+        .order('snapshot_date', { ascending: false });
     
-    let movementsToday = 0;
     if (snapError) {
         console.error('❌ Ошибка загрузки снимков:', snapError);
-    } else if (snapshots.length >= 2) {
-        const prev = snapshots[1];
-        const curr = snapshots[0];
-        
-        const prevOwners = {};
-        const currOwners = {};
-        
-        for (const item of prev) {
-            prevOwners[item.token_id] = item.owner_id;
-        }
-        for (const item of curr) {
-            currOwners[item.token_id] = item.owner_id;
+    } else if (allSnapshots && allSnapshots.length > 0) {
+        // Группируем по датам
+        const dateMap = {};
+        for (const s of allSnapshots) {
+            const date = s.snapshot_date;
+            if (!dateMap[date]) dateMap[date] = [];
+            dateMap[date].push(s);
         }
         
-        const today = new Date().toISOString().split('T')[0];
-        
-        for (const [tokenId, owner] of Object.entries(currOwners)) {
-            const prevOwner = prevOwners[tokenId];
-            if (prevOwner && prevOwner !== owner) {
-                movementsToday++;
+        const dates = Object.keys(dateMap).sort().reverse();
+        if (dates.length >= 2) {
+            const prev = dateMap[dates[1]]; // вчера
+            const curr = dateMap[dates[0]]; // сегодня
+            
+            const prevOwners = {};
+            const currOwners = {};
+            
+            for (const item of prev) {
+                prevOwners[item.token_id] = item.owner_id;
             }
+            for (const item of curr) {
+                currOwners[item.token_id] = item.owner_id;
+            }
+            
+            let movements = 0;
+            const today = new Date().toISOString().split('T')[0];
+            
+            for (const [tokenId, owner] of Object.entries(currOwners)) {
+                const prevOwner = prevOwners[tokenId];
+                if (prevOwner && prevOwner !== owner) {
+                    movements++;
+                }
+            }
+            
+            stats.movements[today] = movements;
+            console.log(`🔄 Движений за сегодня: ${movements}`);
+        } else {
+            console.log('⚠️ Недостаточно снимков для подсчёта движений (нужно минимум 2 даты)');
         }
-        
-        stats.movements[today] = movementsToday;
-        console.log(`🔄 Движений за сегодня: ${movementsToday}`);
     } else {
-        console.log('⚠️ Недостаточно снимков для подсчёта движений (нужно минимум 2)');
+        console.log('⚠️ Снимков нет');
     }
     
     const topHolders = Object.entries(stats.topHolders)
@@ -225,12 +238,9 @@ async function saveFullContractStats(allTokens) {
         .slice(0, 100)
         .map(([address, count]) => ({ address, count }));
     
-    // ============================================================
-    // 🆕 СОХРАНЯЕМ ИСТОРИЮ ХОЛДЕРОВ
-    // ============================================================
+    // Сохраняем историю холдеров
     console.log('📋 Сохраняем историю холдеров...');
     
-    // Загружаем предыдущий топ-100 для сравнения
     const { data: prevTopData } = await supabase
         .from('holders_history')
         .select('address, count')
@@ -244,7 +254,6 @@ async function saveFullContractStats(allTokens) {
         }
     }
     
-    // Сохраняем текущий топ-100
     const holderHistory = topHolders.map((h, i) => ({
         recorded_at: new Date().toISOString(),
         rank: i + 1,
@@ -270,45 +279,51 @@ async function saveFullContractStats(allTokens) {
         console.log(`✅ Сохранено ${saved} записей истории холдеров`);
     }
     
-    // ============================================================
-    // 🆕 СОХРАНЯЕМ АКТИВНОСТЬ ХОЛДЕРОВ (движения по кошелькам)
-    // ============================================================
-    if (snapshots && snapshots.length >= 2 && movementsToday > 0) {
-        console.log('🔥 Сохраняем активность холдеров...');
-        
-        const prev = snapshots[1];
-        const curr = snapshots[0];
-        
-        const prevMapActivity = {};
-        const currMapActivity = {};
-        for (const s of prev) prevMapActivity[s.token_id] = s.owner_id;
-        for (const s of curr) currMapActivity[s.token_id] = s.owner_id;
-        
-        const activity = {};
-        for (const [tokenId, owner] of Object.entries(currMapActivity)) {
-            const prevOwner = prevMapActivity[tokenId];
-            if (prevOwner && prevOwner !== owner) {
-                activity[owner] = (activity[owner] || 0) + 1;
-            }
+    // Сохраняем активность холдеров
+    if (allSnapshots && allSnapshots.length > 0) {
+        const dateMap = {};
+        for (const s of allSnapshots) {
+            const date = s.snapshot_date;
+            if (!dateMap[date]) dateMap[date] = [];
+            dateMap[date].push(s);
         }
         
-        const activityData = Object.entries(activity)
-            .map(([address, movements]) => ({
-                recorded_at: new Date().toISOString(),
-                address,
-                movements
-            }))
-            .sort((a, b) => b.movements - a.movements)
-            .slice(0, 50);
-        
-        if (activityData.length > 0) {
-            const { error } = await supabase
-                .from('holders_activity')
-                .insert(activityData);
-            if (error) {
-                console.error('❌ Ошибка сохранения активности холдеров:', error);
-            } else {
-                console.log(`✅ Сохранена активность ${activityData.length} холдеров`);
+        const dates = Object.keys(dateMap).sort().reverse();
+        if (dates.length >= 2) {
+            const prev = dateMap[dates[1]];
+            const curr = dateMap[dates[0]];
+            
+            const prevMapActivity = {};
+            const currMapActivity = {};
+            for (const s of prev) prevMapActivity[s.token_id] = s.owner_id;
+            for (const s of curr) currMapActivity[s.token_id] = s.owner_id;
+            
+            const activity = {};
+            for (const [tokenId, owner] of Object.entries(currMapActivity)) {
+                const prevOwner = prevMapActivity[tokenId];
+                if (prevOwner && prevOwner !== owner) {
+                    activity[owner] = (activity[owner] || 0) + 1;
+                }
+            }
+            
+            const activityData = Object.entries(activity)
+                .map(([address, movements]) => ({
+                    recorded_at: new Date().toISOString(),
+                    address,
+                    movements
+                }))
+                .sort((a, b) => b.movements - a.movements)
+                .slice(0, 50);
+            
+            if (activityData.length > 0) {
+                const { error } = await supabase
+                    .from('holders_activity')
+                    .insert(activityData);
+                if (error) {
+                    console.error('❌ Ошибка сохранения активности холдеров:', error);
+                } else {
+                    console.log(`✅ Сохранена активность ${activityData.length} холдеров`);
+                }
             }
         }
     }
