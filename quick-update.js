@@ -27,36 +27,28 @@ const DYNAMIC_NAMES = [
     'Old stamp (legendary)'
 ];
 
-// ============================================================
-// 2. ВСЕ МАРКИ (Postage + Dynamic) для Telegram
-// ============================================================
-const STAMP_NAMES = [
-    // Postage Stamp (все группы)
-    'Aries (Postage Stamp)',
-    'Taurus (Postage Stamp)',
-    'Gemini (Postage Stamp)',
-    'Cancer (Postage Stamp)',
-    'Leo (Postage Stamp)',
-    'Virgo (Postage Stamp)',
-    'Libra (Postage Stamp)',
-    'Scorpio (Postage Stamp)',
-    'Sagittarius (Postage Stamp)',
-    'Capricorn (Postage Stamp)',
-    'Aquarius (Postage Stamp)',
-    'Pisces (Postage Stamp)',
-    // Dynamic Stamp
-    'Stamp (legendary - 1 Lv)',
-    'Stamp (legendary - 2 Lv)',
-    'Stamp (legendary - 3 Lv)',
-    'Stamp (legendary - 4 Lv)',
-    'Stamp (legendary - 5 Lv)',
-    'Stamp (legendary - 6 Lv)',
-    'Stamp (legendary - 7 Lv)',
-    'Old stamp (legendary)'
-];
-
 function formatNumber(num) {
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}
+
+// ============================================================
+// 2. ЗАГРУЗКА НАЗВАНИЙ ВСЕХ МАРОК ИЗ SUPABASE
+// ============================================================
+let STAMP_NAMES = [];
+
+async function loadStampNames() {
+    console.log('📋 Загружаем список марок из Supabase...');
+    const { data, error } = await supabase
+        .from('stamps')
+        .select('base_name');
+    
+    if (error) {
+        console.error('❌ Ошибка загрузки марок:', error);
+        return;
+    }
+    
+    STAMP_NAMES = data.map(s => s.base_name).filter(Boolean);
+    console.log(`✅ Загружено ${STAMP_NAMES.length} названий марок`);
 }
 
 // ============================================================
@@ -195,7 +187,6 @@ async function saveFullContractStats(allTokens) {
         movements: {}
     };
     
-    // Собираем данные по движениям
     const ownerHistory = {};
     
     for (const token of allTokens) {
@@ -217,7 +208,6 @@ async function saveFullContractStats(allTokens) {
         });
     }
     
-    // Считаем движения по дням
     for (const [tokenId, history] of Object.entries(ownerHistory)) {
         history.sort((a, b) => new Date(a.date) - new Date(b.date));
         for (let i = 1; i < history.length; i++) {
@@ -233,7 +223,6 @@ async function saveFullContractStats(allTokens) {
         .slice(0, 100)
         .map(([address, count]) => ({ address, count }));
     
-    // Сохраняем в contract_stats
     const { error: insertError } = await supabase
         .from('contract_stats')
         .insert({
@@ -252,7 +241,6 @@ async function saveFullContractStats(allTokens) {
         console.log(`✅ Сохранено: ${stats.total} NFT, ${stats.holders.size} холдеров`);
     }
     
-    // Сохраняем ежедневную статистику
     const today = new Date().toISOString().split('T')[0];
     const { error: dailyError } = await supabase
         .from('daily_contract_stats')
@@ -272,7 +260,6 @@ async function saveFullContractStats(allTokens) {
         console.log(`🔄 Движений за сегодня: ${stats.movements[today] || 0}`);
     }
     
-    // Сохраняем историю
     const { error: historyError } = await supabase
         .from('contract_stats_history')
         .insert({
@@ -298,7 +285,12 @@ async function sendTelegramReport(allTokens, updatedCount, startTime) {
     const token = '8708530374:AAHhcWFtjLqXK_Yxl0qlCtYrwi0ORLcDHNQ';
     const chatIds = ['454371494', '724771751'];
     
-    // Марки (Postage + Dynamic)
+    // Ждём, пока загрузятся названия марок
+    if (STAMP_NAMES.length === 0) {
+        await loadStampNames();
+    }
+    
+    // Марки (Postage + Dynamic) — используем список из Supabase
     const stampTokens = allTokens.filter(t => STAMP_NAMES.includes(t.title));
     const stampHolders = new Set(stampTokens.map(t => t.owner_id).filter(Boolean));
     const stampBurned = stampTokens.filter(t => t.owner_id === 'darai_duplo.near').length;
@@ -367,6 +359,9 @@ async function main() {
     const startTime = Date.now();
     
     try {
+        // Загружаем названия марок из Supabase
+        await loadStampNames();
+        
         const allTokens = await fetchAllTokens();
         console.log(`\n📊 Всего токенов в API: ${allTokens.length}`);
         console.log('═'.repeat(50));
