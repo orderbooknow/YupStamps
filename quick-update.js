@@ -24,6 +24,24 @@ const DYNAMIC_NAMES = [
     'Old stamp (legendary)'
 ];
 
+// ============================================================
+// 🆕 ИСКЛЮЧАЕМЫЕ И СПЕЦИАЛЬНЫЕ КОШЕЛЬКИ
+// ============================================================
+const EXCLUDED_OWNERS = [
+    'sendler-alchemy.near',    // Лавка
+    'darai_collection.near',   // Раздача NFT
+    'darai_duplo.near',        // Сжигание
+    'intents.near',            // HotCraft
+    'darai_portal.near'        // Портал
+];
+
+const SPECIAL_WALLETS = {
+    'intents.near': 'На ХК',
+    'darai_portal.near': 'На Портале',
+    'darai_duplo.near': 'Сожжено',
+    'sendler-alchemy.near': 'В лавке'
+};
+
 function formatNumber(num) {
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
@@ -149,7 +167,7 @@ async function saveSnapshot(allTokens) {
 }
 
 // ============================================================
-// 6. СОХРАНЕНИЕ ПОЛНОЙ СТАТИСТИКИ (С ДВИЖЕНИЯМИ И ХОЛДЕРАМИ)
+// 6. СОХРАНЕНИЕ ПОЛНОЙ СТАТИСТИКИ
 // ============================================================
 async function saveFullContractStats(allTokens) {
     console.log('📊 Сохраняем полную статистику контракта...');
@@ -159,6 +177,8 @@ async function saveFullContractStats(allTokens) {
         holders: new Set(),
         burned: 0,
         shop: 0,
+        onHotCraft: 0,
+        onPortal: 0,
         collections: {},
         topHolders: {},
         movements: {}
@@ -166,23 +186,28 @@ async function saveFullContractStats(allTokens) {
     
     // Собираем базовую статистику
     for (const token of allTokens) {
-        if (token.owner_id) {
-            stats.holders.add(token.owner_id);
-            stats.topHolders[token.owner_id] = (stats.topHolders[token.owner_id] || 0) + 1;
+        const owner = token.owner_id;
+        
+        // Специальные кошельки
+        if (owner === 'darai_duplo.near') stats.burned++;
+        else if (owner === 'sendler-alchemy.near') stats.shop++;
+        else if (owner === 'intents.near') stats.onHotCraft++;
+        else if (owner === 'darai_portal.near') stats.onPortal++;
+        else if (!EXCLUDED_OWNERS.includes(owner)) {
+            // Только реальные холдеры
+            stats.holders.add(owner);
+            stats.topHolders[owner] = (stats.topHolders[owner] || 0) + 1;
         }
-        if (token.owner_id === 'darai_duplo.near') stats.burned++;
-        if (token.owner_id === 'sendler-alchemy.near') stats.shop++;
         
         const collection = token.collection || token.collection_name || 'unknown';
         stats.collections[collection] = (stats.collections[collection] || 0) + 1;
     }
     
     // ============================================================
-    // 🆕 СЧИТАЕМ ДВИЖЕНИЯ ИЗ СНИМКОВ (ИСПРАВЛЕНО)
+    // СЧИТАЕМ ДВИЖЕНИЯ ИЗ СНИМКОВ
     // ============================================================
     console.log('🔄 Считаем движения из снимков...');
     
-    // Загружаем все снимки за последние 2 даты
     const { data: allSnapshots, error: snapError } = await supabase
         .from('contract_snapshots')
         .select('*')
@@ -191,7 +216,6 @@ async function saveFullContractStats(allTokens) {
     if (snapError) {
         console.error('❌ Ошибка загрузки снимков:', snapError);
     } else if (allSnapshots && allSnapshots.length > 0) {
-        // Группируем по датам
         const dateMap = {};
         for (const s of allSnapshots) {
             const date = s.snapshot_date;
@@ -201,8 +225,8 @@ async function saveFullContractStats(allTokens) {
         
         const dates = Object.keys(dateMap).sort().reverse();
         if (dates.length >= 2) {
-            const prev = dateMap[dates[1]]; // вчера
-            const curr = dateMap[dates[0]]; // сегодня
+            const prev = dateMap[dates[1]];
+            const curr = dateMap[dates[0]];
             
             const prevOwners = {};
             const currOwners = {};
@@ -227,10 +251,8 @@ async function saveFullContractStats(allTokens) {
             stats.movements[today] = movements;
             console.log(`🔄 Движений за сегодня: ${movements}`);
         } else {
-            console.log('⚠️ Недостаточно снимков для подсчёта движений (нужно минимум 2 даты)');
+            console.log('⚠️ Недостаточно снимков для подсчёта движений');
         }
-    } else {
-        console.log('⚠️ Снимков нет');
     }
     
     const topHolders = Object.entries(stats.topHolders)
@@ -329,7 +351,7 @@ async function saveFullContractStats(allTokens) {
     }
     
     // ============================================================
-    // 🆕 СОХРАНЯЕМ ТОП-СЖИГАТЕЛЕЙ ЗА ДЕНЬ (ВСЕ NFT)
+    // 🆕 СОХРАНЯЕМ ТОП-СЖИГАТЕЛЕЙ (КОМБО ДУПЛО)
     // ============================================================
     console.log('🔥 Сохраняем топ-сжигателей...');
     
@@ -377,13 +399,16 @@ async function saveFullContractStats(allTokens) {
             collections: stats.collections,
             top_holders: topHolders,
             burned_count: stats.burned,
-            shop_count: stats.shop
+            shop_count: stats.shop,
+            on_hotcraft: stats.onHotCraft,
+            on_portal: stats.onPortal
         });
     
     if (insertError) {
         console.error('❌ Ошибка сохранения статистики:', insertError);
     } else {
         console.log(`✅ Сохранено: ${stats.total} NFT, ${stats.holders.size} холдеров`);
+        console.log(`📊 На ХК: ${stats.onHotCraft}, На Портале: ${stats.onPortal}`);
     }
     
     const { error: dailyError } = await supabase
@@ -423,12 +448,13 @@ async function saveFullContractStats(allTokens) {
 }
 
 // ============================================================
-// 7. ОТПРАВКА В TELEGRAM (ПОЛНОЕ СООБЩЕНИЕ)
+// 7. ОТПРАВКА В TELEGRAM (ОБНОВЛЁННОЕ СООБЩЕНИЕ)
 // ============================================================
 async function sendTelegramReport(allTokens, updatedCount, startTime) {
     const token = '8708530374:AAHhcWFtjLqXK_Yxl0qlCtYrwi0ORLcDHNQ';
     const chatIds = ['454371494', '724771751'];
     
+    // Марки
     const stampTokens = allTokens.filter(t => 
         t.title?.includes('Postage Stamp') || DYNAMIC_NAMES.includes(t.title)
     );
@@ -436,12 +462,19 @@ async function sendTelegramReport(allTokens, updatedCount, startTime) {
     const stampBurned = stampTokens.filter(t => t.owner_id === 'darai_duplo.near').length;
     const stampShop = stampTokens.filter(t => t.owner_id === 'sendler-alchemy.near').length;
     
+    // Прочие NFT
     const otherTokens = allTokens.filter(t => 
         !t.title?.includes('Postage Stamp') && !DYNAMIC_NAMES.includes(t.title)
     );
     const otherHolders = new Set(otherTokens.map(t => t.owner_id).filter(Boolean));
     const otherBurned = otherTokens.filter(t => t.owner_id === 'darai_duplo.near').length;
     const otherShop = otherTokens.filter(t => t.owner_id === 'sendler-alchemy.near').length;
+    
+    // Специальные кошельки (все NFT)
+    const onHotCraft = allTokens.filter(t => t.owner_id === 'intents.near').length;
+    const onPortal = allTokens.filter(t => t.owner_id === 'darai_portal.near').length;
+    const totalBurned = allTokens.filter(t => t.owner_id === 'darai_duplo.near').length;
+    const totalShop = allTokens.filter(t => t.owner_id === 'sendler-alchemy.near').length;
     
     const dynamicCount = allTokens.filter(t => DYNAMIC_NAMES.includes(t.title)).length;
     
@@ -464,7 +497,11 @@ async function sendTelegramReport(allTokens, updatedCount, startTime) {
         `   🏪 В Лавке: ${formatNumber(otherShop)}\n\n` +
         
         `📊 <b>ВСЕГО NFT на контракте:</b>\n` +
-        `   📊 Всего: ${formatNumber(allTokens.length)}\n\n` +
+        `   📊 Всего: ${formatNumber(allTokens.length)}\n` +
+        `   🔥 Сожжено: ${formatNumber(totalBurned)}\n` +
+        `   🏪 В лавке: ${formatNumber(totalShop)}\n` +
+        `   🏪 На ХК: ${formatNumber(onHotCraft)}\n` +
+        `   🏪 На Портале: ${formatNumber(onPortal)}\n\n` +
         
         `🔄 Обновлено владельцев: ${formatNumber(updatedCount)}\n` +
         `✨ Динамических марок: ${formatNumber(dynamicCount)}\n\n` +
