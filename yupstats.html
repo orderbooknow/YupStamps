@@ -666,6 +666,14 @@
                     <div class="metric-change" id="metricShopChange"></div>
                 </div>
                 <div class="metric-card">
+                    <div class="metric-value" id="metricHotCraft">—</div>
+                    <div class="metric-label">🏪 На ХК</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="metricPortal">—</div>
+                    <div class="metric-label">🏪 На Портале</div>
+                </div>
+                <div class="metric-card">
                     <div class="metric-value" id="metricHolders">—</div>
                     <div class="metric-label">👥 Холдеры</div>
                     <div class="metric-change" id="metricHoldersChange"></div>
@@ -1064,8 +1072,17 @@
                     .order('recorded_at', { ascending: true });
                 
                 if (historyError) throw historyError;
-                historyData = history || [];
-                console.log(`✅ Загружено ${historyData.length} записей истории`);
+                
+                // 🆕 ГРУППИРУЕМ ПО ДНЯМ — берём последнюю запись за день
+                const dailyData = {};
+                for (const item of history || []) {
+                    const date = item.recorded_at.split('T')[0];
+                    dailyData[date] = item; // последняя запись перезапишет предыдущие
+                }
+                historyData = Object.values(dailyData).sort((a, b) => 
+                    a.recorded_at.localeCompare(b.recorded_at)
+                );
+                console.log(`✅ Загружено ${historyData.length} дней истории (сгруппировано по дням)`);
                 
                 // Загружаем последнюю статистику
                 const { data: stats, error: statsError } = await supabaseClient
@@ -1096,6 +1113,8 @@
                     document.getElementById('metricTotal').textContent = formatNumber(latest.total_nft);
                     document.getElementById('metricBurned').textContent = formatNumber(latest.burned_count);
                     document.getElementById('metricShop').textContent = formatNumber(latest.shop_count);
+                    document.getElementById('metricHotCraft').textContent = formatNumber(latest.on_hotcraft || 0);
+                    document.getElementById('metricPortal').textContent = formatNumber(latest.on_portal || 0);
                     document.getElementById('metricHolders').textContent = formatNumber(latest.total_holders);
                     document.getElementById('metricAvgNFT').textContent = formatNumber(avg);
                     
@@ -1696,7 +1715,6 @@
                     document.getElementById(`tab-${currentTab}`).classList.add('active');
                     
                     if (currentTab === 'holders') {
-                        // Используем уже загруженные данные
                         if (topHolders.length > 0) {
                             renderHolders(topHolders);
                             calculateConcentration(topHolders);
