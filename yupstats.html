@@ -1220,124 +1220,154 @@
         // ================================================================
         
         async function findNewHolders() {
-            const container = document.getElementById('newHoldersList');
-            try {
-                const { data: snapshots } = await supabaseClient
-                    .from('contract_snapshots')
-                    .select('*')
-                    .order('snapshot_date', { ascending: false })
-                    .limit(2);
-                
-                if (!snapshots || snapshots.length < 2) {
-                    container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">Недостаточно данных</div>`;
-                    return;
-                }
-                
-                const prev = snapshots[1];
-                const curr = snapshots[0];
-                
-                const prevOwners = new Set(prev.map(s => s.owner_id).filter(Boolean));
-                const currOwners = new Set(curr.map(s => s.owner_id).filter(Boolean));
-                
-                const newHolders = [];
-                for (const owner of currOwners) {
-                    if (!prevOwners.has(owner) && !isExcluded(owner)) {
-                        const count = curr.filter(s => s.owner_id === owner).length;
-                        newHolders.push({ address: owner, count });
-                    }
-                }
-                newHolders.sort((a, b) => b.count - a.count);
-                
-                if (newHolders.length === 0) {
-                    container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">Новых холдеров нет</div>`;
-                    return;
-                }
-                
-                let html = `<table class="stats-table"><thead><tr>
-                    <th>👤 Кошелек</th>
-                    <th>🎫 NFT</th>
-                </tr></thead><tbody>`;
-                
-                newHolders.slice(0, 20).forEach(h => {
-                    html += `<tr>
-                        <td>${h.address}</td>
-                        <td><strong>${formatNumber(h.count)}</strong></td>
-                    </tr>`;
-                });
-                
-                html += `</tbody></table>`;
-                container.innerHTML = html;
-                
-            } catch (error) {
-                console.error('Ошибка загрузки новых холдеров:', error);
-                container.innerHTML = `<div style="text-align:center;padding:20px;color:#ef4444;">Ошибка загрузки</div>`;
+    const container = document.getElementById('newHoldersList');
+    try {
+        // Загружаем ВСЕ снимки
+        const { data: snapshots, error } = await supabaseClient
+            .from('contract_snapshots')
+            .select('*')
+            .order('snapshot_date', { ascending: false });
+        
+        if (error) throw error;
+        if (!snapshots || snapshots.length === 0) {
+            container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">Недостаточно данных</div>`;
+            return;
+        }
+        
+        // Группируем по датам
+        const dateMap = {};
+        for (const s of snapshots) {
+            const date = s.snapshot_date;
+            if (!dateMap[date]) dateMap[date] = [];
+            dateMap[date].push(s);
+        }
+        
+        const dates = Object.keys(dateMap).sort().reverse();
+        if (dates.length < 2) {
+            container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">Недостаточно данных (нужно минимум 2 даты)</div>`;
+            return;
+        }
+        
+        const prev = dateMap[dates[1]];
+        const curr = dateMap[dates[0]];
+        
+        const prevOwners = new Set(prev.map(s => s.owner_id).filter(Boolean));
+        const currOwners = new Set(curr.map(s => s.owner_id).filter(Boolean));
+        
+        const newHolders = [];
+        for (const owner of currOwners) {
+            if (!prevOwners.has(owner) && !isExcluded(owner)) {
+                const count = curr.filter(s => s.owner_id === owner).length;
+                newHolders.push({ address: owner, count });
             }
         }
+        newHolders.sort((a, b) => b.count - a.count);
+        
+        if (newHolders.length === 0) {
+            container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">Новых холдеров нет</div>`;
+            return;
+        }
+        
+        let html = `<table class="stats-table"><thead><tr>
+            <th>👤 Кошелек</th>
+            <th>🎫 NFT</th>
+        </tr></thead><tbody>`;
+        
+        newHolders.slice(0, 20).forEach(h => {
+            html += `<tr>
+                <td>${h.address}</td>
+                <td><strong>${formatNumber(h.count)}</strong></td>
+            </tr>`;
+        });
+        
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+        
+    } catch (error) {
+        console.error('Ошибка загрузки новых холдеров:', error);
+        container.innerHTML = `<div style="text-align:center;padding:20px;color:#ef4444;">Ошибка загрузки</div>`;
+    }
+}
         
         // ================================================================
         // ==================== АКТИВНЫЕ ХОЛДЕРЫ =========================
         // ================================================================
         
         async function findActiveHolders() {
-            const container = document.getElementById('activeHoldersList');
-            try {
-                const { data: snapshots } = await supabaseClient
-                    .from('contract_snapshots')
-                    .select('*')
-                    .order('snapshot_date', { ascending: false })
-                    .limit(2);
-                
-                if (!snapshots || snapshots.length < 2) {
-                    container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">Недостаточно данных</div>`;
-                    return;
-                }
-                
-                const prev = snapshots[1];
-                const curr = snapshots[0];
-                
-                const prevMap = {};
-                const currMap = {};
-                for (const s of prev) prevMap[s.token_id] = s.owner_id;
-                for (const s of curr) currMap[s.token_id] = s.owner_id;
-                
-                const movements = {};
-                for (const [tokenId, owner] of Object.entries(currMap)) {
-                    const prevOwner = prevMap[tokenId];
-                    if (prevOwner && prevOwner !== owner && !isExcluded(owner)) {
-                        movements[owner] = (movements[owner] || 0) + 1;
-                    }
-                }
-                
-                const active = Object.entries(movements)
-                    .map(([address, count]) => ({ address, count }))
-                    .sort((a, b) => b.count - a.count)
-                    .slice(0, 20);
-                
-                if (active.length === 0) {
-                    container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">Нет активных движений</div>`;
-                    return;
-                }
-                
-                let html = `<table class="stats-table"><thead><tr>
-                    <th>👤 Кошелек</th>
-                    <th>🔄 Передач</th>
-                </tr></thead><tbody>`;
-                
-                active.forEach(h => {
-                    html += `<tr>
-                        <td>${h.address}</td>
-                        <td><strong>${formatNumber(h.count)}</strong></td>
-                    </tr>`;
-                });
-                
-                html += `</tbody></table>`;
-                container.innerHTML = html;
-                
-            } catch (error) {
-                console.error('Ошибка загрузки активных холдеров:', error);
-                container.innerHTML = `<div style="text-align:center;padding:20px;color:#ef4444;">Ошибка загрузки</div>`;
+    const container = document.getElementById('activeHoldersList');
+    try {
+        // Загружаем ВСЕ снимки
+        const { data: snapshots, error } = await supabaseClient
+            .from('contract_snapshots')
+            .select('*')
+            .order('snapshot_date', { ascending: false });
+        
+        if (error) throw error;
+        if (!snapshots || snapshots.length === 0) {
+            container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">Недостаточно данных</div>`;
+            return;
+        }
+        
+        // Группируем по датам
+        const dateMap = {};
+        for (const s of snapshots) {
+            const date = s.snapshot_date;
+            if (!dateMap[date]) dateMap[date] = [];
+            dateMap[date].push(s);
+        }
+        
+        const dates = Object.keys(dateMap).sort().reverse();
+        if (dates.length < 2) {
+            container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">Недостаточно данных (нужно минимум 2 даты)</div>`;
+            return;
+        }
+        
+        const prev = dateMap[dates[1]];
+        const curr = dateMap[dates[0]];
+        
+        const prevMap = {};
+        const currMap = {};
+        for (const s of prev) prevMap[s.token_id] = s.owner_id;
+        for (const s of curr) currMap[s.token_id] = s.owner_id;
+        
+        const movements = {};
+        for (const [tokenId, owner] of Object.entries(currMap)) {
+            const prevOwner = prevMap[tokenId];
+            if (prevOwner && prevOwner !== owner && !isExcluded(owner)) {
+                movements[owner] = (movements[owner] || 0) + 1;
             }
         }
+        
+        const active = Object.entries(movements)
+            .map(([address, count]) => ({ address, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 20);
+        
+        if (active.length === 0) {
+            container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">Нет активных движений</div>`;
+            return;
+        }
+        
+        let html = `<table class="stats-table"><thead><tr>
+            <th>👤 Кошелек</th>
+            <th>🔄 Передач</th>
+        </tr></thead><tbody>`;
+        
+        active.forEach(h => {
+            html += `<tr>
+                <td>${h.address}</td>
+                <td><strong>${formatNumber(h.count)}</strong></td>
+            </tr>`;
+        });
+        
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+        
+    } catch (error) {
+        console.error('Ошибка загрузки активных холдеров:', error);
+        container.innerHTML = `<div style="text-align:center;padding:20px;color:#ef4444;">Ошибка загрузки</div>`;
+    }
+}
         
         // ================================================================
         // ==================== СРАВНЕНИЕ ПЕРИОДОВ =======================
