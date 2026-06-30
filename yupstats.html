@@ -259,6 +259,46 @@
         .metric-change.down { color: #ef4444; }
         .metric-change.neutral { color: #f59e0b; }
         
+        .compare-section {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+            padding: 12px 16px;
+            background: #1e293b;
+            border-radius: 16px;
+            align-items: center;
+        }
+        
+        body.light .compare-section {
+            background: rgba(255,255,255,0.6);
+        }
+        
+        .compare-section select {
+            padding: 6px 12px;
+            border-radius: 40px;
+            border: 1px solid #475569;
+            background: #0f172a;
+            color: #e2e8f0;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        
+        body.light .compare-section select {
+            background: white;
+            color: #1e293b;
+            border-color: #cbd5e1;
+        }
+        
+        .compare-result {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .compare-result .up { color: #10b981; }
+        .compare-result .down { color: #ef4444; }
+        .compare-result .neutral { color: #f59e0b; }
+        
         .chart-container {
             background: #1e293b;
             border-radius: 20px;
@@ -379,6 +419,10 @@
             font-weight: 600;
         }
         
+        .stats-table .change-up { color: #10b981; }
+        .stats-table .change-down { color: #ef4444; }
+        .stats-table .change-neutral { color: #f59e0b; }
+        
         .table-scroll {
             max-height: 400px;
             overflow-y: auto;
@@ -402,6 +446,133 @@
             background: #f1f5f9;
         }
         
+        .concentration-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .concentration-card {
+            background: #1e293b;
+            padding: 14px 16px;
+            border-radius: 16px;
+            text-align: center;
+        }
+        
+        body.light .concentration-card {
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        
+        .concentration-value {
+            font-size: 28px;
+            font-weight: 800;
+            color: #e94560;
+        }
+        
+        .concentration-label {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+        
+        .concentration-bar {
+            margin-top: 8px;
+            height: 8px;
+            background: #334155;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .concentration-bar .fill {
+            height: 100%;
+            background: linear-gradient(135deg, #e94560, #ff6b8b);
+            border-radius: 4px;
+            transition: width 0.5s;
+        }
+        
+        .burn-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .burn-stat-card {
+            background: #1e293b;
+            padding: 14px 16px;
+            border-radius: 16px;
+            text-align: center;
+        }
+        
+        body.light .burn-stat-card {
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        
+        .burn-stat-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: #e94560;
+        }
+        
+        .burn-stat-label {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+        
+        body.light .burn-stat-label { color: #64748b; }
+        
+        .holder-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px;
+            border-bottom: 1px solid #334155;
+        }
+        
+        body.light .holder-row {
+            border-bottom-color: #e2e8f0;
+        }
+        
+        .holder-row .rank {
+            font-weight: 700;
+            color: #94a3b8;
+            min-width: 30px;
+        }
+        
+        .holder-row .address {
+            flex: 1;
+            font-family: monospace;
+            font-size: 13px;
+        }
+        
+        .holder-row .count {
+            font-weight: 600;
+            min-width: 60px;
+            text-align: right;
+        }
+        
+        .holder-row .change {
+            min-width: 40px;
+            text-align: right;
+        }
+        
+        .holder-row .change .up { color: #10b981; }
+        .holder-row .change .down { color: #ef4444; }
+        .holder-row .change .neutral { color: #f59e0b; }
+        
+        .new-holder-badge {
+            background: #10b981;
+            color: white;
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            margin-left: 8px;
+        }
+        
         @media (max-width: 768px) {
             .header { padding: 12px 16px; }
             .header-left .logo { font-size: 18px; }
@@ -415,6 +586,11 @@
             .legend-checkboxes label { font-size: 12px; }
             .stats-table { font-size: 11px; }
             .stats-table th, .stats-table td { padding: 6px 8px; }
+            .burn-stats { grid-template-columns: repeat(2, 1fr); }
+            .concentration-grid { grid-template-columns: 1fr; }
+            .holder-row { font-size: 12px; gap: 8px; }
+            .holder-row .address { font-size: 11px; }
+            .compare-section { flex-direction: column; align-items: stretch; }
         }
         
         @media (max-width: 480px) {
@@ -444,9 +620,13 @@
 
         <div class="tabs" id="mainTabs">
             <button class="tab active" data-tab="analytics">📊 Аналитика</button>
+            <button class="tab" data-tab="holders">👥 Холдеры</button>
             <button class="tab" data-tab="duplo">🔥 Комбо Дупло</button>
         </div>
 
+        <!-- ============================================================ -->
+        <!-- ==================== ВКЛАДКА: АНАЛИТИКА ====================== -->
+        <!-- ============================================================ -->
         <div class="tab-content active" id="tab-analytics">
             <div class="period-section">
                 <span class="period-label">📅 Период:</span>
@@ -457,6 +637,17 @@
                 <button class="period-btn" data-period="month">Месяц</button>
                 <button class="period-btn" data-period="year">Год</button>
                 <button class="period-btn" data-period="all">Всё</button>
+            </div>
+
+            <!-- ===== СРАВНЕНИЕ ПЕРИОДОВ ===== -->
+            <div class="compare-section">
+                <span style="font-weight:600;font-size:13px;">📊 Сравнить:</span>
+                <select id="comparePeriod">
+                    <option value="day">Сегодня vs Вчера</option>
+                    <option value="week" selected>Неделя vs Прошлая неделя</option>
+                    <option value="month">Месяц vs Прошлый месяц</option>
+                </select>
+                <div id="compareResult" class="compare-result">—</div>
             </div>
 
             <div class="metrics-grid" id="metricsGrid">
@@ -484,6 +675,10 @@
                     <div class="metric-value" id="metricMovements">—</div>
                     <div class="metric-label">🔄 Движений</div>
                     <div class="metric-change" id="metricMovementsChange"></div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="metricAvgNFT">—</div>
+                    <div class="metric-label">📊 В среднем на холдера</div>
                 </div>
             </div>
 
@@ -513,6 +708,7 @@
                                 <th>🏪 В лавке</th>
                                 <th>👥 Холдеры</th>
                                 <th>🔄 Движения</th>
+                                <th>📊 В среднем</th>
                             </tr>
                         </thead>
                         <tbody id="statsTableBody"></tbody>
@@ -521,6 +717,69 @@
             </div>
         </div>
 
+        <!-- ============================================================ -->
+        <!-- ==================== ВКЛАДКА: ХОЛДЕРЫ ======================== -->
+        <!-- ============================================================ -->
+        <div class="tab-content" id="tab-holders">
+            <!-- Концентрация -->
+            <div class="concentration-grid" id="concentrationGrid">
+                <div class="concentration-card">
+                    <div class="concentration-value" id="concTop10">—</div>
+                    <div class="concentration-label">🏆 Топ-10 холдеров</div>
+                    <div class="concentration-bar"><div class="fill" id="concTop10Bar" style="width:0%"></div></div>
+                </div>
+                <div class="concentration-card">
+                    <div class="concentration-value" id="concTop50">—</div>
+                    <div class="concentration-label">🏆 Топ-50 холдеров</div>
+                    <div class="concentration-bar"><div class="fill" id="concTop50Bar" style="width:0%"></div></div>
+                </div>
+                <div class="concentration-card">
+                    <div class="concentration-value" id="concTop100">—</div>
+                    <div class="concentration-label">🏆 Топ-100 холдеров</div>
+                    <div class="concentration-bar"><div class="fill" id="concTop100Bar" style="width:0%"></div></div>
+                </div>
+            </div>
+
+            <!-- Фильтры -->
+            <div class="period-section">
+                <span class="period-label">📅 Период:</span>
+                <button class="period-btn holders-period" data-period="day">День</button>
+                <button class="period-btn holders-period" data-period="2days">2д</button>
+                <button class="period-btn holders-period" data-period="3days">3д</button>
+                <button class="period-btn holders-period active" data-period="week">Неделя</button>
+                <button class="period-btn holders-period" data-period="month">Месяц</button>
+                <button class="period-btn holders-period" data-period="year">Год</button>
+                <button class="period-btn holders-period" data-period="all">Всё</button>
+            </div>
+
+            <!-- Топ-100 холдеров -->
+            <div class="table-container">
+                <h3>🏆 Топ-100 холдеров</h3>
+                <div class="table-scroll" id="holdersList">
+                    <div style="text-align:center;padding:20px;color:#94a3b8;">Загрузка...</div>
+                </div>
+            </div>
+
+            <!-- Новые холдеры и активность -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+                <div class="table-container">
+                    <h3>👤 Новые холдеры (за неделю)</h3>
+                    <div id="newHoldersList" style="max-height:300px;overflow-y:auto;">
+                        <div style="text-align:center;padding:20px;color:#94a3b8;">Загрузка...</div>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <h3>🔥 Самые активные холдеры</h3>
+                    <div id="activeHoldersList" style="max-height:300px;overflow-y:auto;">
+                        <div style="text-align:center;padding:20px;color:#94a3b8;">Загрузка...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- ==================== ВКЛАДКА: КОМБО ДУПЛО =================== -->
+        <!-- ============================================================ -->
         <div class="tab-content" id="tab-duplo">
             <div class="period-section">
                 <span class="period-label">📅 Период:</span>
@@ -596,6 +855,9 @@
         let historyData = [];
         let mainChart = null;
         let burnChart = null;
+        let topHolders = [];
+        let prevTopHolders = [];
+        let concentration = { top10: 0, top50: 0, top100: 0 };
         
         const translations = {
             ru: {
@@ -616,6 +878,7 @@
                 leader: 'Лидер',
                 average: 'В среднем',
                 analytics: 'Аналитика',
+                holdersTab: 'Холдеры',
                 duplo: 'Комбо Дупло',
                 back: 'Назад',
                 period: 'Период',
@@ -625,7 +888,12 @@
                 week: 'Неделя',
                 month: 'Месяц',
                 year: 'Год',
-                all: 'Всё'
+                all: 'Всё',
+                avgNFT: 'В среднем на холдера',
+                compare: 'Сравнить',
+                todayVsYesterday: 'Сегодня vs Вчера',
+                weekVsPrevWeek: 'Неделя vs Прошлая неделя',
+                monthVsPrevMonth: 'Месяц vs Прошлый месяц'
             },
             en: {
                 loading: 'Loading...',
@@ -645,6 +913,7 @@
                 leader: 'Leader',
                 average: 'Average',
                 analytics: 'Analytics',
+                holdersTab: 'Holders',
                 duplo: 'Combo Duplo',
                 back: 'Back',
                 period: 'Period',
@@ -654,7 +923,12 @@
                 week: 'Week',
                 month: 'Month',
                 year: 'Year',
-                all: 'All'
+                all: 'All',
+                avgNFT: 'Average per holder',
+                compare: 'Compare',
+                todayVsYesterday: 'Today vs Yesterday',
+                weekVsPrevWeek: 'Week vs Previous week',
+                monthVsPrevMonth: 'Month vs Previous month'
             }
         };
         
@@ -696,18 +970,14 @@
         
         function updateUITexts() {
             document.querySelectorAll('.tab').forEach(tab => {
-                const key = tab.dataset.tab === 'analytics' ? 'analytics' : 'duplo';
+                const map = { analytics: 'analytics', holders: 'holdersTab', duplo: 'duplo' };
+                const key = map[tab.dataset.tab] || tab.dataset.tab;
                 tab.textContent = t(key);
             });
             
             const periodMap = {
-                'day': 'day',
-                '2days': 'days2',
-                '3days': 'days3',
-                'week': 'week',
-                'month': 'month',
-                'year': 'year',
-                'all': 'all'
+                'day': 'day', '2days': 'days2', '3days': 'days3',
+                'week': 'week', 'month': 'month', 'year': 'year', 'all': 'all'
             };
             document.querySelectorAll('.period-btn').forEach(btn => {
                 const key = periodMap[btn.dataset.period] || btn.dataset.period;
@@ -715,7 +985,52 @@
             });
             
             document.querySelector('.back-btn').textContent = `← ${t('back')}`;
+            
+            document.querySelector('#comparePeriod option[value="day"]').textContent = t('todayVsYesterday');
+            document.querySelector('#comparePeriod option[value="week"]').textContent = t('weekVsPrevWeek');
+            document.querySelector('#comparePeriod option[value="month"]').textContent = t('monthVsPrevMonth');
         }
+        
+        function formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+        }
+        
+        function formatDate(dateStr) {
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('ru-RU');
+        }
+        
+        function getChangeClass(current, previous) {
+            if (previous === 0) return 'neutral';
+            if (current > previous) return 'up';
+            if (current < previous) return 'down';
+            return 'neutral';
+        }
+        
+        function getChangeIcon(current, previous) {
+            if (previous === 0) return '→';
+            if (current > previous) return '↑';
+            if (current < previous) return '↓';
+            return '→';
+        }
+        
+        function getChangePercent(current, previous) {
+            if (previous === 0) return 0;
+            return ((current - previous) / previous * 100);
+        }
+        
+        function getChangeText(current, previous) {
+            if (previous === 0) return '';
+            const diff = current - previous;
+            const percent = getChangePercent(current, previous);
+            if (diff > 0) return `+${diff} (${percent.toFixed(1)}%)`;
+            if (diff < 0) return `${diff} (${percent.toFixed(1)}%)`;
+            return '0';
+        }
+        
+        // ================================================================
+        // ==================== ЗАГРУЗКА ДАННЫХ ==========================
+        // ================================================================
         
         async function loadAllData() {
             try {
@@ -729,7 +1044,7 @@
                 historyData = history || [];
                 console.log(`✅ Загружено ${historyData.length} записей истории`);
                 
-                // Загружаем последнюю полную статистику
+                // Загружаем последнюю статистику
                 const { data: stats, error: statsError } = await supabaseClient
                     .from('contract_stats')
                     .select('*')
@@ -745,23 +1060,309 @@
                     document.getElementById('updateTime').textContent = 
                         `🔄 ${new Date(latest.recorded_at).toLocaleString('ru-RU')}`;
                     
-                    // Всегда показываем метрики
+                    // Метрики
+                    const avg = latest.total_holders > 0 ? Math.round(latest.total_nft / latest.total_holders) : 0;
                     document.getElementById('metricTotal').textContent = formatNumber(latest.total_nft);
                     document.getElementById('metricBurned').textContent = formatNumber(latest.burned_count);
                     document.getElementById('metricShop').textContent = formatNumber(latest.shop_count);
                     document.getElementById('metricHolders').textContent = formatNumber(latest.total_holders);
-                    document.getElementById('metricMovements').textContent = '0';
+                    document.getElementById('metricAvgNFT').textContent = formatNumber(avg);
+                    
+                    // Топ-холдеры
+                    if (latest.top_holders) {
+                        topHolders = latest.top_holders;
+                        renderHolders(topHolders);
+                        calculateConcentration(topHolders);
+                    }
                 }
                 
-                // Строим график
+                // Загружаем предыдущую статистику для сравнения
+                const { data: prevStats } = await supabaseClient
+                    .from('contract_stats')
+                    .select('*')
+                    .order('recorded_at', { ascending: false })
+                    .range(1, 2);
+                
+                if (prevStats && prevStats.length > 0 && prevStats[0].top_holders) {
+                    prevTopHolders = prevStats[0].top_holders;
+                }
+                
+                // Строим график и таблицу
                 buildMainChart('week');
                 buildBurnTable('week');
+                updateComparison('week');
+                findNewHolders();
+                findActiveHolders();
                 
             } catch (error) {
                 console.error('❌ Ошибка загрузки:', error);
                 document.getElementById('updateInfo').textContent = '❌ Ошибка загрузки данных';
             }
         }
+        
+        // ================================================================
+        // ==================== КОНЦЕНТРАЦИЯ ==============================
+        // ================================================================
+        
+        function calculateConcentration(holders) {
+            const total = holders.reduce((sum, h) => sum + h.count, 0);
+            if (total === 0) return;
+            
+            const top10 = holders.slice(0, 10).reduce((sum, h) => sum + h.count, 0);
+            const top50 = holders.slice(0, 50).reduce((sum, h) => sum + h.count, 0);
+            const top100 = holders.slice(0, 100).reduce((sum, h) => sum + h.count, 0);
+            
+            concentration.top10 = (top10 / total * 100);
+            concentration.top50 = (top50 / total * 100);
+            concentration.top100 = (top100 / total * 100);
+            
+            document.getElementById('concTop10').textContent = concentration.top10.toFixed(1) + '%';
+            document.getElementById('concTop50').textContent = concentration.top50.toFixed(1) + '%';
+            document.getElementById('concTop100').textContent = concentration.top100.toFixed(1) + '%';
+            
+            document.getElementById('concTop10Bar').style.width = concentration.top10 + '%';
+            document.getElementById('concTop50Bar').style.width = concentration.top50 + '%';
+            document.getElementById('concTop100Bar').style.width = concentration.top100 + '%';
+        }
+        
+        // ================================================================
+        // ==================== ТОП-100 ХОЛДЕРОВ =========================
+        // ================================================================
+        
+        function renderHolders(holders) {
+            const container = document.getElementById('holdersList');
+            if (!holders || holders.length === 0) {
+                container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">Нет данных</div>`;
+                return;
+            }
+            
+            const display = holders.slice(0, 100);
+            const prevMap = {};
+            prevTopHolders.forEach(h => { prevMap[h.address] = h.count; });
+            
+            let html = `<table class="stats-table"><thead><tr>
+                <th>#</th>
+                <th>👤 Кошелек</th>
+                <th>🎫 NFT</th>
+                <th>📊 Изменение</th>
+            </tr></thead><tbody>`;
+            
+            display.forEach((h, i) => {
+                const prevCount = prevMap[h.address] || 0;
+                const change = getChangeText(h.count, prevCount);
+                const changeClass = getChangeClass(h.count, prevCount);
+                const icon = getChangeIcon(h.count, prevCount);
+                const isNew = !prevMap[h.address] && h.count > 0;
+                
+                html += `<tr>
+                    <td>${i + 1}</td>
+                    <td>${h.address}</td>
+                    <td><strong>${formatNumber(h.count)}</strong></td>
+                    <td class="change-${changeClass}">${icon} ${change}</td>
+                </tr>`;
+            });
+            
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+        
+        // ================================================================
+        // ==================== НОВЫЕ ХОЛДЕРЫ ============================
+        // ================================================================
+        
+        async function findNewHolders() {
+            const container = document.getElementById('newHoldersList');
+            try {
+                // Загружаем последние 2 снимка
+                const { data: snapshots } = await supabaseClient
+                    .from('contract_snapshots')
+                    .select('*')
+                    .order('snapshot_date', { ascending: false })
+                    .limit(2);
+                
+                if (!snapshots || snapshots.length < 2) {
+                    container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">Недостаточно данных</div>`;
+                    return;
+                }
+                
+                const prev = snapshots[1];
+                const curr = snapshots[0];
+                
+                const prevOwners = new Set(prev.map(s => s.owner_id).filter(Boolean));
+                const currOwners = new Set(curr.map(s => s.owner_id).filter(Boolean));
+                
+                const newHolders = [];
+                for (const owner of currOwners) {
+                    if (!prevOwners.has(owner)) {
+                        const count = curr.filter(s => s.owner_id === owner).length;
+                        newHolders.push({ address: owner, count });
+                    }
+                }
+                newHolders.sort((a, b) => b.count - a.count);
+                
+                if (newHolders.length === 0) {
+                    container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">Новых холдеров нет</div>`;
+                    return;
+                }
+                
+                let html = `<table class="stats-table"><thead><tr>
+                    <th>👤 Кошелек</th>
+                    <th>🎫 NFT</th>
+                </tr></thead><tbody>`;
+                
+                newHolders.slice(0, 20).forEach(h => {
+                    html += `<tr>
+                        <td>${h.address}</td>
+                        <td><strong>${formatNumber(h.count)}</strong></td>
+                    </tr>`;
+                });
+                
+                html += `</tbody></table>`;
+                container.innerHTML = html;
+                
+            } catch (error) {
+                console.error('Ошибка загрузки новых холдеров:', error);
+                container.innerHTML = `<div style="text-align:center;padding:20px;color:#ef4444;">Ошибка загрузки</div>`;
+            }
+        }
+        
+        // ================================================================
+        // ==================== АКТИВНЫЕ ХОЛДЕРЫ =========================
+        // ================================================================
+        
+        async function findActiveHolders() {
+            const container = document.getElementById('activeHoldersList');
+            try {
+                // Загружаем последние 2 снимка
+                const { data: snapshots } = await supabaseClient
+                    .from('contract_snapshots')
+                    .select('*')
+                    .order('snapshot_date', { ascending: false })
+                    .limit(2);
+                
+                if (!snapshots || snapshots.length < 2) {
+                    container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">Недостаточно данных</div>`;
+                    return;
+                }
+                
+                const prev = snapshots[1];
+                const curr = snapshots[0];
+                
+                const prevMap = {};
+                const currMap = {};
+                for (const s of prev) prevMap[s.token_id] = s.owner_id;
+                for (const s of curr) currMap[s.token_id] = s.owner_id;
+                
+                const movements = {};
+                for (const [tokenId, owner] of Object.entries(currMap)) {
+                    const prevOwner = prevMap[tokenId];
+                    if (prevOwner && prevOwner !== owner) {
+                        movements[owner] = (movements[owner] || 0) + 1;
+                    }
+                }
+                
+                const active = Object.entries(movements)
+                    .map(([address, count]) => ({ address, count }))
+                    .sort((a, b) => b.count - a.count)
+                    .slice(0, 20);
+                
+                if (active.length === 0) {
+                    container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">Нет активных движений</div>`;
+                    return;
+                }
+                
+                let html = `<table class="stats-table"><thead><tr>
+                    <th>👤 Кошелек</th>
+                    <th>🔄 Передач</th>
+                </tr></thead><tbody>`;
+                
+                active.forEach(h => {
+                    html += `<tr>
+                        <td>${h.address}</td>
+                        <td><strong>${formatNumber(h.count)}</strong></td>
+                    </tr>`;
+                });
+                
+                html += `</tbody></table>`;
+                container.innerHTML = html;
+                
+            } catch (error) {
+                console.error('Ошибка загрузки активных холдеров:', error);
+                container.innerHTML = `<div style="text-align:center;padding:20px;color:#ef4444;">Ошибка загрузки</div>`;
+            }
+        }
+        
+        // ================================================================
+        // ==================== СРАВНЕНИЕ ПЕРИОДОВ =======================
+        // ================================================================
+        
+        function updateComparison(period) {
+            const container = document.getElementById('compareResult');
+            if (historyData.length < 2) {
+                container.innerHTML = '—';
+                return;
+            }
+            
+            const now = new Date();
+            let currentStart, prevStart;
+            
+            switch (period) {
+                case 'day':
+                    currentStart = new Date(now);
+                    currentStart.setDate(now.getDate() - 1);
+                    prevStart = new Date(now);
+                    prevStart.setDate(now.getDate() - 2);
+                    break;
+                case 'week':
+                    currentStart = new Date(now);
+                    currentStart.setDate(now.getDate() - 7);
+                    prevStart = new Date(now);
+                    prevStart.setDate(now.getDate() - 14);
+                    break;
+                case 'month':
+                    currentStart = new Date(now);
+                    currentStart.setMonth(now.getMonth() - 1);
+                    prevStart = new Date(now);
+                    prevStart.setMonth(now.getMonth() - 2);
+                    break;
+                default:
+                    container.innerHTML = '—';
+                    return;
+            }
+            
+            const currentData = historyData.filter(d => new Date(d.recorded_at) >= currentStart);
+            const prevData = historyData.filter(d => new Date(d.recorded_at) >= prevStart && new Date(d.recorded_at) < currentStart);
+            
+            const getAvg = (data, key) => {
+                if (data.length === 0) return 0;
+                return data.reduce((sum, d) => sum + (d[key] || 0), 0) / data.length;
+            };
+            
+            const currentTotal = getAvg(currentData, 'total_nft');
+            const prevTotal = getAvg(prevData, 'total_nft');
+            const currentHolders = getAvg(currentData, 'holders');
+            const prevHolders = getAvg(prevData, 'holders');
+            const currentMovements = getAvg(currentData, 'movements');
+            const prevMovements = getAvg(prevData, 'movements');
+            
+            const diffTotal = getChangeText(currentTotal, prevTotal);
+            const diffHolders = getChangeText(currentHolders, prevHolders);
+            const diffMovements = getChangeText(currentMovements, prevMovements);
+            
+            const totalClass = getChangeClass(currentTotal, prevTotal);
+            const holdersClass = getChangeClass(currentHolders, prevHolders);
+            const movementsClass = getChangeClass(currentMovements, prevMovements);
+            
+            container.innerHTML = `
+                <span>📈 Всего: <span class="${totalClass}">${diffTotal}</span></span>
+                <span>👥 Холдеры: <span class="${holdersClass}">${diffHolders}</span></span>
+                <span>🔄 Движения: <span class="${movementsClass}">${diffMovements}</span></span>
+            `;
+        }
+        
+        // ================================================================
+        // ==================== ГРАФИК И ТАБЛИЦА =========================
+        // ================================================================
         
         function filterDataByPeriod(data, period) {
             if (!data || data.length === 0) return [];
@@ -790,11 +1391,8 @@
             const last = data[data.length - 1];
             const prev = data.length > 1 ? data[data.length - 2] : null;
             
-            document.getElementById('metricTotal').textContent = formatNumber(last.total_nft);
-            document.getElementById('metricBurned').textContent = formatNumber(last.burned);
-            document.getElementById('metricShop').textContent = formatNumber(last.in_shop);
-            document.getElementById('metricHolders').textContent = formatNumber(last.holders);
-            document.getElementById('metricMovements').textContent = formatNumber(last.movements || 0);
+            const avg = last.holders > 0 ? Math.round(last.total_nft / last.holders) : 0;
+            document.getElementById('metricAvgNFT').textContent = formatNumber(avg);
             
             if (prev) {
                 updateChange('metricTotalChange', last.total_nft, prev.total_nft);
@@ -828,22 +1426,12 @@
             }
         }
         
-        function formatNumber(num) {
-            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-        }
-        
-        function formatDate(dateStr) {
-            const d = new Date(dateStr);
-            return d.toLocaleDateString('ru-RU');
-        }
-        
         function buildMainChart(period) {
             const filtered = filterDataByPeriod(historyData, period);
             
             const ctx = document.getElementById('mainChart').getContext('2d');
             if (mainChart) mainChart.destroy();
             
-            // Если нет данных — рисуем пустой график с сообщением
             if (!filtered || filtered.length === 0) {
                 mainChart = new Chart(ctx, {
                     type: 'line',
@@ -860,10 +1448,7 @@
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: { enabled: false }
-                        },
+                        plugins: { legend: { display: false }, tooltip: { enabled: false } },
                         scales: {
                             x: { ticks: { color: '#94a3b8' } },
                             y: { ticks: { color: '#94a3b8' }, beginAtZero: true }
@@ -871,7 +1456,7 @@
                     }
                 });
                 document.getElementById('statsTableBody').innerHTML = 
-                    `<tr><td colspan="6" style="text-align:center;color:#94a3b8;">Загрузка...</td></tr>`;
+                    `<tr><td colspan="7" style="text-align:center;color:#94a3b8;">Загрузка...</td></tr>`;
                 return;
             }
             
@@ -956,10 +1541,7 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    interaction: {
-                        mode: 'index',
-                        intersect: false
-                    },
+                    interaction: { mode: 'index', intersect: false },
                     plugins: {
                         legend: { display: false },
                         tooltip: {
@@ -976,15 +1558,8 @@
                         }
                     },
                     scales: {
-                        x: {
-                            ticks: { color: textColor, maxTicksLimit: 15 },
-                            grid: { color: gridColor }
-                        },
-                        y: {
-                            ticks: { color: textColor, callback: function(value) { return formatNumber(value); } },
-                            grid: { color: gridColor },
-                            beginAtZero: true
-                        }
+                        x: { ticks: { color: textColor, maxTicksLimit: 15 }, grid: { color: gridColor } },
+                        y: { ticks: { color: textColor, callback: function(value) { return formatNumber(value); } }, grid: { color: gridColor }, beginAtZero: true }
                     }
                 }
             });
@@ -997,21 +1572,29 @@
             const tbody = document.getElementById('statsTableBody');
             
             if (!data || data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#94a3b8;">Загрузка...</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#94a3b8;">Загрузка...</td></tr>`;
                 return;
             }
             
-            tbody.innerHTML = data.map(d => `
-                <tr>
-                    <td>${formatDate(d.recorded_at)}</td>
-                    <td><strong>${formatNumber(d.total_nft)}</strong></td>
-                    <td>${formatNumber(d.burned)}</td>
-                    <td>${formatNumber(d.in_shop)}</td>
-                    <td>${formatNumber(d.holders)}</td>
-                    <td>${formatNumber(d.movements || 0)}</td>
-                </tr>
-            `).join('');
+            tbody.innerHTML = data.map(d => {
+                const avg = d.holders > 0 ? Math.round(d.total_nft / d.holders) : 0;
+                return `
+                    <tr>
+                        <td>${formatDate(d.recorded_at)}</td>
+                        <td><strong>${formatNumber(d.total_nft)}</strong></td>
+                        <td>${formatNumber(d.burned)}</td>
+                        <td>${formatNumber(d.in_shop)}</td>
+                        <td>${formatNumber(d.holders)}</td>
+                        <td>${formatNumber(d.movements || 0)}</td>
+                        <td>${formatNumber(avg)}</td>
+                    </tr>
+                `;
+            }).join('');
         }
+        
+        // ================================================================
+        // ==================== ЛЕГЕНДА ==================================
+        // ================================================================
         
         function setupLegend() {
             document.querySelectorAll('#legendCheckboxes input[type="checkbox"]').forEach(cb => {
@@ -1028,6 +1611,10 @@
             });
         }
         
+        // ================================================================
+        // ==================== ВКЛАДКИ ==================================
+        // ================================================================
+        
         function setupTabs() {
             document.querySelectorAll('.tab').forEach(tab => {
                 tab.addEventListener('click', function() {
@@ -1037,20 +1624,56 @@
                     this.classList.add('active');
                     currentTab = this.dataset.tab;
                     document.getElementById(`tab-${currentTab}`).classList.add('active');
+                    
+                    if (currentTab === 'holders') {
+                        renderHolders(topHolders);
+                        calculateConcentration(topHolders);
+                        findNewHolders();
+                        findActiveHolders();
+                    }
                 });
             });
         }
         
+        // ================================================================
+        // ==================== ПЕРИОДЫ ==================================
+        // ================================================================
+        
         function setupPeriods() {
-            document.querySelectorAll('.period-btn:not(.duplo-period)').forEach(btn => {
+            document.querySelectorAll('.period-btn:not(.holders-period):not(.duplo-period)').forEach(btn => {
                 btn.addEventListener('click', function() {
-                    document.querySelectorAll('.period-btn:not(.duplo-period)').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.period-btn:not(.holders-period):not(.duplo-period)').forEach(b => b.classList.remove('active'));
                     this.classList.add('active');
                     currentPeriod = this.dataset.period;
                     buildMainChart(currentPeriod);
+                    updateComparison(currentPeriod);
+                });
+            });
+            
+            document.querySelectorAll('.holders-period').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.holders-period').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    // Перезагружаем данные для холдеров
+                    findNewHolders();
+                    findActiveHolders();
                 });
             });
         }
+        
+        // ================================================================
+        // ==================== СРАВНЕНИЕ ================================
+        // ================================================================
+        
+        function setupCompare() {
+            document.getElementById('comparePeriod').addEventListener('change', function() {
+                updateComparison(this.value);
+            });
+        }
+        
+        // ================================================================
+        // ==================== КОМБО ДУПЛО ==============================
+        // ================================================================
         
         async function buildBurnTable(period) {
             document.getElementById('burnTableBody').innerHTML = 
@@ -1071,6 +1694,10 @@
             });
         }
         
+        // ================================================================
+        // ==================== ИНИЦИАЛИЗАЦИЯ ============================
+        // ================================================================
+        
         async function init() {
             initTheme();
             
@@ -1085,6 +1712,7 @@
             setupPeriods();
             setupDuploPeriods();
             setupLegend();
+            setupCompare();
             
             updateUITexts();
             
