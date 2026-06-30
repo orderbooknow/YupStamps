@@ -813,7 +813,6 @@
                 </div>
             </div>
 
-            <!-- Таблица: Кто сжигал NFT -->
             <div class="table-container">
                 <h3>📋 Кто сжигал NFT</h3>
                 <div class="table-scroll">
@@ -834,7 +833,6 @@
                 </div>
             </div>
 
-            <!-- 🆕 Топ-сжигателей за день -->
             <div class="table-container">
                 <h3>🏆 Топ-сжигателей за день</h3>
                 <div class="table-scroll" id="burnersList">
@@ -851,7 +849,28 @@
         
         const BURNER_ACCOUNT = 'darai_duplo.near';
         const ALCHEMY_ACCOUNT = 'sendler-alchemy.near';
-        const EXCLUDED_OWNERS = ['sendler-alchemy.near'];
+        
+        // ============================================================
+        // 🆕 ИСКЛЮЧАЕМЫЕ И СПЕЦИАЛЬНЫЕ КОШЕЛЬКИ
+        // ============================================================
+        const EXCLUDED_OWNERS = [
+            'sendler-alchemy.near',
+            'darai_collection.near',
+            'darai_duplo.near',
+            'intents.near',
+            'darai_portal.near'
+        ];
+        
+        const SPECIAL_WALLETS = {
+            'intents.near': 'На ХК',
+            'darai_portal.near': 'На Портале',
+            'darai_duplo.near': 'Сожжено',
+            'sendler-alchemy.near': 'В лавке'
+        };
+        
+        function isExcluded(owner) {
+            return EXCLUDED_OWNERS.includes(owner) || SPECIAL_WALLETS[owner];
+        }
         
         let currentLang = 'ru';
         let currentPeriod = 'week';
@@ -1064,29 +1083,38 @@
                     document.getElementById('updateTime').textContent = 
                         `🔄 ${new Date(latest.recorded_at).toLocaleString('ru-RU')}`;
                     
-                    const avg = latest.total_holders > 0 ? Math.round(latest.total_nft / latest.total_holders) : 0;
+                    // Фильтруем топ-холдеры
+                    let filteredHolders = [];
+                    if (latest.top_holders) {
+                        filteredHolders = latest.top_holders.filter(h => !isExcluded(h.address));
+                    }
+                    
+                    const avg = filteredHolders.length > 0 && latest.total_holders > 0 
+                        ? Math.round(latest.total_nft / latest.total_holders) 
+                        : 0;
+                    
                     document.getElementById('metricTotal').textContent = formatNumber(latest.total_nft);
                     document.getElementById('metricBurned').textContent = formatNumber(latest.burned_count);
                     document.getElementById('metricShop').textContent = formatNumber(latest.shop_count);
                     document.getElementById('metricHolders').textContent = formatNumber(latest.total_holders);
                     document.getElementById('metricAvgNFT').textContent = formatNumber(avg);
                     
-                    if (latest.top_holders) {
-                        topHolders = latest.top_holders;
+                    if (filteredHolders.length > 0) {
+                        topHolders = filteredHolders;
                         renderHolders(topHolders);
                         calculateConcentration(topHolders);
                     }
-                }
-                
-                // Загружаем предыдущую статистику для сравнения
-                const { data: prevStats } = await supabaseClient
-                    .from('contract_stats')
-                    .select('*')
-                    .order('recorded_at', { ascending: false })
-                    .range(1, 2);
-                
-                if (prevStats && prevStats.length > 0 && prevStats[0].top_holders) {
-                    prevTopHolders = prevStats[0].top_holders;
+                    
+                    // Загружаем предыдущую статистику для сравнения
+                    const { data: prevStats } = await supabaseClient
+                        .from('contract_stats')
+                        .select('*')
+                        .order('recorded_at', { ascending: false })
+                        .range(1, 2);
+                    
+                    if (prevStats && prevStats.length > 0 && prevStats[0].top_holders) {
+                        prevTopHolders = prevStats[0].top_holders.filter(h => !isExcluded(h.address));
+                    }
                 }
                 
                 // Строим график и таблицу
@@ -1095,8 +1123,6 @@
                 updateComparison('week');
                 findNewHolders();
                 findActiveHolders();
-                
-                // 🆕 Загружаем топ-сжигателей
                 loadBurners();
                 
             } catch (error) {
@@ -1157,7 +1183,6 @@
                 const change = getChangeText(h.count, prevCount);
                 const changeClass = getChangeClass(h.count, prevCount);
                 const icon = getChangeIcon(h.count, prevCount);
-                const isNew = !prevMap[h.address] && h.count > 0;
                 
                 html += `<tr>
                     <td>${i + 1}</td>
@@ -1197,7 +1222,7 @@
                 
                 const newHolders = [];
                 for (const owner of currOwners) {
-                    if (!prevOwners.has(owner)) {
+                    if (!prevOwners.has(owner) && !isExcluded(owner)) {
                         const count = curr.filter(s => s.owner_id === owner).length;
                         newHolders.push({ address: owner, count });
                     }
@@ -1259,7 +1284,7 @@
                 const movements = {};
                 for (const [tokenId, owner] of Object.entries(currMap)) {
                     const prevOwner = prevMap[tokenId];
-                    if (prevOwner && prevOwner !== owner) {
+                    if (prevOwner && prevOwner !== owner && !isExcluded(owner)) {
                         movements[owner] = (movements[owner] || 0) + 1;
                     }
                 }
@@ -1671,8 +1696,11 @@
                     document.getElementById(`tab-${currentTab}`).classList.add('active');
                     
                     if (currentTab === 'holders') {
-                        renderHolders(topHolders);
-                        calculateConcentration(topHolders);
+                        // Используем уже загруженные данные
+                        if (topHolders.length > 0) {
+                            renderHolders(topHolders);
+                            calculateConcentration(topHolders);
+                        }
                         findNewHolders();
                         findActiveHolders();
                     }
