@@ -9,12 +9,424 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
-        /* ... (стили такие же, как были) ... */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 16px;
+            transition: background 0.3s, color 0.3s;
+            min-height: 100vh;
+        }
+        
+        body.light {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+        
+        .container { max-width: 1200px; margin: 0 auto; }
+        
+        .header {
+            background: #1e293b;
+            border-radius: 24px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        body.light .header {
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .header-left .logo {
+            font-size: 22px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #e94560, #ff6b8b);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .back-btn {
+            background: #334155;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 40px;
+            color: #e2e8f0;
+            cursor: pointer;
+            font-size: 13px;
+            transition: 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        body.light .back-btn {
+            background: #e2e8f0;
+            color: #1e293b;
+        }
+        
+        .back-btn:hover { opacity: 0.8; }
+        
+        .header-right {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .theme-toggle, .lang-toggle {
+            background: #334155;
+            border: 1px solid #475569;
+            border-radius: 40px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #e2e8f0;
+            transition: 0.2s;
+        }
+        
+        body.light .theme-toggle,
+        body.light .lang-toggle {
+            background: #e2e8f0;
+            color: #1e293b;
+            border-color: #cbd5e1;
+        }
+        
+        .theme-toggle:hover, .lang-toggle:hover { opacity: 0.8; }
+        
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        
+        .page-title span { color: #e94560; }
+        
+        .update-info {
+            font-size: 13px;
+            color: #94a3b8;
+            margin-bottom: 16px;
+        }
+        
+        body.light .update-info { color: #64748b; }
+        
+        .tabs {
+            display: flex;
+            gap: 6px;
+            background: #1e293b;
+            border-radius: 50px;
+            padding: 4px;
+            margin-bottom: 20px;
+        }
+        
+        body.light .tabs { background: rgba(255,255,255,0.6); }
+        
+        .tab {
+            flex: 1;
+            padding: 10px 16px;
+            text-align: center;
+            border-radius: 40px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #94a3b8;
+            transition: 0.3s;
+            border: none;
+            background: transparent;
+        }
+        
+        .tab.active {
+            background: #0f172a;
+            color: #e94560;
+        }
+        
+        body.light .tab.active {
+            background: white;
+            color: #e94560;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        
+        .tab:hover { opacity: 0.8; }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .period-section {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+            padding: 12px 16px;
+            background: #1e293b;
+            border-radius: 16px;
+        }
+        
+        body.light .period-section {
+            background: rgba(255,255,255,0.6);
+        }
+        
+        .period-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #94a3b8;
+        }
+        
+        .period-btn {
+            padding: 6px 14px;
+            border-radius: 40px;
+            border: none;
+            background: #334155;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 12px;
+            transition: 0.2s;
+        }
+        
+        body.light .period-btn {
+            background: #e2e8f0;
+            color: #64748b;
+        }
+        
+        .period-btn.active {
+            background: #e94560;
+            color: white;
+        }
+        
+        .period-btn:hover:not(.active) { opacity: 0.7; }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .metric-card {
+            background: #1e293b;
+            padding: 14px 16px;
+            border-radius: 16px;
+            text-align: center;
+            transition: 0.2s;
+        }
+        
+        body.light .metric-card {
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        
+        .metric-card:hover { transform: translateY(-2px); }
+        
+        .metric-value {
+            font-size: 24px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #e94560, #ff6b8b);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .metric-label {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+        
+        body.light .metric-label { color: #64748b; }
+        
+        .metric-change {
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+        
+        .metric-change.up { color: #10b981; }
+        .metric-change.down { color: #ef4444; }
+        .metric-change.neutral { color: #f59e0b; }
+        
+        .chart-container {
+            background: #1e293b;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        body.light .chart-container {
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        
+        .chart-container h3 {
+            font-size: 16px;
+            margin-bottom: 12px;
+            color: #e2e8f0;
+        }
+        
+        body.light .chart-container h3 { color: #1e293b; }
+        
+        .chart-wrapper {
+            position: relative;
+            height: 350px;
+        }
+        
+        .legend-checkboxes {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            padding: 12px 0 4px;
+        }
+        
+        .legend-checkboxes label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            color: #94a3b8;
+        }
+        
+        body.light .legend-checkboxes label { color: #64748b; }
+        
+        .legend-checkboxes input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #e94560;
+            cursor: pointer;
+        }
+        
+        .legend-dot {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        
+        .table-container {
+            background: #1e293b;
+            border-radius: 20px;
+            padding: 16px 20px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+        }
+        
+        body.light .table-container {
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        
+        .table-container h3 {
+            font-size: 16px;
+            margin-bottom: 12px;
+            color: #e2e8f0;
+        }
+        
+        body.light .table-container h3 { color: #1e293b; }
+        
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        
+        .stats-table th {
+            text-align: left;
+            padding: 10px 12px;
+            background: #0f172a;
+            color: #94a3b8;
+            font-weight: 600;
+            font-size: 12px;
+            border-bottom: 2px solid #334155;
+        }
+        
+        body.light .stats-table th {
+            background: #f1f5f9;
+            color: #64748b;
+            border-bottom-color: #e2e8f0;
+        }
+        
+        .stats-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #334155;
+        }
+        
+        body.light .stats-table td {
+            border-bottom-color: #e2e8f0;
+        }
+        
+        .stats-table tr:hover td {
+            background: rgba(233, 69, 96, 0.05);
+        }
+        
+        .stats-table .highlight {
+            color: #e94560;
+            font-weight: 600;
+        }
+        
+        .table-scroll {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .table-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .table-scroll::-webkit-scrollbar-track {
+            background: #0f172a;
+            border-radius: 10px;
+        }
+        
+        .table-scroll::-webkit-scrollbar-thumb {
+            background: #e94560;
+            border-radius: 10px;
+        }
+        
+        body.light .table-scroll::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        
+        @media (max-width: 768px) {
+            .header { padding: 12px 16px; }
+            .header-left .logo { font-size: 18px; }
+            .page-title { font-size: 22px; }
+            .tabs .tab { font-size: 12px; padding: 8px 10px; }
+            .period-section { padding: 10px 12px; }
+            .period-btn { font-size: 11px; padding: 4px 10px; }
+            .metrics-grid { grid-template-columns: repeat(3, 1fr); }
+            .chart-wrapper { height: 250px; }
+            .legend-checkboxes { gap: 10px; }
+            .legend-checkboxes label { font-size: 12px; }
+            .stats-table { font-size: 11px; }
+            .stats-table th, .stats-table td { padding: 6px 8px; }
+        }
+        
+        @media (max-width: 480px) {
+            .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+            .metric-value { font-size: 18px; }
+            .chart-wrapper { height: 200px; }
+            .header-right .lang-toggle { font-size: 10px; padding: 4px 8px; }
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- ===== ШАПКА ===== -->
         <div class="header">
             <div class="header-left">
                 <a href="index.html" class="back-btn">← Назад</a>
@@ -30,13 +442,11 @@
         <div class="page-title">📊 <span>YupStats</span> — Аналитика NFT</div>
         <div class="update-info" id="updateInfo">🔄 Данные загружаются...</div>
 
-        <!-- ===== ВКЛАДКИ ===== -->
         <div class="tabs" id="mainTabs">
             <button class="tab active" data-tab="analytics">📊 Аналитика</button>
             <button class="tab" data-tab="duplo">🔥 Комбо Дупло</button>
         </div>
 
-        <!-- ===== АНАЛИТИКА ===== -->
         <div class="tab-content active" id="tab-analytics">
             <div class="period-section">
                 <span class="period-label">📅 Период:</span>
@@ -78,7 +488,7 @@
             </div>
 
             <div class="chart-container">
-                <h3>📈 Динамика NFT (история)</h3>
+                <h3>📈 Динамика NFT</h3>
                 <div class="chart-wrapper">
                     <canvas id="mainChart"></canvas>
                 </div>
@@ -92,7 +502,7 @@
             </div>
 
             <div class="table-container">
-                <h3>📊 Детальная статистика (история)</h3>
+                <h3>📊 Детальная статистика</h3>
                 <div class="table-scroll">
                     <table class="stats-table" id="statsTable">
                         <thead>
@@ -105,15 +515,12 @@
                                 <th>🔄 Движения</th>
                             </tr>
                         </thead>
-                        <tbody id="statsTableBody">
-                            <tr><td colspan="6" style="text-align:center;color:#94a3b8;">Загрузка...</td></tr>
-                        </tbody>
+                        <tbody id="statsTableBody"></tbody>
                     </table>
                 </div>
             </div>
         </div>
 
-        <!-- ===== КОМБО ДУПЛО ===== -->
         <div class="tab-content" id="tab-duplo">
             <div class="period-section">
                 <span class="period-label">📅 Период:</span>
@@ -175,10 +582,6 @@
     </div>
 
     <script>
-        // ================================================================
-        // ==================== КОНФИГУРАЦИЯ ==============================
-        // ================================================================
-        
         const SUPABASE_URL = 'https://obbujhdmegdgxzdtpbai.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_R0pbZnbuSEbkaCLHcZ_YhQ_J2ZRgIB8';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -187,20 +590,12 @@
         const ALCHEMY_ACCOUNT = 'sendler-alchemy.near';
         const EXCLUDED_OWNERS = ['sendler-alchemy.near'];
         
-        // ================================================================
-        // ==================== СОСТОЯНИЕ ================================
-        // ================================================================
-        
         let currentLang = 'ru';
         let currentPeriod = 'week';
         let currentTab = 'analytics';
         let historyData = [];
         let mainChart = null;
         let burnChart = null;
-        
-        // ================================================================
-        // ==================== ПЕРЕВОД ==================================
-        // ================================================================
         
         const translations = {
             ru: {
@@ -267,10 +662,6 @@
             return translations[currentLang]?.[key] || key;
         }
         
-        // ================================================================
-        // ==================== ТЕМА =====================================
-        // ================================================================
-        
         function initTheme() {
             const saved = localStorage.getItem('yupstats_theme') || 'dark';
             if (saved === 'light') {
@@ -295,10 +686,6 @@
             if (mainChart) mainChart.update();
             if (burnChart) burnChart.update();
         }
-        
-        // ================================================================
-        // ==================== ЯЗЫК =====================================
-        // ================================================================
         
         function toggleLang() {
             currentLang = currentLang === 'ru' ? 'en' : 'ru';
@@ -330,13 +717,9 @@
             document.querySelector('.back-btn').textContent = `← ${t('back')}`;
         }
         
-        // ================================================================
-        // ==================== ЗАГРУЗКА ДАННЫХ ==========================
-        // ================================================================
-        
         async function loadAllData() {
             try {
-                // Загружаем ИСТОРИЮ из contract_stats_history
+                // Загружаем историю
                 const { data: history, error: historyError } = await supabaseClient
                     .from('contract_stats_history')
                     .select('*')
@@ -361,22 +744,24 @@
                         `🔄 Данные обновлены: ${new Date(latest.recorded_at).toLocaleString('ru-RU')}`;
                     document.getElementById('updateTime').textContent = 
                         `🔄 ${new Date(latest.recorded_at).toLocaleString('ru-RU')}`;
+                    
+                    // Всегда показываем метрики
+                    document.getElementById('metricTotal').textContent = formatNumber(latest.total_nft);
+                    document.getElementById('metricBurned').textContent = formatNumber(latest.burned_count);
+                    document.getElementById('metricShop').textContent = formatNumber(latest.shop_count);
+                    document.getElementById('metricHolders').textContent = formatNumber(latest.total_holders);
+                    document.getElementById('metricMovements').textContent = '0';
                 }
                 
-                // Строим график с периодом по умолчанию
+                // Строим график
                 buildMainChart('week');
                 buildBurnTable('week');
                 
             } catch (error) {
                 console.error('❌ Ошибка загрузки:', error);
                 document.getElementById('updateInfo').textContent = '❌ Ошибка загрузки данных';
-                document.getElementById('updateTime').textContent = '❌ Ошибка';
             }
         }
-        
-        // ================================================================
-        // ==================== ФИЛЬТРАЦИЯ ПО ПЕРИОДУ ====================
-        // ================================================================
         
         function filterDataByPeriod(data, period) {
             if (!data || data.length === 0) return [];
@@ -399,16 +784,8 @@
             return data.filter(item => item.recorded_at.split('T')[0] >= start);
         }
         
-        // ================================================================
-        // ==================== МЕТРИКИ ==================================
-        // ================================================================
-        
         function updateMetrics(data) {
-            if (!data || data.length === 0) {
-                ['metricTotal', 'metricBurned', 'metricShop', 'metricHolders', 'metricMovements']
-                    .forEach(id => document.getElementById(id).textContent = '—');
-                return;
-            }
+            if (!data || data.length === 0) return;
             
             const last = data[data.length - 1];
             const prev = data.length > 1 ? data[data.length - 2] : null;
@@ -460,16 +837,41 @@
             return d.toLocaleDateString('ru-RU');
         }
         
-        // ================================================================
-        // ==================== ГРАФИК (ОСНОВНОЙ) =======================
-        // ================================================================
-        
         function buildMainChart(period) {
             const filtered = filterDataByPeriod(historyData, period);
             
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            if (mainChart) mainChart.destroy();
+            
+            // Если нет данных — рисуем пустой график с сообщением
             if (!filtered || filtered.length === 0) {
+                mainChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Нет данных'],
+                        datasets: [
+                            { label: 'Всего NFT', data: [0], borderColor: '#e94560', pointRadius: 0 },
+                            { label: 'Сожжено', data: [0], borderColor: '#ef4444', pointRadius: 0 },
+                            { label: 'В лавке', data: [0], borderColor: '#f59e0b', pointRadius: 0 },
+                            { label: 'Холдеры', data: [0], borderColor: '#10b981', pointRadius: 0 },
+                            { label: 'Движения', data: [0], borderColor: '#8b5cf6', pointRadius: 0 }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { enabled: false }
+                        },
+                        scales: {
+                            x: { ticks: { color: '#94a3b8' } },
+                            y: { ticks: { color: '#94a3b8' }, beginAtZero: true }
+                        }
+                    }
+                });
                 document.getElementById('statsTableBody').innerHTML = 
-                    `<tr><td colspan="6" style="text-align:center;color:#94a3b8;">${t('noData')}</td></tr>`;
+                    `<tr><td colspan="6" style="text-align:center;color:#94a3b8;">Загрузка...</td></tr>`;
                 return;
             }
             
@@ -483,10 +885,6 @@
             const isLight = document.body.classList.contains('light');
             const textColor = isLight ? '#1e293b' : '#e2e8f0';
             const gridColor = isLight ? '#e2e8f0' : '#334155';
-            
-            const ctx = document.getElementById('mainChart').getContext('2d');
-            
-            if (mainChart) mainChart.destroy();
             
             mainChart = new Chart(ctx, {
                 type: 'line',
@@ -595,15 +993,11 @@
             updateTable(filtered);
         }
         
-        // ================================================================
-        // ==================== ТАБЛИЦА ==================================
-        // ================================================================
-        
         function updateTable(data) {
             const tbody = document.getElementById('statsTableBody');
             
             if (!data || data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#94a3b8;">${t('noData')}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#94a3b8;">Загрузка...</td></tr>`;
                 return;
             }
             
@@ -618,10 +1012,6 @@
                 </tr>
             `).join('');
         }
-        
-        // ================================================================
-        // ==================== ЛЕГЕНДА (ЧЕКБОКСЫ) ======================
-        // ================================================================
         
         function setupLegend() {
             document.querySelectorAll('#legendCheckboxes input[type="checkbox"]').forEach(cb => {
@@ -638,10 +1028,6 @@
             });
         }
         
-        // ================================================================
-        // ==================== ВКЛАДКИ ==================================
-        // ================================================================
-        
         function setupTabs() {
             document.querySelectorAll('.tab').forEach(tab => {
                 tab.addEventListener('click', function() {
@@ -655,10 +1041,6 @@
             });
         }
         
-        // ================================================================
-        // ==================== ПЕРИОДЫ ==================================
-        // ================================================================
-        
         function setupPeriods() {
             document.querySelectorAll('.period-btn:not(.duplo-period)').forEach(btn => {
                 btn.addEventListener('click', function() {
@@ -670,13 +1052,9 @@
             });
         }
         
-        // ================================================================
-        // ==================== КОМБО ДУПЛО (заглушка) ==================
-        // ================================================================
-        
         async function buildBurnTable(period) {
             document.getElementById('burnTableBody').innerHTML = 
-                `<tr><td colspan="5" style="text-align:center;color:#94a3b8;">Данные загружаются...</td></tr>`;
+                `<tr><td colspan="5" style="text-align:center;color:#94a3b8;">Загрузка...</td></tr>`;
             document.getElementById('burnTotal').textContent = '—';
             document.getElementById('burnSenders').textContent = '—';
             document.getElementById('burnTopSender').textContent = '—';
@@ -692,10 +1070,6 @@
                 });
             });
         }
-        
-        // ================================================================
-        // ==================== ИНИЦИАЛИЗАЦИЯ ============================
-        // ================================================================
         
         async function init() {
             initTheme();
