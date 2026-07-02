@@ -1280,7 +1280,15 @@
             // Среднее на холдера
             const avg = holders.current > 0 ? Math.round(total.current / holders.current) : 0;
             document.getElementById('metricAvgNFT').textContent = formatNumber(avg);
-            
+            // 🆕 % изменения для ХК и Портала
+            if (prevStats && prevStats.length > 0) {
+            const prev = prevStats[0];
+            setTimeout(() => {
+        updateChange('metricHotCraftChange', latest.on_hotcraft || 0, prev.on_hotcraft || 0);
+        updateChange('metricPortalChange', latest.on_portal || 0, prev.on_portal || 0);
+    }, 100);
+}
+
             // Топ-холдеры
             if (filteredHolders.length > 0) {
                 topHolders = filteredHolders;
@@ -1620,11 +1628,11 @@
     }
     
     try {
-        // Берём только записи с реальными отправителями
+        // ✅ ИСКЛЮЧАЕМ unknown
         const { data, error } = await supabaseClient
             .from('burn_history')
             .select('*')
-            .neq('from_address', 'unknown')  // 👈 ИСКЛЮЧАЕМ unknown
+            .neq('from_address', 'unknown')
             .order('timestamp', { ascending: false })
             .limit(200);
         
