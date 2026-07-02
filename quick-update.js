@@ -429,6 +429,9 @@ async function saveFullContractStats(allTokens) {
         console.log(`🔄 Движений за сегодня: ${stats.movements[today] || 0}`);
     }
     
+    // ============================================================
+    // 🆕 СОХРАНЯЕМ ИСТОРИЮ С ДОБАВЛЕНИЕМ on_hotcraft И on_portal
+    // ============================================================
     const { error: historyError } = await supabase
         .from('contract_stats_history')
         .insert({
@@ -437,13 +440,16 @@ async function saveFullContractStats(allTokens) {
             holders: stats.holders.size,
             burned: stats.burned,
             in_shop: stats.shop,
-            movements: stats.movements[today] || 0
+            movements: stats.movements[today] || 0,
+            on_hotcraft: stats.onHotCraft,   // 👈 ДОБАВЛЕНО
+            on_portal: stats.onPortal        // 👈 ДОБАВЛЕНО
         });
     
     if (historyError) {
         console.error('❌ Ошибка сохранения истории:', historyError);
     } else {
         console.log(`✅ Сохранена история за ${new Date().toISOString()}`);
+        console.log(`📊 На ХК: ${stats.onHotCraft}, На Портале: ${stats.onPortal}`);
     }
 }
 
@@ -526,6 +532,9 @@ async function sendTelegramReport(allTokens, updatedCount, startTime) {
     }
 }
 
+// ============================================================
+// 7. ЗАГРУЗКА ИСТОРИИ СЖИГАНИЙ
+// ============================================================
 async function loadBurnHistory() {
     console.log('🔥 Загружаем историю сжиганий...');
     const url = `https://api.sendler.xyz/history/nft-user-history/?wallet_id=darai_duplo.near&limit=200`;
