@@ -1238,8 +1238,6 @@
             const latest = stats[0];
             document.getElementById('updateInfo').textContent = 
                 `🔄 Данные обновлены: ${new Date(latest.recorded_at).toLocaleString('ru-RU')}`;
-            document.getElementById('updateTime').textContent = 
-                `🔄 ${new Date(latest.recorded_at).toLocaleString('ru-RU')}`;
             
             // Фильтруем топ-холдеры
             let filteredHolders = [];
@@ -1280,14 +1278,6 @@
             // Среднее на холдера
             const avg = holders.current > 0 ? Math.round(total.current / holders.current) : 0;
             document.getElementById('metricAvgNFT').textContent = formatNumber(avg);
-            // 🆕 % изменения для ХК и Портала
-            if (prevStats && prevStats.length > 0) {
-            const prev = prevStats[0];
-            setTimeout(() => {
-        updateChange('metricHotCraftChange', latest.on_hotcraft || 0, prev.on_hotcraft || 0);
-        updateChange('metricPortalChange', latest.on_portal || 0, prev.on_portal || 0);
-    }, 100);
-}
 
             // Топ-холдеры
             if (filteredHolders.length > 0) {
@@ -1305,6 +1295,13 @@
             
             if (prevStats && prevStats.length > 0 && prevStats[0].top_holders) {
                 prevTopHolders = prevStats[0].top_holders.filter(h => !isExcluded(h.address));
+            }
+
+            // 🆕 % изменения для ХК и Портала
+            if (prevStats && prevStats.length > 0) {
+                const prev = prevStats[0];
+                updateChange('metricHotCraftChange', latest.on_hotcraft || 0, prev.on_hotcraft || 0);
+                updateChange('metricPortalChange', latest.on_portal || 0, prev.on_portal || 0);
             }
         }
         
