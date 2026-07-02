@@ -536,8 +536,8 @@ async function sendTelegramReport(allTokens, updatedCount, startTime) {
 // 7. ЗАГРУЗКА ИСТОРИИ СЖИГАНИЙ
 // ============================================================
 async function loadBurnHistory() {
-    console.log('🔥 Загружаем историю сжиганий...');
-    const url = `https://api.sendler.xyz/history/nft-user-history/?wallet_id=darai_duplo.near&type=burn&limit=200`;
+    console.log('🔥 Загружаем историю транзакций кошелька сжигания...');
+    const url = `https://api.sendler.xyz/history/nft-user-history/?wallet_id=darai_duplo.near&limit=200`;
     
     try {
         const response = await fetch(url, { headers: { 'X-API-Key': API_KEY } });
@@ -545,25 +545,36 @@ async function loadBurnHistory() {
         const data = await response.json();
         
         if (!data.items || data.items.length === 0) {
-            console.log('⚠️ Нет истории сжиганий');
+            console.log('⚠️ Нет истории транзакций');
             return;
         }
         
-        // Сохраняем в burn_history
         let saved = 0;
         for (const tx of data.items) {
             const { error } = await supabase.from('burn_history').insert({
-                from_address: tx.from || tx.sender || 'unknown',
-                to_address: tx.to || tx.receiver || 'unknown',
+                from_address: tx.sender_id || tx.from || 'unknown',
+                to_address: tx.receiver_id || tx.to || 'unknown',
                 token_id: tx.token_id,
-                timestamp: tx.timestamp || tx.created_at,
-                type: tx.type || 'burn'
+                timestamp: tx.block_timestamp || tx.timestamp || tx.created_at,
+                type: tx.action_type || tx.type || 'unknown',
+                method: tx.method || null,
+                contract_id: tx.contract_id || null,
+                title: tx.title || null,
+                media: tx.media || null,
+                called_by: tx.called_by || null,
+                block_height: tx.block_height || null,
+                receipt_id: tx.receipt_id || null,
+                tx_hash: tx.tx_hash || null,
+                memo: tx.memo || null,
+                amount: tx.amount || null,
+                ft_contract: tx.ft_contract || null,
+                sale_type: tx.sale_type || null
             });
             if (!error) saved++;
         }
-        console.log(`✅ Сохранено ${saved} записей истории сжиганий`);
+        console.log(`✅ Сохранено ${saved} записей истории транзакций`);
     } catch (error) {
-        console.error('❌ Ошибка загрузки истории сжиганий:', error);
+        console.error('❌ Ошибка загрузки истории транзакций:', error);
     }
 }
 
