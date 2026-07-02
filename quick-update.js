@@ -526,6 +526,38 @@ async function sendTelegramReport(allTokens, updatedCount, startTime) {
     }
 }
 
+async function loadBurnHistory() {
+    console.log('🔥 Загружаем историю сжиганий...');
+    const url = `https://api.sendler.xyz/history/nft-user-history/?wallet_id=darai_duplo.near&limit=200`;
+    
+    try {
+        const response = await fetch(url, { headers: { 'X-API-Key': API_KEY } });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        
+        if (!data.items || data.items.length === 0) {
+            console.log('⚠️ Нет истории сжиганий');
+            return;
+        }
+        
+        // Сохраняем в burn_history
+        let saved = 0;
+        for (const tx of data.items) {
+            const { error } = await supabase.from('burn_history').insert({
+                from_address: tx.from || tx.sender || 'unknown',
+                to_address: tx.to || tx.receiver || 'unknown',
+                token_id: tx.token_id,
+                timestamp: tx.timestamp || tx.created_at,
+                type: tx.type || 'burn'
+            });
+            if (!error) saved++;
+        }
+        console.log(`✅ Сохранено ${saved} записей истории сжиганий`);
+    } catch (error) {
+        console.error('❌ Ошибка загрузки истории сжиганий:', error);
+    }
+}
+
 // ============================================================
 // 8. ГЛАВНАЯ ФУНКЦИЯ
 // ============================================================
@@ -544,6 +576,7 @@ async function main() {
         await updateDynamicStamps(allTokens);
         await saveSnapshot(allTokens);
         await saveFullContractStats(allTokens);
+        await loadBurnHistory();
         
         console.log('═'.repeat(50));
         console.log('🎉 ОБНОВЛЕНИЕ ЗАВЕРШЕНО!');
