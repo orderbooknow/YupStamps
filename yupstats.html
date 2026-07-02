@@ -1269,9 +1269,23 @@
             document.getElementById('metricMovements').textContent = formatNumber(movements.current);
             updateChange('metricMovementsChange', movements.current, movements.previous);
             
+            // Загружаем предыдущую статистику для сравнения ХК и Портала
+            const { data: prevStats } = await supabaseClient
+                .from('contract_stats')
+                .select('*')
+                .order('recorded_at', { ascending: false })
+                .range(1, 2);
+            
             // 🆕 ХК и Портале (из latest)
             document.getElementById('metricHotCraft').textContent = formatNumber(latest.on_hotcraft || 0);
             document.getElementById('metricPortal').textContent = formatNumber(latest.on_portal || 0);
+            
+            // 🆕 % изменения для ХК и Портала (сравниваем с предыдущим снимком)
+            if (prevStats && prevStats.length > 0) {
+                const prev = prevStats[0];
+                updateChange('metricHotCraftChange', latest.on_hotcraft || 0, prev.on_hotcraft || 0);
+                updateChange('metricPortalChange', latest.on_portal || 0, prev.on_portal || 0);
+            }
             
             // Среднее на холдера
             const avg = holders.current > 0 ? Math.round(total.current / holders.current) : 0;
@@ -1283,13 +1297,6 @@
                 renderHolders(topHolders);
                 calculateConcentration(topHolders);
             }
-            
-            // Загружаем предыдущую статистику для сравнения
-            const { data: prevStats } = await supabaseClient
-                .from('contract_stats')
-                .select('*')
-                .order('recorded_at', { ascending: false })
-                .range(1, 2);
             
             if (prevStats && prevStats.length > 0 && prevStats[0].top_holders) {
                 prevTopHolders = prevStats[0].top_holders.filter(h => !isExcluded(h.address));
