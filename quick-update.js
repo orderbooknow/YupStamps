@@ -537,7 +537,7 @@ async function sendTelegramReport(allTokens, updatedCount, startTime) {
 // ============================================================
 async function loadBurnHistory() {
     console.log('🔥 Загружаем историю сжиганий...');
-    const url = `https://api.sendler.xyz/history/nft-user-history/?wallet_id=darai_duplo.near&limit=200`;
+    const url = `https://api.sendler.xyz/history/nft-user-history/?wallet_id=darai_duplo.near&type=burn&limit=200`;
     
     try {
         const response = await fetch(url, { headers: { 'X-API-Key': API_KEY } });
