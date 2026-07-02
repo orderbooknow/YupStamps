@@ -787,10 +787,12 @@
                 <div class="metric-card">
                     <div class="metric-value" id="metricHotCraft">—</div>
                     <div class="metric-label">🏪 На ХК</div>
+                    <div class="metric-change" id="metricHotCraftChange"></div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-value" id="metricPortal">—</div>
                     <div class="metric-label">🏪 На Портале</div>
+                    <div class="metric-change" id="metricPortalChange"></div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-value" id="metricHolders">—</div>
@@ -902,66 +904,74 @@
         <!-- ============================================================ -->
         <!-- ==================== ВКЛАДКА: КОМБО ДУПЛО =================== -->
         <!-- ============================================================ -->
+
         <div class="tab-content" id="tab-duplo">
-            <div class="period-section">
-                <span class="period-label">📅 Период:</span>
-                <button class="period-btn duplo-period" data-period="day">День</button>
-                <button class="period-btn duplo-period" data-period="2days">2д</button>
-                <button class="period-btn duplo-period" data-period="3days">3д</button>
-                <button class="period-btn duplo-period active" data-period="week">Неделя</button>
-                <button class="period-btn duplo-period" data-period="month">Месяц</button>
-                <button class="period-btn duplo-period" data-period="year">Год</button>
-                <button class="period-btn duplo-period" data-period="all">Всё</button>
-            </div>
+    <div class="period-section">
+        <span class="period-label">📅 Период:</span>
+        <button class="period-btn duplo-period" data-period="day">День</button>
+        <button class="period-btn duplo-period" data-period="2days">2д</button>
+        <button class="period-btn duplo-period" data-period="3days">3д</button>
+        <button class="period-btn duplo-period active" data-period="week">Неделя</button>
+        <button class="period-btn duplo-period" data-period="month">Месяц</button>
+        <button class="period-btn duplo-period" data-period="year">Год</button>
+        <button class="period-btn duplo-period" data-period="all">Всё</button>
+    </div>
 
-            <div class="burn-stats" id="burnStats">
-                <div class="burn-stat-card">
-                    <div class="burn-stat-value" id="burnTotal">—</div>
-                    <div class="burn-stat-label">🔥 Всего сожжено</div>
-                </div>
-                <div class="burn-stat-card">
-                    <div class="burn-stat-value" id="burnSenders">—</div>
-                    <div class="burn-stat-label">👥 Участников</div>
-                </div>
-                <div class="burn-stat-card">
-                    <div class="burn-stat-value" id="burnTopSender">—</div>
-                    <div class="burn-stat-label">🏆 Лидер</div>
-                </div>
-                <div class="burn-stat-card">
-                    <div class="burn-stat-value" id="burnAvg">—</div>
-                    <div class="burn-stat-label">📊 В среднем</div>
-                </div>
-            </div>
-
-            <div class="chart-container">
-                <h3>🔥 Динамика сжиганий</h3>
-                <div class="chart-wrapper">
-                    <canvas id="burnChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Кто сжигал NFT -->
-            <div class="table-container">
-                <h3>📋 Кто сжигал NFT</h3>
-                <div class="table-scroll">
-                    <table class="stats-table" id="burnTable">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>👤 Кошелек</th>
-                                <th>🔥 Количество</th>
-                                <th>📅 Первое сжигание</th>
-                                <th>📅 Последнее сжигание</th>
-                            </tr>
-                        </thead>
-                        <tbody id="burnTableBody">
-                            <tr><td colspan="5" style="text-align:center;color:#94a3b8;">Загрузка...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+    <div class="burn-stats" id="burnStats">
+        <div class="burn-stat-card">
+            <div class="burn-stat-value" id="burnTotal">—</div>
+            <div class="burn-stat-label">🔥 Всего сожжено</div>
+        </div>
+        <div class="burn-stat-card">
+            <div class="burn-stat-value" id="burnSenders">—</div>
+            <div class="burn-stat-label">👥 Участников</div>
+        </div>
+        <div class="burn-stat-card">
+            <div class="burn-stat-value" id="burnTopSender">—</div>
+            <div class="burn-stat-label">🏆 Лидер</div>
+        </div>
+        <div class="burn-stat-card">
+            <div class="burn-stat-value" id="burnAvg">—</div>
+            <div class="burn-stat-label">📊 В среднем</div>
         </div>
     </div>
+
+    <div class="chart-container">
+        <h3>🔥 Динамика сжиганий</h3>
+        <div class="chart-wrapper">
+            <canvas id="burnChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Кто сжигал NFT -->
+    <div class="table-container">
+        <h3>📋 Кто сжигал NFT</h3>
+        <div class="table-scroll">
+            <table class="stats-table" id="burnTable">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>👤 Кошелек</th>
+                        <th>🔥 Количество</th>
+                        <th>📅 Первое сжигание</th>
+                        <th>📅 Последнее сжигание</th>
+                    </tr>
+                </thead>
+                <tbody id="burnTableBody">
+                    <tr><td colspan="5" style="text-align:center;color:#94a3b8;">Загрузка...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 🆕 Топ-сжигателей за день -->
+    <div class="table-container">
+        <h3>🏆 Топ-сжигателей за день</h3>
+        <div class="table-scroll" id="burnersList">
+            <div style="text-align:center;padding:20px;color:#94a3b8;">Загрузка...</div>
+        </div>
+    </div>
+</div>
 
     <script>
         const SUPABASE_URL = 'https://obbujhdmegdgxzdtpbai.supabase.co';
@@ -1176,92 +1186,99 @@
         // ==================== ЗАГРУЗКА ДАННЫХ ==========================
         // ================================================================
         
-        async function loadAllData() {
-            try {
-                // Загружаем историю
-                const { data: history, error: historyError } = await supabaseClient
-                    .from('contract_stats_history')
-                    .select('*')
-                    .order('recorded_at', { ascending: true });
-                
-                if (historyError) throw historyError;
-                
-                // 🆕 ГРУППИРУЕМ ПО ДНЯМ — берём последнюю запись за день
-                const dailyData = {};
-                for (const item of history || []) {
-                    const date = item.recorded_at.split('T')[0];
-                    dailyData[date] = item; // последняя запись перезапишет предыдущие
-                }
-                historyData = Object.values(dailyData).sort((a, b) => 
-                    a.recorded_at.localeCompare(b.recorded_at)
-                );
-                console.log(`✅ Загружено ${historyData.length} дней истории (сгруппировано по дням)`);
-                
-                // Загружаем последнюю статистику
-                const { data: stats, error: statsError } = await supabaseClient
-                    .from('contract_stats')
-                    .select('*')
-                    .order('recorded_at', { ascending: false })
-                    .limit(1);
-                
-                if (statsError) throw statsError;
-                
-                if (stats && stats.length > 0) {
-                    const latest = stats[0];
-                    document.getElementById('updateInfo').textContent = 
-                        `🔄 Данные обновлены: ${new Date(latest.recorded_at).toLocaleString('ru-RU')}`;
-                    document.getElementById('updateTime').textContent = 
-                        `🔄 ${new Date(latest.recorded_at).toLocaleString('ru-RU')}`;
-                    
-                    // Фильтруем топ-холдеры
-                    let filteredHolders = [];
-                    if (latest.top_holders) {
-                        filteredHolders = latest.top_holders.filter(h => !isExcluded(h.address));
-                    }
-                    
-                    const avg = filteredHolders.length > 0 && latest.total_holders > 0 
-                        ? Math.round(latest.total_nft / latest.total_holders) 
-                        : 0;
-                    
-                    document.getElementById('metricTotal').textContent = formatNumber(latest.total_nft);
-                    document.getElementById('metricBurned').textContent = formatNumber(latest.burned_count);
-                    document.getElementById('metricShop').textContent = formatNumber(latest.shop_count);
-                    document.getElementById('metricHotCraft').textContent = formatNumber(latest.on_hotcraft || 0);
-                    document.getElementById('metricPortal').textContent = formatNumber(latest.on_portal || 0);
-                    document.getElementById('metricHolders').textContent = formatNumber(latest.total_holders);
-                    document.getElementById('metricAvgNFT').textContent = formatNumber(avg);
-                    
-                    if (filteredHolders.length > 0) {
-                        topHolders = filteredHolders;
-                        renderHolders(topHolders);
-                        calculateConcentration(topHolders);
-                    }
-                    
-                    // Загружаем предыдущую статистику для сравнения
-                    const { data: prevStats } = await supabaseClient
-                        .from('contract_stats')
-                        .select('*')
-                        .order('recorded_at', { ascending: false })
-                        .range(1, 2);
-                    
-                    if (prevStats && prevStats.length > 0 && prevStats[0].top_holders) {
-                        prevTopHolders = prevStats[0].top_holders.filter(h => !isExcluded(h.address));
-                    }
-                }
-                
-                // Строим график и таблицу
-                buildMainChart('week');
-                buildBurnTable('week');
-                updateComparison('week');
-                findNewHolders();
-                findActiveHolders();
-                loadBurners();
-                
-            } catch (error) {
-                console.error('❌ Ошибка загрузки:', error);
-                document.getElementById('updateInfo').textContent = '❌ Ошибка загрузки данных';
+       async function loadAllData() {
+    try {
+        // Загружаем историю
+        const { data: history, error: historyError } = await supabaseClient
+            .from('contract_stats_history')
+            .select('*')
+            .order('recorded_at', { ascending: true });
+        
+        if (historyError) throw historyError;
+        
+        // 🆕 ГРУППИРУЕМ ПО ДНЯМ — берём последнюю запись за день
+        const dailyData = {};
+        for (const item of history || []) {
+            const date = item.recorded_at.split('T')[0];
+            dailyData[date] = item; // последняя запись перезапишет предыдущие
+        }
+        historyData = Object.values(dailyData).sort((a, b) => 
+            a.recorded_at.localeCompare(b.recorded_at)
+        );
+        console.log(`✅ Загружено ${historyData.length} дней истории (сгруппировано по дням)`);
+        
+        // Загружаем последнюю статистику
+        const { data: stats, error: statsError } = await supabaseClient
+            .from('contract_stats')
+            .select('*')
+            .order('recorded_at', { ascending: false })
+            .limit(1);
+        
+        if (statsError) throw statsError;
+        
+        if (stats && stats.length > 0) {
+            const latest = stats[0];
+            document.getElementById('updateInfo').textContent = 
+                `🔄 Данные обновлены: ${new Date(latest.recorded_at).toLocaleString('ru-RU')}`;
+            document.getElementById('updateTime').textContent = 
+                `🔄 ${new Date(latest.recorded_at).toLocaleString('ru-RU')}`;
+            
+            // Загружаем предыдущую статистику для сравнения (ВЫНЕСЕНО ВВЕРХ!)
+            const { data: prevStats } = await supabaseClient
+                .from('contract_stats')
+                .select('*')
+                .order('recorded_at', { ascending: false })
+                .range(1, 2);
+            
+            // Фильтруем топ-холдеры
+            let filteredHolders = [];
+            if (latest.top_holders) {
+                filteredHolders = latest.top_holders.filter(h => !isExcluded(h.address));
+            }
+            
+            const avg = filteredHolders.length > 0 && latest.total_holders > 0 
+                ? Math.round(latest.total_nft / latest.total_holders) 
+                : 0;
+            
+            document.getElementById('metricTotal').textContent = formatNumber(latest.total_nft);
+            document.getElementById('metricBurned').textContent = formatNumber(latest.burned_count);
+            document.getElementById('metricShop').textContent = formatNumber(latest.shop_count);
+            document.getElementById('metricHotCraft').textContent = formatNumber(latest.on_hotcraft || 0);
+            document.getElementById('metricPortal').textContent = formatNumber(latest.on_portal || 0);
+            document.getElementById('metricHolders').textContent = formatNumber(latest.total_holders);
+            document.getElementById('metricAvgNFT').textContent = formatNumber(avg);
+            
+            // 🆕 % изменения для ХК и Портала (теперь prevStats уже объявлен)
+            if (prevStats && prevStats.length > 0) {
+                const prev = prevStats[0];
+                updateChange('metricHotCraftChange', latest.on_hotcraft || 0, prev.on_hotcraft || 0);
+                updateChange('metricPortalChange', latest.on_portal || 0, prev.on_portal || 0);
+            }
+            
+            if (filteredHolders.length > 0) {
+                topHolders = filteredHolders;
+                renderHolders(topHolders);
+                calculateConcentration(topHolders);
+            }
+            
+            if (prevStats && prevStats.length > 0 && prevStats[0].top_holders) {
+                prevTopHolders = prevStats[0].top_holders.filter(h => !isExcluded(h.address));
             }
         }
+        
+        // Строим график и таблицу
+        buildMainChart('week');
+        buildBurnTable('week');
+        updateComparison('week');
+        findNewHolders();
+        findActiveHolders();
+        loadBurners();
+        
+    } catch (error) {
+        console.error('❌ Ошибка загрузки:', error);
+        document.getElementById('updateInfo').textContent = '❌ Ошибка загрузки данных';
+    }
+}
         
         // ================================================================
         // ==================== КОНЦЕНТРАЦИЯ ==============================
