@@ -1385,157 +1385,160 @@
         // ================================================================
         
         async function findNewHolders() {
-            const container = document.getElementById('newHoldersList');
-            const period = document.querySelector('.holders-period.active')?.dataset.period || 'week';
-            
-            try {
-                let days;
-                switch (period) {
-                    case 'day': days = 1; break;
-                    case '2days': days = 2; break;
-                    case '3days': days = 3; break;
-                    case 'week': days = 7; break;
-                    case 'month': days = 30; break;
-                    case 'year': days = 365; break;
-                    default: days = 7;
-                }
-                
-                // Получаем даты для сравнения
-                const today = new Date().toISOString().split('T')[0];
-                const past = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-                
-                // Получаем уникальных владельцев
-                const { data: todayData, error: todayError } = await supabaseClient
-                    .from('contract_snapshots')
-                    .select('owner_id')
-                    .eq('snapshot_date', today);
-                
-                if (todayError) throw todayError;
-                
-                const { data: pastData, error: pastError } = await supabaseClient
-                    .from('contract_snapshots')
-                    .select('owner_id')
-                    .eq('snapshot_date', past);
-                
-                if (pastError) throw pastError;
-                
-                const todayOwners = new Set(todayData.map(s => s.owner_id).filter(Boolean));
-                const pastOwners = new Set(pastData.map(s => s.owner_id).filter(Boolean));
-                
-                const newHolders = [];
-                for (const owner of todayOwners) {
-                    if (!pastOwners.has(owner) && !isExcluded(owner)) {
-                        const count = todayData.filter(s => s.owner_id === owner).length;
-                        newHolders.push({ address: owner, count });
-                    }
-                }
-                newHolders.sort((a, b) => b.count - a.count);
-                
-                if (newHolders.length === 0) {
-                    container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">Новых холдеров нет</div>`;
-                    return;
-                }
-                
-                let html = `<table class="stats-table"><thead><tr>
-                    <th>👤 Кошелек</th>
-                    <th>🎫 NFT</th>
-                </tr></thead><tbody>`;
-                
-                newHolders.slice(0, 20).forEach(h => {
-                    html += `<tr>
-                        <td>${h.address}</td>
-                        <td><strong>${formatNumber(h.count)}</strong></td>
-                    </tr>`;
-                });
-                
-                html += `</tbody></table>`;
-                container.innerHTML = html;
-                
-            } catch (error) {
-                console.error('Ошибка загрузки новых холдеров:', error);
-                container.innerHTML = `<div style="text-align:center;padding:20px;color:#ef4444;">Ошибка загрузки</div>`;
+    const container = document.getElementById('newHoldersList');
+    const period = document.querySelector('.holders-period.active')?.dataset.period || 'week';
+    
+    // 👇 ОЧИЩАЕМ
+    container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">Загрузка...</div>`;
+    
+    try {
+        let days;
+        switch (period) {
+            case 'day': days = 1; break;
+            case '2days': days = 2; break;
+            case '3days': days = 3; break;
+            case 'week': days = 7; break;
+            case 'month': days = 30; break;
+            case 'year': days = 365; break;
+            default: days = 7;
+        }
+        
+        const today = new Date().toISOString().split('T')[0];
+        const past = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        
+        const { data: todayData, error: todayError } = await supabaseClient
+            .from('contract_snapshots')
+            .select('owner_id')
+            .eq('snapshot_date', today);
+        
+        if (todayError) throw todayError;
+        
+        const { data: pastData, error: pastError } = await supabaseClient
+            .from('contract_snapshots')
+            .select('owner_id')
+            .eq('snapshot_date', past);
+        
+        if (pastError) throw pastError;
+        
+        const todayOwners = new Set(todayData.map(s => s.owner_id).filter(Boolean));
+        const pastOwners = new Set(pastData.map(s => s.owner_id).filter(Boolean));
+        
+        const newHolders = [];
+        for (const owner of todayOwners) {
+            if (!pastOwners.has(owner) && !isExcluded(owner)) {
+                const count = todayData.filter(s => s.owner_id === owner).length;
+                newHolders.push({ address: owner, count });
             }
         }
+        newHolders.sort((a, b) => b.count - a.count);
+        
+        if (newHolders.length === 0) {
+            container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">Новых холдеров нет</div>`;
+            return;
+        }
+        
+        let html = `<table class="stats-table"><thead><tr>
+            <th>👤 Кошелек</th>
+            <th>🎫 NFT</th>
+        </tr></thead><tbody>`;
+        
+        newHolders.slice(0, 20).forEach(h => {
+            html += `<tr>
+                <td>${h.address}</td>
+                <td><strong>${formatNumber(h.count)}</strong></td>
+            </tr>`;
+        });
+        
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+        
+    } catch (error) {
+        console.error('Ошибка загрузки новых холдеров:', error);
+        container.innerHTML = `<div style="text-align:center;padding:20px;color:#ef4444;">Ошибка загрузки</div>`;
+    }
+}
         
         // ================================================================
         // ==================== АКТИВНЫЕ ХОЛДЕРЫ =========================
         // ================================================================
         
         async function findActiveHolders() {
-            const container = document.getElementById('activeHoldersList');
-            const period = document.querySelector('.holders-period.active')?.dataset.period || 'week';
-            
-            try {
-                let days;
-                switch (period) {
-                    case 'day': days = 1; break;
-                    case '2days': days = 2; break;
-                    case '3days': days = 3; break;
-                    case 'week': days = 7; break;
-                    case 'month': days = 30; break;
-                    case 'year': days = 365; break;
-                    default: days = 7;
-                }
-                
-                const today = new Date().toISOString().split('T')[0];
-                const past = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-                
-                // Загружаем данные за две даты
-                const { data: todayData, error: todayError } = await supabaseClient
-                    .from('contract_snapshots')
-                    .select('token_id, owner_id')
-                    .eq('snapshot_date', today);
-                
-                if (todayError) throw todayError;
-                
-                const { data: pastData, error: pastError } = await supabaseClient
-                    .from('contract_snapshots')
-                    .select('token_id, owner_id')
-                    .eq('snapshot_date', past);
-                
-                if (pastError) throw pastError;
-                
-                const pastMap = {};
-                pastData.forEach(s => { pastMap[s.token_id] = s.owner_id; });
-                
-                const movements = {};
-                todayData.forEach(s => {
-                    const pastOwner = pastMap[s.token_id];
-                    if (pastOwner && pastOwner !== s.owner_id && !isExcluded(s.owner_id)) {
-                        movements[s.owner_id] = (movements[s.owner_id] || 0) + 1;
-                    }
-                });
-                
-                const active = Object.entries(movements)
-                    .map(([address, count]) => ({ address, count }))
-                    .sort((a, b) => b.count - a.count)
-                    .slice(0, 20);
-                
-                if (active.length === 0) {
-                    container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">Нет активных движений</div>`;
-                    return;
-                }
-                
-                let html = `<table class="stats-table"><thead><tr>
-                    <th>👤 Кошелек</th>
-                    <th>🔄 Передач</th>
-                </tr></thead><tbody>`;
-                
-                active.forEach(h => {
-                    html += `<tr>
-                        <td>${h.address}</td>
-                        <td><strong>${formatNumber(h.count)}</strong></td>
-                    </tr>`;
-                });
-                
-                html += `</tbody></table>`;
-                container.innerHTML = html;
-                
-            } catch (error) {
-                console.error('Ошибка загрузки активных холдеров:', error);
-                container.innerHTML = `<div style="text-align:center;padding:20px;color:#ef4444;">Ошибка загрузки</div>`;
-            }
+    const container = document.getElementById('activeHoldersList');
+    const period = document.querySelector('.holders-period.active')?.dataset.period || 'week';
+    
+    // 👇 ОЧИЩАЕМ
+    container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">Загрузка...</div>`;
+    
+    try {
+        let days;
+        switch (period) {
+            case 'day': days = 1; break;
+            case '2days': days = 2; break;
+            case '3days': days = 3; break;
+            case 'week': days = 7; break;
+            case 'month': days = 30; break;
+            case 'year': days = 365; break;
+            default: days = 7;
         }
+        
+        const today = new Date().toISOString().split('T')[0];
+        const past = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        
+        const { data: todayData, error: todayError } = await supabaseClient
+            .from('contract_snapshots')
+            .select('token_id, owner_id')
+            .eq('snapshot_date', today);
+        
+        if (todayError) throw todayError;
+        
+        const { data: pastData, error: pastError } = await supabaseClient
+            .from('contract_snapshots')
+            .select('token_id, owner_id')
+            .eq('snapshot_date', past);
+        
+        if (pastError) throw pastError;
+        
+        const pastMap = {};
+        pastData.forEach(s => { pastMap[s.token_id] = s.owner_id; });
+        
+        const movements = {};
+        todayData.forEach(s => {
+            const pastOwner = pastMap[s.token_id];
+            if (pastOwner && pastOwner !== s.owner_id && !isExcluded(s.owner_id)) {
+                movements[s.owner_id] = (movements[s.owner_id] || 0) + 1;
+            }
+        });
+        
+        const active = Object.entries(movements)
+            .map(([address, count]) => ({ address, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 20);
+        
+        if (active.length === 0) {
+            container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">Нет активных движений</div>`;
+            return;
+        }
+        
+        let html = `<table class="stats-table"><thead><tr>
+            <th>👤 Кошелек</th>
+            <th>🔄 Передач</th>
+        </tr></thead><tbody>`;
+        
+        active.forEach(h => {
+            html += `<tr>
+                <td>${h.address}</td>
+                <td><strong>${formatNumber(h.count)}</strong></td>
+            </tr>`;
+        });
+        
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+        
+    } catch (error) {
+        console.error('Ошибка загрузки активных холдеров:', error);
+        container.innerHTML = `<div style="text-align:center;padding:20px;color:#ef4444;">Ошибка загрузки</div>`;
+    }
+}
         
         // ================================================================
         // ==================== СРАВНЕНИЕ ПЕРИОДОВ =======================
