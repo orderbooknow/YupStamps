@@ -728,7 +728,6 @@
                 <span class="logo">🎨 YupStats</span>
             </div>
             <div class="header-right">
-                <span id="updateTime" class="update-info" style="margin:0;">🔄 Загрузка...</span>
                 <button class="lang-toggle" id="langToggle">RU</button>
                 <button class="theme-toggle" id="themeToggle">☀️</button>
             </div>
@@ -1614,74 +1613,86 @@
         // ================================================================
         
         async function loadBurners() {
-            const container = document.getElementById('burnersList');
-            try {
-                const { data, error } = await supabaseClient
-                    .from('burn_history')
-                    .select('*')
-                    .order('timestamp', { ascending: false })
-                    .limit(50);
-                
-                if (error) throw error;
-                
-                if (!data || data.length === 0) {
-                    container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">Нет данных о сжиганиях</div>`;
-                    return;
-                }
-                
-                // Группируем по отправителю (from_address)
-                const burners = {};
-                data.forEach(row => {
-                    const address = row.from_address || 'unknown';
-                    if (!burners[address]) {
-                        burners[address] = {
-                            count: 0,
-                            firstBurn: row.timestamp,
-                            lastBurn: row.timestamp
-                        };
-                    }
-                    burners[address].count++;
-                    if (row.timestamp < burners[address].firstBurn) burners[address].firstBurn = row.timestamp;
-                    if (row.timestamp > burners[address].lastBurn) burners[address].lastBurn = row.timestamp;
-                });
-                
-                const sorted = Object.entries(burners)
-                    .sort((a, b) => b[1].count - a[1].count)
-                    .slice(0, 50)
-                    .map(([address, data], i) => ({
-                        rank: i + 1,
-                        address,
-                        count: data.count,
-                        firstBurn: data.firstBurn,
-                        lastBurn: data.lastBurn
-                    }));
-                
-                let html = `<table class="stats-table"><thead><tr>
-                    <th>#</th>
-                    <th>👤 Кошелек</th>
-                    <th>🔥 Количество</th>
-                    <th>📅 Первое сжигание</th>
-                    <th>📅 Последнее сжигание</th>
-                </tr></thead><tbody>`;
-                
-                sorted.forEach(h => {
-                    html += `<tr>
-                        <td>${h.rank}</td>
-                        <td>${h.address}</td>
-                        <td><strong>${formatNumber(h.count)}</strong></td>
-                        <td>${formatDate(h.firstBurn)}</td>
-                        <td>${formatDate(h.lastBurn)}</td>
-                    </tr>`;
-                });
-                
-                html += `</tbody></table>`;
-                container.innerHTML = html;
-                
-            } catch (error) {
-                console.error('Ошибка загрузки сжигателей:', error);
-                container.innerHTML = `<div style="text-align:center;padding:20px;color:#ef4444;">Ошибка загрузки</div>`;
-            }
+    const container = document.getElementById('burnersList');
+    if (!container) {
+        console.error('❌ Элемент burnersList не найден');
+        return;
+    }
+    
+    try {
+        // Берём только записи с реальными отправителями
+        const { data, error } = await supabaseClient
+            .from('burn_history')
+            .select('*')
+            .neq('from_address', 'unknown')  // 👈 ИСКЛЮЧАЕМ unknown
+            .order('timestamp', { ascending: false })
+            .limit(200);
+        
+        if (error) throw error;
+        
+        if (!data || data.length === 0) {
+            container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">Нет данных о сжиганиях</div>`;
+            return;
         }
+        
+        // Группируем по отправителю
+        const burners = {};
+        data.forEach(row => {
+            const address = row.from_address;
+            if (!burners[address]) {
+                burners[address] = {
+                    count: 0,
+                    firstBurn: row.timestamp,
+                    lastBurn: row.timestamp
+                };
+            }
+            burners[address].count++;
+            if (row.timestamp < burners[address].firstBurn) burners[address].firstBurn = row.timestamp;
+            if (row.timestamp > burners[address].lastBurn) burners[address].lastBurn = row.timestamp;
+        });
+        
+        const sorted = Object.entries(burners)
+            .sort((a, b) => b[1].count - a[1].count)
+            .slice(0, 50)
+            .map(([address, data], i) => ({
+                rank: i + 1,
+                address,
+                count: data.count,
+                firstBurn: data.firstBurn,
+                lastBurn: data.lastBurn
+            }));
+        
+        if (sorted.length === 0) {
+            container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">Нет реальных сжигателей</div>`;
+            return;
+        }
+        
+        let html = `<table class="stats-table"><thead><tr>
+            <th>#</th>
+            <th>👤 Кошелек</th>
+            <th>🔥 Количество</th>
+            <th>📅 Первое сжигание</th>
+            <th>📅 Последнее сжигание</th>
+        </tr></thead><tbody>`;
+        
+        sorted.forEach(h => {
+            html += `<tr>
+                <td>${h.rank}</td>
+                <td>${h.address}</td>
+                <td><strong>${formatNumber(h.count)}</strong></td>
+                <td>${formatDate(h.firstBurn)}</td>
+                <td>${formatDate(h.lastBurn)}</td>
+            </tr>`;
+        });
+        
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+        
+    } catch (error) {
+        console.error('❌ Ошибка загрузки сжигателей:', error);
+        container.innerHTML = `<div style="text-align:center;padding:20px;color:#ef4444;">Ошибка загрузки</div>`;
+    }
+}
         
         // ================================================================
         // ==================== ГРАФИК И ТАБЛИЦА =========================
