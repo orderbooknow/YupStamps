@@ -1196,18 +1196,18 @@
         
         if (historyError) throw historyError;
         
-        // 🆕 ГРУППИРУЕМ ПО ДНЯМ — берём последнюю запись за день
+        // Группируем по дням
         const dailyData = {};
         for (const item of history || []) {
             const date = item.recorded_at.split('T')[0];
-            dailyData[date] = item; // последняя запись перезапишет предыдущие
+            dailyData[date] = item;
         }
         historyData = Object.values(dailyData).sort((a, b) => 
             a.recorded_at.localeCompare(b.recorded_at)
         );
-        console.log(`✅ Загружено ${historyData.length} дней истории (сгруппировано по дням)`);
+        console.log(`✅ Загружено ${historyData.length} дней истории`);
         
-        // Загружаем последнюю статистику
+        // Загружаем последнюю статистику для топ-холдеров
         const { data: stats, error: statsError } = await supabaseClient
             .from('contract_stats')
             .select('*')
@@ -1216,6 +1216,25 @@
         
         if (statsError) throw statsError;
         
+        // 🆕 Функция для получения последнего значения за период
+        function getPeriodValue(data, key, days) {
+            if (!data || data.length === 0) return 0;
+            const cutoff = new Date();
+            cutoff.setDate(cutoff.getDate() - days);
+            const cutoffStr = cutoff.toISOString().split('T')[0];
+            const filtered = data.filter(d => d.recorded_at.split('T')[0] >= cutoffStr);
+            if (filtered.length === 0) return 0;
+            return filtered[filtered.length - 1][key] || 0;
+        }
+        
+        // Получаем значения для текущего и предыдущего периода
+        const getCompare = (key) => {
+            const current = getPeriodValue(historyData, key, 1);  // сегодня
+            const previous = getPeriodValue(historyData, key, 2); // вчера
+            return { current, previous };
+        };
+        
+        // Обновляем метрики с динамическими изменениями
         if (stats && stats.length > 0) {
             const latest = stats[0];
             document.getElementById('updateInfo').textContent = 
@@ -1223,43 +1242,54 @@
             document.getElementById('updateTime').textContent = 
                 `🔄 ${new Date(latest.recorded_at).toLocaleString('ru-RU')}`;
             
-            // Загружаем предыдущую статистику для сравнения (ВЫНЕСЕНО ВВЕРХ!)
-            const { data: prevStats } = await supabaseClient
-                .from('contract_stats')
-                .select('*')
-                .order('recorded_at', { ascending: false })
-                .range(1, 2);
-            
             // Фильтруем топ-холдеры
             let filteredHolders = [];
             if (latest.top_holders) {
                 filteredHolders = latest.top_holders.filter(h => !isExcluded(h.address));
             }
             
-            const avg = filteredHolders.length > 0 && latest.total_holders > 0 
-                ? Math.round(latest.total_nft / latest.total_holders) 
-                : 0;
+            // 🆕 МЕТРИКИ С РАСЧЁТОМ ПО ПЕРИОДУ
+            const total = getCompare('total_nft');
+            document.getElementById('metricTotal').textContent = formatNumber(total.current);
+            updateChange('metricTotalChange', total.current, total.previous);
             
-            document.getElementById('metricTotal').textContent = formatNumber(latest.total_nft);
-            document.getElementById('metricBurned').textContent = formatNumber(latest.burned_count);
-            document.getElementById('metricShop').textContent = formatNumber(latest.shop_count);
+            const burned = getCompare('burned');
+            document.getElementById('metricBurned').textContent = formatNumber(burned.current);
+            updateChange('metricBurnedChange', burned.current, burned.previous);
+            
+            const shop = getCompare('in_shop');
+            document.getElementById('metricShop').textContent = formatNumber(shop.current);
+            updateChange('metricShopChange', shop.current, shop.previous);
+            
+            const holders = getCompare('holders');
+            document.getElementById('metricHolders').textContent = formatNumber(holders.current);
+            updateChange('metricHoldersChange', holders.current, holders.previous);
+            
+            const movements = getCompare('movements');
+            document.getElementById('metricMovements').textContent = formatNumber(movements.current);
+            updateChange('metricMovementsChange', movements.current, movements.previous);
+            
+            // 🆕 ХК и Портале (из latest)
             document.getElementById('metricHotCraft').textContent = formatNumber(latest.on_hotcraft || 0);
             document.getElementById('metricPortal').textContent = formatNumber(latest.on_portal || 0);
-            document.getElementById('metricHolders').textContent = formatNumber(latest.total_holders);
+            
+            // Среднее на холдера
+            const avg = holders.current > 0 ? Math.round(total.current / holders.current) : 0;
             document.getElementById('metricAvgNFT').textContent = formatNumber(avg);
             
-            // 🆕 % изменения для ХК и Портала (теперь prevStats уже объявлен)
-            if (prevStats && prevStats.length > 0) {
-                const prev = prevStats[0];
-                updateChange('metricHotCraftChange', latest.on_hotcraft || 0, prev.on_hotcraft || 0);
-                updateChange('metricPortalChange', latest.on_portal || 0, prev.on_portal || 0);
-            }
-            
+            // Топ-холдеры
             if (filteredHolders.length > 0) {
                 topHolders = filteredHolders;
                 renderHolders(topHolders);
                 calculateConcentration(topHolders);
             }
+            
+            // Загружаем предыдущую статистику для сравнения
+            const { data: prevStats } = await supabaseClient
+                .from('contract_stats')
+                .select('*')
+                .order('recorded_at', { ascending: false })
+                .range(1, 2);
             
             if (prevStats && prevStats.length > 0 && prevStats[0].top_holders) {
                 prevTopHolders = prevStats[0].top_holders.filter(h => !isExcluded(h.address));
