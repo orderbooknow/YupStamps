@@ -3,7 +3,11 @@ const WebSocket = require('ws');
 
 const SUPABASE_URL = 'https://obbujhdmegdgxzdtpbai.supabase.co';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY || 'sb_publishable_R0pbZnbuSEbkaCLHcZ_YhQ_J2ZRgIB8';
-const API_KEY = 'pR7xQnL2mV9cYfK4uD8sTjH1wB5eZaCgX0oNiUyE6lA';
+const API_KEY = process.env.SENDLER_API_KEY;
+if (!API_KEY) {
+    console.error('❌ Не задан SENDLER_API_KEY (переменная окружения)');
+    process.exit(1);
+}
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
     realtime: { transport: WebSocket }
@@ -457,8 +461,12 @@ async function saveFullContractStats(allTokens) {
 // 7. ОТПРАВКА В TELEGRAM (ОБНОВЛЁННОЕ СООБЩЕНИЕ)
 // ============================================================
 async function sendTelegramReport(allTokens, updatedCount, startTime) {
-    const token = '8708530374:AAHhcWFtjLqXK_Yxl0qlCtYrwi0ORLcDHNQ';
-    const chatIds = ['454371494', '724771751'];
+    const token = process.env.TELEGRAM_BOT_TOKEN;
+    const chatIds = (process.env.TELEGRAM_CHAT_ID || '').split(',').map(s => s.trim()).filter(Boolean);
+    if (!token || chatIds.length === 0) {
+        console.error('❌ Не заданы TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID, отчёт не отправлен');
+        return;
+    }
     
     // Марки
     const stampTokens = allTokens.filter(t => 
@@ -537,25 +545,61 @@ async function sendTelegramReport(allTokens, updatedCount, startTime) {
 // ============================================================
 async function loadBurnHistory() {
     console.log('🔥 Загружаем историю транзакций кошелька сжигания...');
-    const url = `https://api.sendler.xyz/history/nft-user-history/?wallet_id=darai_duplo.near&limit=200`;
-    
+
     try {
-        const response = await fetch(url, { headers: { 'X-API-Key': API_KEY } });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const data = await response.json();
-        
-        if (!data.items || data.items.length === 0) {
+        // 1) Собираем ключи уже сохранённых записей, чтобы не дублировать при повторных запусках
+        const existingKeys = new Set();
+        {
+            let from = 0;
+            const pageSize = 1000;
+            let hasMore = true;
+            while (hasMore) {
+                const { data, error } = await supabase
+                    .from('burn_history')
+                    .select('receipt_id, token_id, timestamp')
+                    .range(from, from + pageSize - 1);
+                if (error) throw error;
+                data.forEach(r => existingKeys.add(r.receipt_id || `${r.token_id}_${r.timestamp}`));
+                from += pageSize;
+                hasMore = data.length === pageSize;
+            }
+        }
+        console.log(`📦 Уже в базе: ${existingKeys.size} записей истории`);
+
+        // 2) Пагинация по ВСЕЙ истории (раньше грузилось только 200 последних!)
+        let allItems = [];
+        let cursor = null;
+        let page = 0;
+        while (true) {
+            let url = `https://api.sendler.xyz/history/nft-user-history/?wallet_id=darai_duplo.near&limit=200`;
+            if (cursor) url += `&cursor=${cursor}`;
+            const response = await fetch(url, { headers: { 'X-API-Key': API_KEY } });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            if (!data.items || data.items.length === 0) break;
+            allItems.push(...data.items);
+            console.log(`📦 Страница истории ${++page}: +${data.items.length}, всего ${allItems.length}`);
+            if (data.next_cursor) { cursor = data.next_cursor; await sleep(500); }
+            else break;
+        }
+
+        if (allItems.length === 0) {
             console.log('⚠️ Нет истории транзакций');
             return;
         }
-        
-        let saved = 0;
-        for (const tx of data.items) {
+
+        // 3) Вставляем только НОВЫЕ записи (которых ещё нет в базе)
+        let saved = 0, skipped = 0, errors = 0;
+        for (const tx of allItems) {
+            const timestamp = tx.block_timestamp || tx.timestamp || tx.created_at;
+            const key = tx.receipt_id || `${tx.token_id}_${timestamp}`;
+            if (existingKeys.has(key)) { skipped++; continue; }
+
             const { error } = await supabase.from('burn_history').insert({
                 from_address: tx.sender_id || tx.from || 'unknown',
                 to_address: tx.receiver_id || tx.to || 'unknown',
                 token_id: tx.token_id,
-                timestamp: tx.block_timestamp || tx.timestamp || tx.created_at,
+                timestamp: timestamp,
                 type: tx.action_type || tx.type || 'unknown',
                 method: tx.method || null,
                 contract_id: tx.contract_id || null,
@@ -570,9 +614,10 @@ async function loadBurnHistory() {
                 ft_contract: tx.ft_contract || null,
                 sale_type: tx.sale_type || null
             });
-            if (!error) saved++;
+            if (!error) { saved++; existingKeys.add(key); }
+            else { errors++; console.error('❌ Ошибка вставки записи истории:', error.message); }
         }
-        console.log(`✅ Сохранено ${saved} записей истории транзакций`);
+        console.log(`✅ Сохранено новых: ${saved}, пропущено (уже были): ${skipped}, ошибок: ${errors}`);
     } catch (error) {
         console.error('❌ Ошибка загрузки истории транзакций:', error);
     }
