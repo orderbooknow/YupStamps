@@ -180,6 +180,8 @@ async function saveSnapshot(allTokens) {
 async function saveFullContractStats(allTokens) {
     console.log('📊 Сохраняем полную статистику контракта...');
     
+    const today = new Date().toISOString().split('T')[0];
+    
     const stats = {
         total: allTokens.length,
         holders: new Set(),
@@ -247,7 +249,6 @@ async function saveFullContractStats(allTokens) {
             }
             
             let movements = 0;
-            const today = new Date().toISOString().split('T')[0];
             
             for (const [tokenId, owner] of Object.entries(currOwners)) {
                 const prevOwner = prevOwners[tokenId];
