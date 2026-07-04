@@ -145,8 +145,12 @@ async function updateDynamicStamps(allTokens) {
 async function saveSnapshot(allTokens) {
     console.log('📸 Сохраняем снимок контракта...');
     
+    // 🆕 Единая метка времени для ВСЕГО снимка (иначе каждый токен попадает
+    // в свою собственную "дату" из-за разницы в миллисекундах, и движения не считаются)
+    const snapshotDate = new Date().toISOString();
+    
     const snapshots = allTokens.map(token => ({
-        snapshot_date: new Date().toISOString(),
+        snapshot_date: snapshotDate,
         token_id: token.token_id,
         owner_id: token.owner_id || null,
         name: token.title || token.name || 'Unknown',
