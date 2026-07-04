@@ -566,7 +566,9 @@ async function loadBurnHistory() {
         }
         console.log(`📦 Уже в базе: ${existingKeys.size} записей истории`);
 
-        // 2) Пагинация по ВСЕЙ истории (раньше грузилось только 200 последних!)
+        // 2) Пагинация по истории — но останавливаемся, как только упрёмся
+        //    в уже сохранённые записи (история идёт от новых к старым,
+        //    так что дальше будут только ещё более старые, уже известные записи)
         let allItems = [];
         let cursor = null;
         let page = 0;
@@ -577,8 +579,20 @@ async function loadBurnHistory() {
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const data = await response.json();
             if (!data.items || data.items.length === 0) break;
+
             allItems.push(...data.items);
             console.log(`📦 Страница истории ${++page}: +${data.items.length}, всего ${allItems.length}`);
+
+            // 🆕 Если на этой странице нет НИ ОДНОЙ новой записи — дальше можно не ходить
+            const hasNewItems = data.items.some(tx => {
+                const key = tx.receipt_id || `${tx.token_id}_${tx.block_timestamp || tx.timestamp || tx.created_at}`;
+                return !existingKeys.has(key);
+            });
+            if (!hasNewItems && existingKeys.size > 0) {
+                console.log(`⏹️ Все записи на странице ${page} уже есть в базе — останавливаем пагинацию`);
+                break;
+            }
+
             if (data.next_cursor) { cursor = data.next_cursor; await sleep(500); }
             else break;
         }
