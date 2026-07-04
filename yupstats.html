@@ -1669,32 +1669,36 @@
 
     container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">Загрузка...</div>`;
 
-    try {
+    // 🆕 Небольшая задержка + функция повторной попытки на случай обрыва сети (ERR_HTTP2_PING_FAILED и т.п.)
+    async function fetchBurnRows(attempt = 1) {
         let query = supabaseClient
             .from('burn_history')
-            .select('*')
+            .select('from_address, timestamp')   // 🆕 только нужные колонки — меньше вес ответа
             .neq('from_address', 'unknown')
             .order('timestamp', { ascending: false });
 
-        // 🆕 Фильтр по периоду
         if (period !== 'all') {
-            let days;
-            switch (period) {
-                case 'day': days = 1; break;
-                case '2days': days = 2; break;
-                case '3days': days = 3; break;
-                case 'week': days = 7; break;
-                case 'month': days = 30; break;
-                case 'year': days = 365; break;
-                default: days = 7;
-            }
+            const days = periodToDays(period) || 7;
             const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
             query = query.gte('timestamp', cutoff);
         }
 
-        const { data, error } = await query.limit(1000);
-        
-        if (error) throw error;
+        try {
+            const { data, error } = await query.limit(1000);
+            if (error) throw error;
+            return data;
+        } catch (err) {
+            if (attempt < 3) {
+                console.warn(`⚠️ Попытка ${attempt} не удалась (${err.message}), повтор через ${attempt * 500}мс...`);
+                await new Promise(r => setTimeout(r, attempt * 500));
+                return fetchBurnRows(attempt + 1);
+            }
+            throw err;
+        }
+    }
+
+    try {
+        const data = await fetchBurnRows();
         
         if (!data || data.length === 0) {
             container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">Нет данных о сжиганиях за этот период</div>`;
@@ -1756,7 +1760,7 @@
         
     } catch (error) {
         console.error('❌ Ошибка загрузки сжигателей:', error);
-        container.innerHTML = `<div style="text-align:center;padding:20px;color:#ef4444;">Ошибка загрузки</div>`;
+        container.innerHTML = `<div style="text-align:center;padding:20px;color:#ef4444;">Ошибка сети при загрузке. Попробуй переключить период ещё раз или обновить страницу.</div>`;
     }
 }
         
