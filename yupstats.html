@@ -426,6 +426,14 @@
         .table-scroll {
             max-height: 400px;
             overflow-y: auto;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .stats-table .address-cell {
+            font-family: monospace;
+            white-space: nowrap;
+            cursor: help;
         }
         
         .table-scroll::-webkit-scrollbar {
@@ -623,17 +631,18 @@
                 font-size: 11px;
             }
             .stats-table {
-                font-size: 10px;
+                font-size: 11px;
+                min-width: 520px;
             }
             .stats-table th,
             .stats-table td {
-                padding: 4px 4px;
-                word-break: break-word;
-                white-space: normal;
+                padding: 6px 8px;
+                white-space: nowrap;
             }
             .stats-table .address-cell {
-                word-break: break-all;
-                max-width: 90px;
+                max-width: 130px;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
             .holder-row {
                 flex-wrap: wrap;
@@ -698,11 +707,12 @@
                 padding: 4px 8px;
             }
             .stats-table {
-                font-size: 9px;
+                font-size: 10px;
+                min-width: 460px;
             }
             .stats-table th,
             .stats-table td {
-                padding: 2px 3px;
+                padding: 4px 6px;
             }
             .holder-row .address {
                 font-size: 8px;
@@ -772,6 +782,10 @@
                     <div class="metric-value" id="metricTotal">—</div>
                     <div class="metric-label">📈 Всего NFT</div>
                     <div class="metric-change" id="metricTotalChange"></div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="metricNewMints">—</div>
+                    <div class="metric-label">🆕 Новых заминчено</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-value" id="metricBurned">—</div>
@@ -1104,6 +1118,94 @@
             return d.toLocaleDateString('ru-RU');
         }
         
+        // 🆕 Сокращаем длинные адреса для красивого отображения (полный адрес — в title/tooltip)
+        function shortenAddress(address) {
+            if (!address) return '';
+            if (address.length <= 20) return address;
+            return `${address.slice(0, 10)}...${address.slice(-6)}`;
+        }
+        
+        function addressCell(address) {
+            return `<td class="address-cell" title="${address}">${shortenAddress(address)}</td>`;
+        }
+        
+        // 🆕 Находим РЕАЛЬНЫЕ snapshot_date в базе (снимки хранятся с полным timestamp,
+        // поэтому точное сравнение с "голой" датой никогда ничего не находило)
+        async function getSnapshotDates(days) {
+            const { data: latestSnap, error: latestErr } = await supabaseClient
+                .from('contract_snapshots')
+                .select('snapshot_date')
+                .order('snapshot_date', { ascending: false })
+                .limit(1);
+            if (latestErr) throw latestErr;
+            if (!latestSnap || latestSnap.length === 0) return { current: null, past: null };
+            const current = latestSnap[0].snapshot_date;
+
+            let pastQuery = supabaseClient
+                .from('contract_snapshots')
+                .select('snapshot_date')
+                .order('snapshot_date', { ascending: false })
+                .limit(1);
+
+            if (days !== null) {
+                const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+                pastQuery = pastQuery.lte('snapshot_date', cutoff);
+            } else {
+                // "Всё" — берём самый первый снимок из всех
+                pastQuery = supabaseClient
+                    .from('contract_snapshots')
+                    .select('snapshot_date')
+                    .order('snapshot_date', { ascending: true })
+                    .limit(1);
+            }
+
+            const { data: pastSnap, error: pastErr } = await pastQuery;
+            if (pastErr) throw pastErr;
+            const past = (pastSnap && pastSnap.length > 0) ? pastSnap[0].snapshot_date : null;
+
+            return { current, past };
+        }
+        
+        function periodToDays(period) {
+            switch (period) {
+                case 'day': return 1;
+                case '2days': return 2;
+                case '3days': return 3;
+                case 'week': return 7;
+                case 'month': return 30;
+                case 'year': return 365;
+                case 'all': return null;
+                default: return 7;
+            }
+        }
+        
+        // 🆕 Считаем, сколько новых NFT было заминчено за выбранный период
+        // (total_nft растёт при каждом минте и не уменьшается при сожжении —
+        // сожжённые токены просто меняют владельца на кошелёк сжигания)
+        function updateNewMints(period) {
+            const el = document.getElementById('metricNewMints');
+            if (!el) return;
+            if (!historyData || historyData.length === 0) { el.textContent = '—'; return; }
+            
+            const currentTotal = historyData[historyData.length - 1].total_nft || 0;
+            
+            const days = periodToDays(period);
+            let pastTotal;
+            if (days === null) {
+                // "Всё" — сравниваем с самой первой записью в истории
+                pastTotal = historyData[0].total_nft || 0;
+            } else {
+                const cutoff = new Date();
+                cutoff.setDate(cutoff.getDate() - days);
+                const cutoffStr = cutoff.toISOString().split('T')[0];
+                const past = historyData.filter(d => d.recorded_at.split('T')[0] <= cutoffStr);
+                pastTotal = past.length > 0 ? (past[past.length - 1].total_nft || 0) : (historyData[0].total_nft || 0);
+            }
+            
+            const newMints = Math.max(0, currentTotal - pastTotal);
+            el.textContent = formatNumber(newMints);
+        }
+        
         function getChangeClass(current, previous) {
             if (previous === 0) return 'neutral';
             if (current > previous) return 'up';
@@ -1200,6 +1302,7 @@
             const total = getCompare('total_nft');
             document.getElementById('metricTotal').textContent = formatNumber(total.current);
             updateChange('metricTotalChange', total.current, total.previous);
+            updateNewMints(currentPeriod);
             
             const burned = getCompare('burned');
             document.getElementById('metricBurned').textContent = formatNumber(burned.current);
@@ -1324,7 +1427,7 @@
                 
                 html += `<tr>
                     <td>${i + 1}</td>
-                    <td>${h.address}</td>
+                    ${addressCell(h.address)}
                     <td><strong>${formatNumber(h.count)}</strong></td>
                     <td class="change-${changeClass}">${icon} ${change}</td>
                 </tr>`;
@@ -1342,28 +1445,21 @@
     const container = document.getElementById('newHoldersList');
     const period = document.querySelector('.holders-period.active')?.dataset.period || 'week';
     
-    // 👇 ОЧИЩАЕМ
     container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">Загрузка...</div>`;
     
     try {
-        let days;
-        switch (period) {
-            case 'day': days = 1; break;
-            case '2days': days = 2; break;
-            case '3days': days = 3; break;
-            case 'week': days = 7; break;
-            case 'month': days = 30; break;
-            case 'year': days = 365; break;
-            default: days = 7;
-        }
+        const days = periodToDays(period);
+        const { current, past } = await getSnapshotDates(days);
         
-        const today = new Date().toISOString().split('T')[0];
-        const past = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        if (!current || !past || current === past) {
+            container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">Недостаточно данных за этот период</div>`;
+            return;
+        }
         
         const { data: todayData, error: todayError } = await supabaseClient
             .from('contract_snapshots')
             .select('owner_id')
-            .eq('snapshot_date', today);
+            .eq('snapshot_date', current);
         
         if (todayError) throw todayError;
         
@@ -1398,7 +1494,7 @@
         
         newHolders.slice(0, 20).forEach(h => {
             html += `<tr>
-                <td>${h.address}</td>
+                ${addressCell(h.address)}
                 <td><strong>${formatNumber(h.count)}</strong></td>
             </tr>`;
         });
@@ -1420,28 +1516,21 @@
     const container = document.getElementById('activeHoldersList');
     const period = document.querySelector('.holders-period.active')?.dataset.period || 'week';
     
-    // 👇 ОЧИЩАЕМ
     container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">Загрузка...</div>`;
     
     try {
-        let days;
-        switch (period) {
-            case 'day': days = 1; break;
-            case '2days': days = 2; break;
-            case '3days': days = 3; break;
-            case 'week': days = 7; break;
-            case 'month': days = 30; break;
-            case 'year': days = 365; break;
-            default: days = 7;
-        }
+        const days = periodToDays(period);
+        const { current, past } = await getSnapshotDates(days);
         
-        const today = new Date().toISOString().split('T')[0];
-        const past = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        if (!current || !past || current === past) {
+            container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">Недостаточно данных за этот период</div>`;
+            return;
+        }
         
         const { data: todayData, error: todayError } = await supabaseClient
             .from('contract_snapshots')
             .select('token_id, owner_id')
-            .eq('snapshot_date', today);
+            .eq('snapshot_date', current);
         
         if (todayError) throw todayError;
         
@@ -1480,7 +1569,7 @@
         
         active.forEach(h => {
             html += `<tr>
-                <td>${h.address}</td>
+                ${addressCell(h.address)}
                 <td><strong>${formatNumber(h.count)}</strong></td>
             </tr>`;
         });
@@ -1655,7 +1744,7 @@
         sorted.forEach(h => {
             html += `<tr>
                 <td>${h.rank}</td>
-                <td>${h.address}</td>
+                ${addressCell(h.address)}
                 <td><strong>${formatNumber(h.count)}</strong></td>
                 <td>${formatDate(h.firstBurn)}</td>
                 <td>${formatDate(h.lastBurn)}</td>
@@ -1964,6 +2053,7 @@
                     currentPeriod = this.dataset.period;
                     buildMainChart(currentPeriod);
                     updateComparison(currentPeriod);
+                    updateNewMints(currentPeriod);
                 });
             });
             
