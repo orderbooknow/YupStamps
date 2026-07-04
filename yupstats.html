@@ -916,56 +916,9 @@
         <button class="period-btn duplo-period" data-period="all">Всё</button>
     </div>
 
-    <div class="burn-stats" id="burnStats">
-        <div class="burn-stat-card">
-            <div class="burn-stat-value" id="burnTotal">—</div>
-            <div class="burn-stat-label">🔥 Всего сожжено</div>
-        </div>
-        <div class="burn-stat-card">
-            <div class="burn-stat-value" id="burnSenders">—</div>
-            <div class="burn-stat-label">👥 Участников</div>
-        </div>
-        <div class="burn-stat-card">
-            <div class="burn-stat-value" id="burnTopSender">—</div>
-            <div class="burn-stat-label">🏆 Лидер</div>
-        </div>
-        <div class="burn-stat-card">
-            <div class="burn-stat-value" id="burnAvg">—</div>
-            <div class="burn-stat-label">📊 В среднем</div>
-        </div>
-    </div>
-
-    <div class="chart-container">
-        <h3>🔥 Динамика сжиганий</h3>
-        <div class="chart-wrapper">
-            <canvas id="burnChart"></canvas>
-        </div>
-    </div>
-
-    <!-- Кто сжигал NFT -->
+    <!-- 🆕 Список сжигателей за выбранный период -->
     <div class="table-container">
-        <h3>📋 Кто сжигал NFT</h3>
-        <div class="table-scroll">
-            <table class="stats-table" id="burnTable">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>👤 Кошелек</th>
-                        <th>🔥 Количество</th>
-                        <th>📅 Первое сжигание</th>
-                        <th>📅 Последнее сжигание</th>
-                    </tr>
-                </thead>
-                <tbody id="burnTableBody">
-                    <tr><td colspan="5" style="text-align:center;color:#94a3b8;">Загрузка...</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- 🆕 Топ-сжигателей за день -->
-    <div class="table-container">
-        <h3>🏆 Топ-сжигателей за день</h3>
+        <h3>🏆 Список сжигателей</h3>
         <div class="table-scroll" id="burnersList">
             <div style="text-align:center;padding:20px;color:#94a3b8;">Загрузка...</div>
         </div>
@@ -1007,7 +960,6 @@
         let currentTab = 'analytics';
         let historyData = [];
         let mainChart = null;
-        let burnChart = null;
         let topHolders = [];
         let prevTopHolders = [];
         let concentration = { top10: 0, top50: 0, top100: 0 };
@@ -1111,7 +1063,6 @@
                 document.getElementById('themeToggle').textContent = '🌙';
             }
             if (mainChart) mainChart.update();
-            if (burnChart) burnChart.update();
         }
         
         function toggleLang() {
@@ -1307,7 +1258,6 @@
         
         // Строим график и таблицу
         buildMainChart('week');
-        buildBurnTable('week');
         updateComparison('week');
         findNewHolders();
         findActiveHolders();
@@ -1617,26 +1567,48 @@
         // ==================== КОМБО ДУПЛО ==============================
         // ================================================================
         
-        async function loadBurners() {
+        async function loadBurners(period) {
     const container = document.getElementById('burnersList');
     if (!container) {
         console.error('❌ Элемент burnersList не найден');
         return;
     }
-    
+
+    if (!period) {
+        period = document.querySelector('.duplo-period.active')?.dataset.period || 'week';
+    }
+
+    container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">Загрузка...</div>`;
+
     try {
-        // ✅ ИСКЛЮЧАЕМ unknown
-        const { data, error } = await supabaseClient
+        let query = supabaseClient
             .from('burn_history')
             .select('*')
             .neq('from_address', 'unknown')
-            .order('timestamp', { ascending: false })
-            .limit(200);
+            .order('timestamp', { ascending: false });
+
+        // 🆕 Фильтр по периоду
+        if (period !== 'all') {
+            let days;
+            switch (period) {
+                case 'day': days = 1; break;
+                case '2days': days = 2; break;
+                case '3days': days = 3; break;
+                case 'week': days = 7; break;
+                case 'month': days = 30; break;
+                case 'year': days = 365; break;
+                default: days = 7;
+            }
+            const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+            query = query.gte('timestamp', cutoff);
+        }
+
+        const { data, error } = await query.limit(1000);
         
         if (error) throw error;
         
         if (!data || data.length === 0) {
-            container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">Нет данных о сжиганиях</div>`;
+            container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">Нет данных о сжиганиях за этот период</div>`;
             return;
         }
         
@@ -1744,7 +1716,8 @@
         
         function updateChange(elementId, current, previous) {
             const el = document.getElementById(elementId);
-            if (!el || previous === 0) {
+            if (!el) return;
+            if (previous === 0) {
                 el.textContent = '';
                 el.className = 'metric-change neutral';
                 return;
@@ -2018,22 +1991,12 @@
         // ==================== КОМБО ДУПЛО ==============================
         // ================================================================
         
-        async function buildBurnTable(period) {
-            document.getElementById('burnTableBody').innerHTML = 
-                `<tr><td colspan="5" style="text-align:center;color:#94a3b8;">Загрузка...</td></tr>`;
-            document.getElementById('burnTotal').textContent = '—';
-            document.getElementById('burnSenders').textContent = '—';
-            document.getElementById('burnTopSender').textContent = '—';
-            document.getElementById('burnAvg').textContent = '—';
-        }
-        
         function setupDuploPeriods() {
             document.querySelectorAll('.duplo-period').forEach(btn => {
                 btn.addEventListener('click', function() {
                     document.querySelectorAll('.duplo-period').forEach(b => b.classList.remove('active'));
                     this.classList.add('active');
-                    buildBurnTable(this.dataset.period);
-                    loadBurners();
+                    loadBurners(this.dataset.period);
                 });
             });
         }
