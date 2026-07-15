@@ -165,12 +165,17 @@ async function sendTelegramReport(stats, startTime) {
 
     for (const chatId of chatIds) {
         try {
-            await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+            const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ chat_id: chatId, text: message, parse_mode: 'HTML' })
             });
-            console.log(`📨 Отправлено в Telegram (${chatId})`);
+            const result = await res.json();
+            if (result.ok) {
+                console.log(`📨 Отправлено в Telegram (${chatId})`);
+            } else {
+                console.error(`❌ Telegram отклонил сообщение для ${chatId}: ${result.description || JSON.stringify(result)}`);
+            }
         } catch (e) {
             console.error(`❌ Ошибка отправки для ${chatId}:`, e);
         }
