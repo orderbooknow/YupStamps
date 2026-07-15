@@ -64,6 +64,38 @@ function extractBaseName(apiTitle) {
     return base;
 }
 
+// 🆕 "Сырое" название — убираем только префикс "Postage Stamp - ", суффикс редкости НЕ трогаем.
+// Нужно, потому что часть строк в Excel хранит суффикс прямо в названии
+// (например, "Hong Kong (rare)" вместо "Hong Kong").
+function extractRawName(apiTitle) {
+    if (!apiTitle) return null;
+    let raw = apiTitle.replace(/^Postage Stamp - /, '');
+    raw = raw.replace(/^- /, '').trim();
+    return raw;
+}
+
+// 🆕 Ищем соответствие: сначала точно, потом с нормализацией дефисов/пробелов
+// (в Excel встречаются варианты вроде "Sri-Lanka" вместо "Sri Lanka")
+function normalizeForMatch(s) {
+    return s.trim().toLowerCase().replace(/[-\s]+/g, ' ');
+}
+
+const groupsMapNormalized = new Map(groupsList.map(g => [normalizeForMatch(g.name), g]));
+
+function lookupStampInfo(apiTitle) {
+    const baseName = extractBaseName(apiTitle);
+    if (baseName) {
+        const info = groupsMap.get(baseName.trim().toLowerCase()) || groupsMapNormalized.get(normalizeForMatch(baseName));
+        if (info) return { info, baseName };
+    }
+    const rawName = extractRawName(apiTitle);
+    if (rawName && rawName.toLowerCase() !== (baseName || '').toLowerCase()) {
+        const info = groupsMap.get(rawName.trim().toLowerCase()) || groupsMapNormalized.get(normalizeForMatch(rawName));
+        if (info) return { info, baseName };
+    }
+    return { info: null, baseName };
+}
+
 // ============================================================
 // 1. ЗАБИРАЕМ ВСЕ ТОКЕНЫ С API (постранично, целиком)
 // ============================================================
@@ -99,8 +131,7 @@ async function syncStaticStamps(allTokens) {
     const notFound = [];
 
     const rows = staticTokens.map(t => {
-        const baseName = extractBaseName(t.title);
-        const info = baseName ? groupsMap.get(baseName.trim().toLowerCase()) : null;
+        const { info, baseName } = lookupStampInfo(t.title);
         if (info) matched++;
         else notFound.push({ token_id: t.token_id, title: t.title, base_name: baseName });
 
@@ -209,12 +240,17 @@ async function sendTelegramReport(stats, startTime) {
 
     for (const chatId of chatIds) {
         try {
-            await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+            const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ chat_id: chatId, text: message, parse_mode: 'HTML' })
             });
-            console.log(`📨 Отправлено в Telegram (${chatId})`);
+            const result = await res.json();
+            if (result.ok) {
+                console.log(`📨 Отправлено в Telegram (${chatId})`);
+            } else {
+                console.error(`❌ Telegram отклонил сообщение для ${chatId}: ${result.description || JSON.stringify(result)}`);
+            }
         } catch (e) {
             console.error(`❌ Ошибка отправки для ${chatId}:`, e);
         }
