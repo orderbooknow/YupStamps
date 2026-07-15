@@ -91,7 +91,9 @@ async function fetchAllTokens() {
 // ============================================================
 async function syncStaticStamps(allTokens) {
     console.log('📊 Синхронизируем обычные марки в stamps (разовый полный забор, с Excel-разметкой)...');
-    const staticTokens = allTokens.filter(t => !DYNAMIC_NAMES.includes(t.title));
+    // 🆕 На контракте лежат не только марки — фильтруем строго по названию,
+    // как и было в оригинальном quick-update.js
+    const staticTokens = allTokens.filter(t => t.title?.includes('Postage Stamp'));
 
     let matched = 0;
     const notFound = [];
