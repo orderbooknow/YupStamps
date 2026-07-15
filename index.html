@@ -635,8 +635,8 @@
     const YAROSLAV_CHAT_ID = '454371494';
 
     // ==================== SUPABASE ====================
-    const SUPABASE_URL = 'https://obbujhdmegdgxzdtpbai.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_R0pbZnbuSEbkaCLHcZ_YhQ_J2ZRgIB8';
+    const SUPABASE_URL = 'https://rplputivoyxqqjxjkvgd.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwbHB1dGl2b3l4cXFqeGprdmdkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1OTA1NDMsImV4cCI6MjA5OTE2NjU0M30.xvaNbmRdEPvTk7VZ82p93_ynizv4jCjC5cgohvv2U7c';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     const EXCLUDED_OWNERS = ['sendler-alchemy.near'];
     const BURNER_ACCOUNT = 'darai_duplo.near';
@@ -713,6 +713,7 @@
         'Alchemist (6)': 'Alchemist (6)',
         'Alchemist (4-5)': 'Alchemist (4-5)',
         'Alchemist (old-3)': 'Alchemist (old-3)',
+        'Alchemist (8)': 'Alchemist (8)',
     };
 
     const rarityTranslations = {
@@ -1211,7 +1212,9 @@
         dynamic.forEach(item => {
             const name = item.name;
             let groupName = 'Alchemist (old-3)';
-            if (name === 'Stamp (legendary - 7 Lv)' || name === 'Stamp (legendary - 7Lv)') {
+            if (name === 'Stamp (Golden Soon - 8 Lv)' || name === 'Stamp (Golden Soon - 8Lv)') {
+                groupName = 'Alchemist (8)';
+            } else if (name === 'Stamp (legendary - 7 Lv)' || name === 'Stamp (legendary - 7Lv)') {
                 groupName = 'Alchemist (7)';
             } else if (name === 'Stamp (legendary - 6 Lv)' || name === 'Stamp (legendary - 6Lv)') {
                 groupName = 'Alchemist (6)';
