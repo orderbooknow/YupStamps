@@ -32,3 +32,14 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: node sync-stamps-full.js
+
+      - name: Upload debug artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sync-debug-files
+          path: |
+            not_found_stamps.json
+            unclassified_tokens.json
+          if-no-files-found: ignore
+          retention-days: 14
