@@ -1,0 +1,1628 @@
+[
+  {
+    "name": "accountant",
+    "reputation": 2500,
+    "rarity": "Common",
+    "group": "Профессии"
+  },
+  {
+    "name": "Actor",
+    "reputation": 2000,
+    "rarity": "Rare",
+    "group": "Профессии"
+  },
+  {
+    "name": "AdminZon",
+    "reputation": 250,
+    "rarity": "Rare",
+    "group": "ИНФЛЮЕНСЕР"
+  },
+  {
+    "name": "Advocate",
+    "reputation": 3777,
+    "rarity": "Unique",
+    "group": "Профессии"
+  },
+  {
+    "name": "Africa",
+    "reputation": 2900,
+    "rarity": "Legendary",
+    "group": "АФРИКА"
+  },
+  {
+    "name": "Alaska",
+    "reputation": 500,
+    "rarity": "Rare",
+    "group": "АМЕРИКА"
+  },
+  {
+    "name": "Albania",
+    "reputation": 200,
+    "rarity": "Uncommon",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Alert Station",
+    "reputation": 490,
+    "rarity": "Uncommon",
+    "group": "Северные Миры"
+  },
+  {
+    "name": "Algeria",
+    "reputation": 490,
+    "rarity": "Uncommon",
+    "group": "АФРИКА"
+  },
+  {
+    "name": "Amsterdam golden (legendary)",
+    "reputation": 2900,
+    "rarity": "Legendary",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Angola",
+    "reputation": 950,
+    "rarity": "Legendary",
+    "group": "АФРИКА"
+  },
+  {
+    "name": "Antartica",
+    "reputation": 550,
+    "rarity": "Common",
+    "group": "Северные Миры"
+  },
+  {
+    "name": "Aquarius",
+    "reputation": 700,
+    "rarity": "Rare",
+    "group": "ЗОДИАКИ"
+  },
+  {
+    "name": "Architect",
+    "reputation": 5000,
+    "rarity": "Legendary",
+    "group": "Профессии"
+  },
+  {
+    "name": "Aries",
+    "reputation": 1000,
+    "rarity": "Legendary",
+    "group": "ЗОДИАКИ"
+  },
+  {
+    "name": "Armenia",
+    "reputation": 2500,
+    "rarity": "Legendary",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "artist",
+    "reputation": 2500,
+    "rarity": "Uncommon",
+    "group": "Профессии"
+  },
+  {
+    "name": "astronaut",
+    "reputation": 2900,
+    "rarity": "Common",
+    "group": "Профессии"
+  },
+  {
+    "name": "Audi",
+    "reputation": 3000,
+    "rarity": "Legendary",
+    "group": "МАШИНЫ"
+  },
+  {
+    "name": "Australia",
+    "reputation": 2500,
+    "rarity": "Legendary",
+    "group": "ОКЕАНИЯ"
+  },
+  {
+    "name": "Autumn",
+    "reputation": 1950,
+    "rarity": "Common",
+    "group": "Времена года"
+  },
+  {
+    "name": "Azerbajan",
+    "reputation": 2500,
+    "rarity": "Legendary",
+    "group": "АЗИЯ"
+  },
+  {
+    "name": "Baikal",
+    "reputation": 190,
+    "rarity": "Rare",
+    "group": "АЗИЯ"
+  },
+  {
+    "name": "Bali",
+    "reputation": 580,
+    "rarity": "Rare",
+    "group": "АЗИЯ"
+  },
+  {
+    "name": "bartender",
+    "reputation": 3500,
+    "rarity": "Rare",
+    "group": "Профессии"
+  },
+  {
+    "name": "bath",
+    "reputation": 550,
+    "rarity": "Rare",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "Battle",
+    "reputation": 4700,
+    "rarity": "Mystic",
+    "group": "Охотники"
+  },
+  {
+    "name": "Belarus",
+    "reputation": 500,
+    "rarity": "Rare",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Benjamin",
+    "reputation": 250,
+    "rarity": "Rare",
+    "group": "ИНФЛЮЕНСЕР"
+  },
+  {
+    "name": "Best Trader",
+    "reputation": 1000,
+    "rarity": "Legendary",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "bmw",
+    "reputation": 3000,
+    "rarity": "Rare",
+    "group": "МАШИНЫ"
+  },
+  {
+    "name": "Bolivia",
+    "reputation": 250,
+    "rarity": "Common",
+    "group": "АМЕРИКА"
+  },
+  {
+    "name": "Bristol",
+    "reputation": 450,
+    "rarity": "Epic",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Britain",
+    "reputation": 350,
+    "rarity": "Uncommon",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Broadcast listener",
+    "reputation": 2500,
+    "rarity": "Rare",
+    "group": "Профессии"
+  },
+  {
+    "name": "builder",
+    "reputation": 3500,
+    "rarity": "Rare",
+    "group": "Профессии"
+  },
+  {
+    "name": "Burundi",
+    "reputation": 990,
+    "rarity": "Uncommon",
+    "group": "АФРИКА"
+  },
+  {
+    "name": "business (Legendary)",
+    "reputation": 4000,
+    "rarity": "Legendary",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "Cairo",
+    "reputation": 325,
+    "rarity": "Rare",
+    "group": "АФРИКА"
+  },
+  {
+    "name": "Cameroon",
+    "reputation": 450,
+    "rarity": "Uncommon",
+    "group": "АФРИКА"
+  },
+  {
+    "name": "Canada",
+    "reputation": 350,
+    "rarity": "Uncommon",
+    "group": "АМЕРИКА"
+  },
+  {
+    "name": "Cancer",
+    "reputation": 950,
+    "rarity": "Rare",
+    "group": "ЗОДИАКИ"
+  },
+  {
+    "name": "Cappadocia",
+    "reputation": 320,
+    "rarity": "Common",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Capricorn Golden",
+    "reputation": 3000,
+    "rarity": "Legendary",
+    "group": "ЗОДИАКИ"
+  },
+  {
+    "name": "Chevrolet",
+    "reputation": 2500,
+    "rarity": "Rare",
+    "group": "МАШИНЫ"
+  },
+  {
+    "name": "China",
+    "reputation": 400,
+    "rarity": "Uncommon",
+    "group": "АЗИЯ"
+  },
+  {
+    "name": "Collection (epic)",
+    "reputation": 350,
+    "rarity": "Epic",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "Colombia",
+    "reputation": 250,
+    "rarity": "Common",
+    "group": "АМЕРИКА"
+  },
+  {
+    "name": "Confectioner",
+    "reputation": 2500,
+    "rarity": "Common",
+    "group": "Профессии"
+  },
+  {
+    "name": "Congo",
+    "reputation": 290,
+    "rarity": "Common",
+    "group": "АФРИКА"
+  },
+  {
+    "name": "cook",
+    "reputation": 3500,
+    "rarity": "Rare",
+    "group": "Профессии"
+  },
+  {
+    "name": "Crimea",
+    "reputation": 850,
+    "rarity": "Unique",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Croatia",
+    "reputation": 400,
+    "rarity": "Uncommon",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Crypto",
+    "reputation": 250,
+    "rarity": "Rare",
+    "group": "ИНФЛЮЕНСЕР"
+  },
+  {
+    "name": "Cyprus",
+    "reputation": 590,
+    "rarity": "Rare",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Delhi",
+    "reputation": 2500,
+    "rarity": "Legendary",
+    "group": "АЗИЯ"
+  },
+  {
+    "name": "diver",
+    "reputation": 4000,
+    "rarity": "Common",
+    "group": "Профессии"
+  },
+  {
+    "name": "doctor",
+    "reputation": 2500,
+    "rarity": "Uncommon",
+    "group": "Профессии"
+  },
+  {
+    "name": "Dubai",
+    "reputation": 900,
+    "rarity": "Mystic",
+    "group": "АЗИЯ"
+  },
+  {
+    "name": "Earth",
+    "reputation": 500,
+    "rarity": "Rare",
+    "group": "СОЛНЕЧНАЯ СИСТЕМА"
+  },
+  {
+    "name": "Easter Island",
+    "reputation": 1250,
+    "rarity": "Common",
+    "group": "ОКЕАНИЯ"
+  },
+  {
+    "name": "Egypt",
+    "reputation": 250,
+    "rarity": "Uncommon",
+    "group": "АФРИКА"
+  },
+  {
+    "name": "Ethiopia",
+    "reputation": 590,
+    "rarity": "Common",
+    "group": "АФРИКА"
+  },
+  {
+    "name": "Evil Boar Golden",
+    "reputation": -50000,
+    "rarity": "Legendary",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "fail",
+    "reputation": 10,
+    "rarity": "Rare",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "Fangs of mordor",
+    "reputation": 450,
+    "rarity": "Common",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "Farmer",
+    "reputation": 2500,
+    "rarity": "Rare",
+    "group": "Профессии"
+  },
+  {
+    "name": "Finland",
+    "reputation": 2500,
+    "rarity": "Legendary",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "firefighter",
+    "reputation": 4000,
+    "rarity": "Common",
+    "group": "Профессии"
+  },
+  {
+    "name": "florist",
+    "reputation": 3500,
+    "rarity": "Rare",
+    "group": "Профессии"
+  },
+  {
+    "name": "football player",
+    "reputation": 3500,
+    "rarity": "Rare",
+    "group": "Профессии"
+  },
+  {
+    "name": "Forest",
+    "reputation": 290,
+    "rarity": "Rare",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "future",
+    "reputation": 3000,
+    "rarity": "Rare",
+    "group": "МАШИНЫ"
+  },
+  {
+    "name": "Gabon",
+    "reputation": 325,
+    "rarity": "Uncommon",
+    "group": "АФРИКА"
+  },
+  {
+    "name": "Galapagos Island (epic)",
+    "reputation": 1650,
+    "rarity": "Epic",
+    "group": "АМЕРИКА"
+  },
+  {
+    "name": "Gambia",
+    "reputation": 999,
+    "rarity": "Uncommon",
+    "group": "АФРИКА"
+  },
+  {
+    "name": "Garage",
+    "reputation": 300,
+    "rarity": "Uncommon",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "Gave",
+    "reputation": 4500,
+    "rarity": "Common",
+    "group": "Охотники"
+  },
+  {
+    "name": "GEMENI",
+    "reputation": 1200,
+    "rarity": "Legendary",
+    "group": "ЗОДИАКИ"
+  },
+  {
+    "name": "Georgia",
+    "reputation": 220,
+    "rarity": "Common",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Giraffe",
+    "reputation": 850,
+    "rarity": "Legendary",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "Gold news",
+    "reputation": 1500,
+    "rarity": "Rare",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "Gondolin",
+    "reputation": 990,
+    "rarity": "Common",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "Guatemala",
+    "reputation": 2500,
+    "rarity": "Legendary",
+    "group": "АМЕРИКА"
+  },
+  {
+    "name": "hairdresser",
+    "reputation": 4500,
+    "rarity": "Epic",
+    "group": "Профессии"
+  },
+  {
+    "name": "Halloween",
+    "reputation": -5000,
+    "rarity": "Rare",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "Halloween Black",
+    "reputation": -4000,
+    "rarity": "Common",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "harmony",
+    "reputation": 500,
+    "rarity": "Rare",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "Hell",
+    "reputation": -15000,
+    "rarity": "Legendary",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "HereWallet.Ch",
+    "reputation": 250,
+    "rarity": "Rare",
+    "group": "ИНФЛЮЕНСЕР"
+  },
+  {
+    "name": "Hollywood",
+    "reputation": 990,
+    "rarity": "Unique",
+    "group": "АМЕРИКА"
+  },
+  {
+    "name": "Hong Kong (rare)",
+    "reputation": 650,
+    "rarity": "Rare",
+    "group": "АЗИЯ"
+  },
+  {
+    "name": "Hot Miners",
+    "reputation": 250,
+    "rarity": "Rare",
+    "group": "ИНФЛЮЕНСЕР"
+  },
+  {
+    "name": "HotCraft",
+    "reputation": 190,
+    "rarity": "Common",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "HotCraft Golden Legendary",
+    "reputation": 750,
+    "rarity": "Legendary",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "HotCraft Golden Platinum",
+    "reputation": 900,
+    "rarity": "Unique",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "HotCraft Golden (uncommon)",
+    "reputation": 250,
+    "rarity": "Uncommon",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "hummer",
+    "reputation": 4000,
+    "rarity": "Unique",
+    "group": "МАШИНЫ"
+  },
+  {
+    "name": "IN",
+    "reputation": 4500,
+    "rarity": "Uncommon",
+    "group": "Охотники"
+  },
+  {
+    "name": "Investments Dmitry",
+    "reputation": 250,
+    "rarity": "Rare",
+    "group": "ИНФЛЮЕНСЕР"
+  },
+  {
+    "name": "Ireland",
+    "reputation": 390,
+    "rarity": "Common",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Irkutsk",
+    "reputation": 200,
+    "rarity": "Rare",
+    "group": "АЗИЯ"
+  },
+  {
+    "name": "Israel",
+    "reputation": 550,
+    "rarity": "Uncommon",
+    "group": "АЗИЯ"
+  },
+  {
+    "name": "Italy",
+    "reputation": 150,
+    "rarity": "Common",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Jamaica",
+    "reputation": 415,
+    "rarity": "Uncommon",
+    "group": "АМЕРИКА"
+  },
+  {
+    "name": "Jholudi Common",
+    "reputation": 590,
+    "rarity": "Common",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "Jholudi Epic",
+    "reputation": 450,
+    "rarity": "Epic",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "Jholudi Golden",
+    "reputation": 2000,
+    "rarity": "Legendary",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "Jholudi Platina Unique",
+    "reputation": 1100,
+    "rarity": "Unique",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "Jholudi Rare",
+    "reputation": 550,
+    "rarity": "Rare",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "Jholudi Uncommon",
+    "reputation": 550,
+    "rarity": "Uncommon",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "Jupiter",
+    "reputation": 1000,
+    "rarity": "Common",
+    "group": "СОЛНЕЧНАЯ СИСТЕМА"
+  },
+  {
+    "name": "Kaluga",
+    "reputation": 180,
+    "rarity": "Uncommon",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Kemerovo",
+    "reputation": 200,
+    "rarity": "Rare",
+    "group": "АЗИЯ"
+  },
+  {
+    "name": "Kharkov",
+    "reputation": 650,
+    "rarity": "Rare",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Kingdom of buckwheat",
+    "reputation": 350,
+    "rarity": "Common",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "Kopeecha",
+    "reputation": 250,
+    "rarity": "Rare",
+    "group": "ИНФЛЮЕНСЕР"
+  },
+  {
+    "name": "Koshelki",
+    "reputation": 950,
+    "rarity": "Unique",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Krasnoyarsk",
+    "reputation": 550,
+    "rarity": "Rare",
+    "group": "АЗИЯ"
+  },
+  {
+    "name": "Krypto Mechta",
+    "reputation": 250,
+    "rarity": "Rare",
+    "group": "ИНФЛЮЕНСЕР"
+  },
+  {
+    "name": "Kvint",
+    "reputation": 600,
+    "rarity": "Common",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Kyiv",
+    "reputation": 475,
+    "rarity": "Rare",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Lada (common)",
+    "reputation": -2500,
+    "rarity": "Common",
+    "group": "МАШИНЫ"
+  },
+  {
+    "name": "Lamborghini",
+    "reputation": 3500,
+    "rarity": "Legendary",
+    "group": "МАШИНЫ"
+  },
+  {
+    "name": "Lapland",
+    "reputation": 850,
+    "rarity": "Rare",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "Las Vegas",
+    "reputation": 650,
+    "rarity": "Unique",
+    "group": "АМЕРИКА"
+  },
+  {
+    "name": "Latvia",
+    "reputation": 390,
+    "rarity": "Uncommon",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Leipreachan",
+    "reputation": 250,
+    "rarity": "Rare",
+    "group": "ИНФЛЮЕНСЕР"
+  },
+  {
+    "name": "Leo (common)",
+    "reputation": 250,
+    "rarity": "Common",
+    "group": "ЗОДИАКИ"
+  },
+  {
+    "name": "Libra",
+    "reputation": 350,
+    "rarity": "Common",
+    "group": "ЗОДИАКИ"
+  },
+  {
+    "name": "London",
+    "reputation": 350,
+    "rarity": "Rare",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Longyear",
+    "reputation": 600,
+    "rarity": "Epic",
+    "group": "Северные Миры"
+  },
+  {
+    "name": "Love Hone",
+    "reputation": 2000,
+    "rarity": "Unique",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "Luxembourg",
+    "reputation": 750,
+    "rarity": "Legendary",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Macedonia",
+    "reputation": 315,
+    "rarity": "Rare",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Madagascar",
+    "reputation": 500,
+    "rarity": "Common",
+    "group": "АФРИКА"
+  },
+  {
+    "name": "Madrid",
+    "reputation": 290,
+    "rarity": "Common",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Magadan",
+    "reputation": 420,
+    "rarity": "Rare",
+    "group": "АЗИЯ"
+  },
+  {
+    "name": "Maldives",
+    "reputation": 500,
+    "rarity": "Common",
+    "group": "АЗИЯ"
+  },
+  {
+    "name": "Manas",
+    "reputation": 590,
+    "rarity": "Common",
+    "group": "АЗИЯ"
+  },
+  {
+    "name": "Mars",
+    "reputation": 800,
+    "rarity": "Epic",
+    "group": "СОЛНЕЧНАЯ СИСТЕМА"
+  },
+  {
+    "name": "masseur",
+    "reputation": 2500,
+    "rarity": "Common",
+    "group": "Профессии"
+  },
+  {
+    "name": "mechanic",
+    "reputation": 2500,
+    "rarity": "Common",
+    "group": "Профессии"
+  },
+  {
+    "name": "mercedes",
+    "reputation": 2000,
+    "rarity": "Uncommon",
+    "group": "МАШИНЫ"
+  },
+  {
+    "name": "Mercury",
+    "reputation": 1500,
+    "rarity": "Mystic",
+    "group": "СОЛНЕЧНАЯ СИСТЕМА"
+  },
+  {
+    "name": "Mexico",
+    "reputation": 550,
+    "rarity": "Rare",
+    "group": "АМЕРИКА"
+  },
+  {
+    "name": "Miami",
+    "reputation": 200,
+    "rarity": "Uncommon",
+    "group": "АМЕРИКА"
+  },
+  {
+    "name": "mini Retro",
+    "reputation": 100,
+    "rarity": "Rare",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "Mizantrop",
+    "reputation": 250,
+    "rarity": "Rare",
+    "group": "ИНФЛЮЕНСЕР"
+  },
+  {
+    "name": "Moldova",
+    "reputation": 600,
+    "rarity": "Epic",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Monaco",
+    "reputation": 777,
+    "rarity": "Unique",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Montenegro",
+    "reputation": 650,
+    "rarity": "Uncommon",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Mordor",
+    "reputation": -2500,
+    "rarity": "Common",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "Moscow",
+    "reputation": 750,
+    "rarity": "Legendary",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "musician",
+    "reputation": 2900,
+    "rarity": "Uncommon",
+    "group": "Профессии"
+  },
+  {
+    "name": "mustang",
+    "reputation": 3000,
+    "rarity": "Rare",
+    "group": "МАШИНЫ"
+  },
+  {
+    "name": "Mysteria",
+    "reputation": 777,
+    "rarity": "Rare",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "neo",
+    "reputation": 3000,
+    "rarity": "Rare",
+    "group": "МАШИНЫ"
+  },
+  {
+    "name": "NEO X",
+    "reputation": 2000,
+    "rarity": "Common",
+    "group": "МАШИНЫ"
+  },
+  {
+    "name": "Nepal",
+    "reputation": 395,
+    "rarity": "Uncommon",
+    "group": "АЗИЯ"
+  },
+  {
+    "name": "Neptune Gold (legendary)",
+    "reputation": 3500,
+    "rarity": "Legendary",
+    "group": "СОЛНЕЧНАЯ СИСТЕМА"
+  },
+  {
+    "name": "New York",
+    "reputation": 2500,
+    "rarity": "Legendary",
+    "group": "АМЕРИКА"
+  },
+  {
+    "name": "New Zealand",
+    "reputation": 450,
+    "rarity": "Common",
+    "group": "ОКЕАНИЯ"
+  },
+  {
+    "name": "North Pole",
+    "reputation": 900,
+    "rarity": "Rare",
+    "group": "Северные Миры"
+  },
+  {
+    "name": "Norway",
+    "reputation": 450,
+    "rarity": "Rare",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Novosibirsk",
+    "reputation": 300,
+    "rarity": "Rare",
+    "group": "АЗИЯ"
+  },
+  {
+    "name": "Odessa",
+    "reputation": 490,
+    "rarity": "Rare",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Of (legendary)",
+    "reputation": 4600,
+    "rarity": "Legendary",
+    "group": "Охотники"
+  },
+  {
+    "name": "old car (unique)",
+    "reputation": 1500,
+    "rarity": "Unique",
+    "group": "МАШИНЫ"
+  },
+  {
+    "name": "Old Stamp (Legendary)",
+    "reputation": 500,
+    "rarity": "Legendary",
+    "group": "Alchemist (old-3)"
+  },
+  {
+    "name": "Omsk",
+    "reputation": 250,
+    "rarity": "Common",
+    "group": "АЗИЯ"
+  },
+  {
+    "name": "Ophiuchus",
+    "reputation": 3000,
+    "rarity": "Unique",
+    "group": "ЗОДИАКИ"
+  },
+  {
+    "name": "Panama Platina",
+    "reputation": 999,
+    "rarity": "Legendary",
+    "group": "АМЕРИКА"
+  },
+  {
+    "name": "Paris",
+    "reputation": 380,
+    "rarity": "Rare",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Pattaya",
+    "reputation": 350,
+    "rarity": "Uncommon",
+    "group": "АЗИЯ"
+  },
+  {
+    "name": "Pchelovod",
+    "reputation": 320,
+    "rarity": "Uncommon",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "photographer",
+    "reputation": 3000,
+    "rarity": "Uncommon",
+    "group": "Профессии"
+  },
+  {
+    "name": "Pisces",
+    "reputation": 400,
+    "rarity": "Uncommon",
+    "group": "ЗОДИАКИ"
+  },
+  {
+    "name": "Porsche",
+    "reputation": 2900,
+    "rarity": "Common",
+    "group": "МАШИНЫ"
+  },
+  {
+    "name": "Positano",
+    "reputation": 300,
+    "rarity": "Rare",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Prince",
+    "reputation": 100,
+    "rarity": "Common",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "Procrypto",
+    "reputation": 250,
+    "rarity": "Rare",
+    "group": "ИНФЛЮЕНСЕР"
+  },
+  {
+    "name": "psychologist",
+    "reputation": 3500,
+    "rarity": "Unique",
+    "group": "Профессии"
+  },
+  {
+    "name": "Quel Thalas",
+    "reputation": 250,
+    "rarity": "Uncommon",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "Rarity",
+    "reputation": 3250,
+    "rarity": "Uncommon",
+    "group": "МАШИНЫ"
+  },
+  {
+    "name": "realtor",
+    "reputation": 2500,
+    "rarity": "Uncommon",
+    "group": "Профессии"
+  },
+  {
+    "name": "Richard",
+    "reputation": 4950,
+    "rarity": "Legendary",
+    "group": "Охотники"
+  },
+  {
+    "name": "Richy Team",
+    "reputation": 250,
+    "rarity": "Rare",
+    "group": "ИНФЛЮЕНСЕР"
+  },
+  {
+    "name": "Rio De Janeiro",
+    "reputation": 1250,
+    "rarity": "Legendary",
+    "group": "АМЕРИКА"
+  },
+  {
+    "name": "Romania",
+    "reputation": 450,
+    "rarity": "Rare",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Rwanda",
+    "reputation": 1250,
+    "rarity": "Legendary",
+    "group": "АФРИКА"
+  },
+  {
+    "name": "Rybinsk",
+    "reputation": 400,
+    "rarity": "Rare",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Sagittarius Platinum",
+    "reputation": 3500,
+    "rarity": "Unique",
+    "group": "ЗОДИАКИ"
+  },
+  {
+    "name": "Samoa",
+    "reputation": 800,
+    "rarity": "Unique",
+    "group": "ОКЕАНИЯ"
+  },
+  {
+    "name": "Santorini",
+    "reputation": 300,
+    "rarity": "Rare",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Saturn",
+    "reputation": 1000,
+    "rarity": "Uncommon",
+    "group": "СОЛНЕЧНАЯ СИСТЕМА"
+  },
+  {
+    "name": "Scorpio",
+    "reputation": 750,
+    "rarity": "Rare",
+    "group": "ЗОДИАКИ"
+  },
+  {
+    "name": "seamstress",
+    "reputation": 1900,
+    "rarity": "Common",
+    "group": "Профессии"
+  },
+  {
+    "name": "Shanghai",
+    "reputation": 200,
+    "rarity": "Common",
+    "group": "АЗИЯ"
+  },
+  {
+    "name": "Siberia golden",
+    "reputation": 3000,
+    "rarity": "Legendary",
+    "group": "АЗИЯ"
+  },
+  {
+    "name": "Silent Hill",
+    "reputation": -5000,
+    "rarity": "Common",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "Singapore",
+    "reputation": 2950,
+    "rarity": "Legendary",
+    "group": "АЗИЯ"
+  },
+  {
+    "name": "Sitti Evil",
+    "reputation": -10000,
+    "rarity": "Common",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "Sochi",
+    "reputation": 450,
+    "rarity": "Uncommon",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Solomon Islands",
+    "reputation": 2500,
+    "rarity": "Legendary",
+    "group": "ОКЕАНИЯ"
+  },
+  {
+    "name": "speaker",
+    "reputation": 4000,
+    "rarity": "Rare",
+    "group": "Профессии"
+  },
+  {
+    "name": "Spring",
+    "reputation": 2950,
+    "rarity": "Uncommon",
+    "group": "Времена года"
+  },
+  {
+    "name": "Sri-Lanka",
+    "reputation": 3500,
+    "rarity": "Legendary",
+    "group": "АЗИЯ"
+  },
+  {
+    "name": "St. Peterborough",
+    "reputation": 750,
+    "rarity": "Rare",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Stamp (Legendary - 1Lv)",
+    "reputation": 1000,
+    "rarity": "Legendary",
+    "group": "Alchemist (old-3)"
+  },
+  {
+    "name": "Stamp (Legendary - 2Lv)",
+    "reputation": 2000,
+    "rarity": "Legendary",
+    "group": "Alchemist (old-3)"
+  },
+  {
+    "name": "Stamp (Legendary - 3Lv)",
+    "reputation": 3000,
+    "rarity": "Legendary",
+    "group": "Alchemist (old-3)"
+  },
+  {
+    "name": "Stamp (Legendary - 4Lv)",
+    "reputation": 4000,
+    "rarity": "Legendary",
+    "group": "Alchemist (4-5)"
+  },
+  {
+    "name": "Stamp (Legendary - 5Lv)",
+    "reputation": 4500,
+    "rarity": "Legendary",
+    "group": "Alchemist (4-5)"
+  },
+  {
+    "name": "Stamp (Legendary - 6Lv)",
+    "reputation": 4900,
+    "rarity": "Legendary",
+    "group": "Alchemist (6)"
+  },
+  {
+    "name": "Stamp (Legendary - 7Lv)",
+    "reputation": 5000,
+    "rarity": "Legendary",
+    "group": "Alchemist (7)"
+  },
+  {
+    "name": "Summer",
+    "reputation": 1900,
+    "rarity": "Common",
+    "group": "Времена года"
+  },
+  {
+    "name": "Sun",
+    "reputation": 1250,
+    "rarity": "Legendary",
+    "group": "СОЛНЕЧНАЯ СИСТЕМА"
+  },
+  {
+    "name": "Tallin",
+    "reputation": 800,
+    "rarity": "Rare",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Tanzania",
+    "reputation": 1250,
+    "rarity": "Epic",
+    "group": "АФРИКА"
+  },
+  {
+    "name": "Taurus",
+    "reputation": 400,
+    "rarity": "Uncommon",
+    "group": "ЗОДИАКИ"
+  },
+  {
+    "name": "taxi driver",
+    "reputation": 2650,
+    "rarity": "Uncommon",
+    "group": "Профессии"
+  },
+  {
+    "name": "The whale King",
+    "reputation": 5000,
+    "rarity": "Mystic",
+    "group": "Охотники"
+  },
+  {
+    "name": "Tiger",
+    "reputation": 400,
+    "rarity": "Rare",
+    "group": "ИНФЛЮЕНСЕР"
+  },
+  {
+    "name": "Tirith",
+    "reputation": 990,
+    "rarity": "Rare",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "Tokyo",
+    "reputation": 360,
+    "rarity": "Uncommon",
+    "group": "АЗИЯ"
+  },
+  {
+    "name": "Tokyo",
+    "reputation": 350,
+    "rarity": "Common",
+    "group": "АЗИЯ"
+  },
+  {
+    "name": "Top 300 reputation",
+    "reputation": 250,
+    "rarity": "Common",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "Toronto",
+    "reputation": 450,
+    "rarity": "Rare",
+    "group": "АМЕРИКА"
+  },
+  {
+    "name": "Tula",
+    "reputation": 350,
+    "rarity": "Uncommon",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Tunisia",
+    "reputation": 350,
+    "rarity": "Uncommon",
+    "group": "АФРИКА"
+  },
+  {
+    "name": "UAE",
+    "reputation": 2000,
+    "rarity": "Legendary",
+    "group": "АЗИЯ"
+  },
+  {
+    "name": "UAZ",
+    "reputation": 2000,
+    "rarity": "Common",
+    "group": "МАШИНЫ"
+  },
+  {
+    "name": "UniChillNft",
+    "reputation": 250,
+    "rarity": "Rare",
+    "group": "ИНФЛЮЕНСЕР"
+  },
+  {
+    "name": "Uranus",
+    "reputation": 1850,
+    "rarity": "Legendary",
+    "group": "СОЛНЕЧНАЯ СИСТЕМА"
+  },
+  {
+    "name": "USA business",
+    "reputation": 750,
+    "rarity": "Rare",
+    "group": "АМЕРИКА"
+  },
+  {
+    "name": "Vain",
+    "reputation": 4750,
+    "rarity": "Epic",
+    "group": "Охотники"
+  },
+  {
+    "name": "Valimar",
+    "reputation": 500,
+    "rarity": "Uncommon",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "Venezia",
+    "reputation": 400,
+    "rarity": "Uncommon",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Venus",
+    "reputation": 850,
+    "rarity": "Unique",
+    "group": "СОЛНЕЧНАЯ СИСТЕМА"
+  },
+  {
+    "name": "Vet (rare)",
+    "reputation": 2500,
+    "rarity": "Rare",
+    "group": "Профессии"
+  },
+  {
+    "name": "Virgo",
+    "reputation": 650,
+    "rarity": "Uncommon",
+    "group": "ЗОДИАКИ"
+  },
+  {
+    "name": "Vladislavskii",
+    "reputation": 1250,
+    "rarity": "Legendary",
+    "group": "ИНФЛЮЕНСЕР"
+  },
+  {
+    "name": "Vladivostok",
+    "reputation": 190,
+    "rarity": "Rare",
+    "group": "АЗИЯ"
+  },
+  {
+    "name": "Volkswagen",
+    "reputation": 1800,
+    "rarity": "Common",
+    "group": "МАШИНЫ"
+  },
+  {
+    "name": "Voronezh",
+    "reputation": 990,
+    "rarity": "Uncommon",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Voronezh Golden",
+    "reputation": 2500,
+    "rarity": "Legendary",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Warsaw",
+    "reputation": 250,
+    "rarity": "Uncommon",
+    "group": "ЕВРОПА"
+  },
+  {
+    "name": "Winter",
+    "reputation": 3000,
+    "rarity": "Common",
+    "group": "Времена года"
+  },
+  {
+    "name": "Yekaterinburg",
+    "reputation": 190,
+    "rarity": "Uncommon",
+    "group": "АЗИЯ/ЕВРОПА"
+  },
+  {
+    "name": "York",
+    "reputation": 4500,
+    "rarity": "Rare",
+    "group": "Охотники"
+  },
+  {
+    "name": "Yupalka",
+    "reputation": 300,
+    "rarity": "Rare",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "YupLand 2 Mystic",
+    "reputation": 1600,
+    "rarity": "Mystic",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "YupLand 3 (mystic)",
+    "reputation": 2900,
+    "rarity": "Mystic",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "Yupland 4 Mystic",
+    "reputation": 3200,
+    "rarity": "Mystic",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "Yupland 5 Mystic",
+    "reputation": 2850,
+    "rarity": "Mystic",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "Yupland 5 Rare",
+    "reputation": 250,
+    "rarity": "Rare",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "YupLand Duplo (common)",
+    "reputation": 250,
+    "rarity": "Common",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "YupLand Duplo Epic",
+    "reputation": 1000,
+    "rarity": "Epic",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "YupLand Duplo Rare",
+    "reputation": 750,
+    "rarity": "Rare",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "YupLand Duplo Uncommon",
+    "reputation": 450,
+    "rarity": "Uncommon",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "YupLand Expedition (uncommon)",
+    "reputation": 250,
+    "rarity": "Uncommon",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "Yupland Game",
+    "reputation": 350,
+    "rarity": "Rare",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "YupLand Golden Legendary",
+    "reputation": 2900,
+    "rarity": "Legendary",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "YupLand Mystic",
+    "reputation": 1500,
+    "rarity": "Mystic",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "YupLand Platinum Unique",
+    "reputation": 3000,
+    "rarity": "Unique",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "YupLand Socks (uncommon)",
+    "reputation": 250,
+    "rarity": "Uncommon",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "YupSelf",
+    "reputation": 4000,
+    "rarity": "Legendary",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "YupSoul",
+    "reputation": 4500,
+    "rarity": "Legendary",
+    "group": "СКАЗОЧНЫЕ МИРЫ"
+  },
+  {
+    "name": "Zimbabwe",
+    "reputation": 515,
+    "rarity": "Common",
+    "group": "АФРИКА"
+  },
+  {
+    "name": "Zurich",
+    "reputation": 750,
+    "rarity": "Uncommon",
+    "group": "ЕВРОПА"
+  }
+]
