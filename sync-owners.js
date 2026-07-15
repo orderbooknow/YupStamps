@@ -123,14 +123,17 @@ async function syncDynamicStamps(allTokens) {
     }
     console.log(`✅ Сохранено ${saved}/${rows.length} динамических экземпляров`);
 
-    // Одна "шаблонная" запись в stamps на каждое динамическое название
+    // Одна "шаблонная" запись в stamps на каждое динамическое название.
+    // 🆕 Используем синтетический token_id (а не base_name) — чтобы конфликт
+    // разрешался через тот же полноценный уникальный индекс, что и у обычных марок.
     for (const name of DYNAMIC_NAMES) {
         const { error } = await supabase.from('stamps').upsert({
+            token_id: `dynamic:${name}`,
             base_name: name,
             title: name,
             group_name: DYNAMIC_GROUPS[name],
             rarity: 'Legendary'
-        }, { onConflict: 'base_name' });
+        }, { onConflict: 'token_id' });
         if (error) console.error(`❌ Ошибка upsert для ${name}: ${error.message}`);
         else console.log(`📝 Обновлена статическая запись для ${name}`);
     }
