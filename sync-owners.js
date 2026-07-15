@@ -158,7 +158,9 @@ async function sendTelegramReport(stats, startTime) {
         `🖼️ <b>YupStamps Gallery Sync</b> 🖼️\n\n` +
         `📊 Всего токенов с API: ${formatNumber(stats.totalTokens)}\n` +
         `📮 Обычных марок (обновлён владелец): ${formatNumber(stats.staticCount)}\n` +
-        `✨ Динамических (алхимических): ${formatNumber(stats.dynamicCount)}\n\n` +
+        `✨ Динамических (алхимических): ${formatNumber(stats.dynamicCount)}\n` +
+        (stats.unclassifiedCount > 0 ? `❓ Не попало ни в марки, ни в динамические: ${formatNumber(stats.unclassifiedCount)}\n` : ``) +
+        `\n` +
         `⏱️ Время: ${elapsed} сек`;
 
     for (const chatId of chatIds) {
@@ -180,6 +182,33 @@ function formatNumber(num) {
 }
 
 // ============================================================
+// 🆕 ПРОВЕРКА: токены, не попавшие НИ под фильтр марок, НИ под динамические
+// ============================================================
+function findUnclassifiedTokens(allTokens) {
+    const unclassified = allTokens.filter(t =>
+        !t.title?.includes('Postage Stamp') && !DYNAMIC_NAMES.includes(t.title)
+    );
+
+    console.log(`🔎 Токенов, не попавших ни в марки, ни в динамические: ${unclassified.length}`);
+
+    if (unclassified.length > 0) {
+        const byTitle = {};
+        unclassified.forEach(t => {
+            const key = t.title || '(без названия)';
+            byTitle[key] = (byTitle[key] || 0) + 1;
+        });
+        const sorted = Object.entries(byTitle).sort((a, b) => b[1] - a[1]);
+
+        console.log('   Топ названий среди не попавших в обработку (первые 15):');
+        sorted.slice(0, 15).forEach(([title, count]) => {
+            console.log(`   - "${title}": ${count} шт.`);
+        });
+    }
+
+    return unclassified.length;
+}
+
+// ============================================================
 // MAIN
 // ============================================================
 async function main() {
@@ -188,13 +217,16 @@ async function main() {
     const allTokens = await fetchAllTokens();
     console.log(`✅ Всего токенов получено: ${allTokens.length}`);
 
+    const unclassifiedCount = findUnclassifiedTokens(allTokens);
+
     const staticStats = await syncOwners(allTokens);
     const dynamicStats = await syncDynamicStamps(allTokens);
 
     await sendTelegramReport({
         totalTokens: allTokens.length,
         staticCount: staticStats.staticCount,
-        dynamicCount: dynamicStats.dynamicCount
+        dynamicCount: dynamicStats.dynamicCount,
+        unclassifiedCount
     }, startTime);
 
     console.log('🎉 Готово!');
