@@ -31,4 +31,4 @@ jobs:
           SENDLER_API_KEY: ${{ secrets.SENDLER_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: node sync-owners.js
+        run: node sync-stamps-full.js
