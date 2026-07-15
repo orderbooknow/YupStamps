@@ -1,4 +1,5 @@
 const { createClient } = require('@supabase/supabase-js');
+const WebSocket = require('ws');
 const fs = require('fs');
 const path = require('path');
 
@@ -12,7 +13,9 @@ const API_KEY = process.env.SENDLER_API_KEY;
 if (!SUPABASE_KEY) { console.error('❌ Не задан SUPABASE_SERVICE_KEY'); process.exit(1); }
 if (!API_KEY) { console.error('❌ Не задан SENDLER_API_KEY'); process.exit(1); }
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+    realtime: { transport: WebSocket }
+});
 const API_URL = 'https://api.sendler.xyz/nft/list/?contract_address=yuplandshop.mintbase1.near&limit=10000';
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
@@ -87,7 +90,7 @@ async function fetchAllTokens() {
 // 2. ОБНОВЛЯЕМ ТАБЛИЦУ stamps (обычные марки) — ВСЕ поля сразу
 // ============================================================
 async function syncStaticStamps(allTokens) {
-    console.log('📊 Синхронизируем обычные марки в stamps...');
+    console.log('📊 Синхронизируем обычные марки в stamps (разовый полный забор, с Excel-разметкой)...');
     const staticTokens = allTokens.filter(t => !DYNAMIC_NAMES.includes(t.title));
 
     let matched = 0;
