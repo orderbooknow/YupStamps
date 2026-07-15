@@ -52,10 +52,11 @@ if (!fs.existsSync(GROUPS_MAP_PATH)) {
     process.exit(1);
 }
 const groupsList = JSON.parse(fs.readFileSync(GROUPS_MAP_PATH, 'utf8'));
-const groupsMap = new Map(groupsList.map(g => [g.name.trim().toLowerCase(), g]));
-console.log(`📖 Загружена карта разметки: ${groupsMap.size} названий`);
+console.log(`📖 Загружена карта разметки: ${groupsList.length} названий`);
 
 // Извлекаем базовое название из title API (как в update-groups.js)
+const RARITY_WORDS = ['common', 'rare', 'legendary', 'epic', 'uncommon', 'unique', 'mystic'];
+
 function extractBaseName(apiTitle) {
     if (!apiTitle) return null;
     let base = apiTitle.replace(/^Postage Stamp - /, '');
@@ -64,41 +65,96 @@ function extractBaseName(apiTitle) {
     return base;
 }
 
-// 🆕 "Сырое" название — убираем только префикс "Postage Stamp - ", суффикс редкости НЕ трогаем.
-// Нужно, потому что часть строк в Excel хранит суффикс прямо в названии
-// (например, "Hong Kong (rare)" вместо "Hong Kong").
-function extractRawName(apiTitle) {
+// 🆕 Достаём редкость из title API, если она там указана в скобках
+function extractRarityFromTitle(apiTitle) {
     if (!apiTitle) return null;
-    let raw = apiTitle.replace(/^Postage Stamp - /, '');
-    raw = raw.replace(/^- /, '').trim();
-    return raw;
+    const m = apiTitle.match(/\((common|rare|legendary|epic|uncommon|unique|mystic)\)\s*$/i);
+    return m ? m[1].toLowerCase() : null;
 }
 
-// 🆕 Ищем соответствие: сначала точно, потом с нормализацией дефисов/пробелов
-// (в Excel встречаются варианты вроде "Sri-Lanka" вместо "Sri Lanka")
 function normalizeForMatch(s) {
     return s.trim().toLowerCase().replace(/[-\s]+/g, ' ');
 }
 
-const groupsMapNormalized = new Map(groupsList.map(g => [normalizeForMatch(g.name), g]));
+// 🆕 Разбираем название строки Excel на (базовое имя, редкость) — редкость может быть
+// записана по-разному: "Name (rare)" ИЛИ просто "Name Rare" без скобок, с большой буквы
+function splitExcelNameAndRarity(name) {
+    if (!name) return { base: name, rarity: null };
+    let m = name.match(/^(.*?)\s*\((common|rare|legendary|epic|uncommon|unique|mystic)\)\s*$/i);
+    if (m) return { base: m[1].trim(), rarity: m[2].toLowerCase() };
 
+    const words = name.trim().split(/\s+/);
+    const lastWord = words[words.length - 1]?.toLowerCase();
+    if (words.length > 1 && RARITY_WORDS.includes(lastWord)) {
+        return { base: words.slice(0, -1).join(' '), rarity: lastWord };
+    }
+    return { base: name.trim(), rarity: null };
+}
+
+// 🆕 Группируем Excel-строки по нормализованному базовому имени.
+// Под одним именем может быть НЕСКОЛЬКО строк с разной редкостью
+// (например, "YupLand Duplo" — common/uncommon/rare/epic отдельными строками).
+const groupsByNormBase = new Map();
+groupsList.forEach(g => {
+    const { base, rarity } = splitExcelNameAndRarity(g.name);
+    const normBase = normalizeForMatch(base);
+    if (!groupsByNormBase.has(normBase)) groupsByNormBase.set(normBase, []);
+    groupsByNormBase.get(normBase).push({ rarity, info: g });
+});
+
+// 🆕 Ищем соответствие по (базовое имя + редкость).
+// Если под этим именем в Excel только ОДНА строка — берём её без вопросов.
+// Если несколько (разные редкости) — сопоставляем по редкости из title API.
 function lookupStampInfo(apiTitle) {
     const baseName = extractBaseName(apiTitle);
-    if (baseName) {
-        const info = groupsMap.get(baseName.trim().toLowerCase()) || groupsMapNormalized.get(normalizeForMatch(baseName));
-        if (info) return { info, baseName };
+    if (!baseName) return { info: null, baseName };
+
+    const normBase = normalizeForMatch(baseName);
+    const candidates = groupsByNormBase.get(normBase);
+    if (!candidates || candidates.length === 0) return { info: null, baseName };
+
+    if (candidates.length === 1) {
+        return { info: candidates[0].info, baseName };
     }
-    const rawName = extractRawName(apiTitle);
-    if (rawName && rawName.toLowerCase() !== (baseName || '').toLowerCase()) {
-        const info = groupsMap.get(rawName.trim().toLowerCase()) || groupsMapNormalized.get(normalizeForMatch(rawName));
-        if (info) return { info, baseName };
+
+    const apiRarity = extractRarityFromTitle(apiTitle);
+    if (apiRarity) {
+        const match = candidates.find(c => c.rarity === apiRarity);
+        if (match) return { info: match.info, baseName };
     }
+    // Несколько вариантов, но не смогли определить, какой именно — не гадаем
+    return { info: null, baseName };
     return { info: null, baseName };
 }
 
 // ============================================================
-// 1. ЗАБИРАЕМ ВСЕ ТОКЕНЫ С API (постранично, целиком)
+// 1. ЗАБИРАЕМ ВСЕ ТОКЕНЫ С API (постранично, целиком, с повторными попытками)
 // ============================================================
+async function fetchPage(url, attempt = 1) {
+    try {
+        const response = await fetch(url, { headers: { 'X-API-Key': API_KEY } });
+        if (!response.ok) {
+            // 502/503/504 — временные сбои на стороне API, имеет смысл повторить
+            if ([502, 503, 504].includes(response.status) && attempt < 5) {
+                const delay = attempt * 2000;
+                console.log(`⚠️ HTTP ${response.status} на странице, попытка ${attempt}, повтор через ${delay}мс...`);
+                await sleep(delay);
+                return fetchPage(url, attempt + 1);
+            }
+            throw new Error(`HTTP ${response.status}`);
+        }
+        return await response.json();
+    } catch (e) {
+        if (attempt < 5 && (e.message?.includes('HTTP 502') || e.message?.includes('HTTP 503') || e.message?.includes('HTTP 504') || e.name === 'TypeError')) {
+            const delay = attempt * 2000;
+            console.log(`⚠️ Ошибка сети (${e.message}), попытка ${attempt}, повтор через ${delay}мс...`);
+            await sleep(delay);
+            return fetchPage(url, attempt + 1);
+        }
+        throw e;
+    }
+}
+
 async function fetchAllTokens() {
     console.log('📥 Забираем все токены с API sendler...');
     let allTokens = [];
@@ -107,9 +163,7 @@ async function fetchAllTokens() {
     while (true) {
         let url = API_URL;
         if (cursor) url += `&cursor=${cursor}`;
-        const response = await fetch(url, { headers: { 'X-API-Key': API_KEY } });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const data = await response.json();
+        const data = await fetchPage(url);
         allTokens.push(...data.items);
         console.log(`📦 Страница ${++page}: загружено ${data.items.length}, всего ${allTokens.length}`);
         if (data.next_cursor) { cursor = data.next_cursor; await sleep(500); }
