@@ -72,7 +72,9 @@ async function fetchAllTokens() {
 // ============================================================
 async function syncOwners(allTokens) {
     console.log('📊 Обновляем владельцев обычных марок...');
-    const staticTokens = allTokens.filter(t => !DYNAMIC_NAMES.includes(t.title));
+    // 🆕 На контракте лежат не только марки — фильтруем строго по названию,
+    // как и было в оригинальном quick-update.js
+    const staticTokens = allTokens.filter(t => t.title?.includes('Postage Stamp'));
 
     const rows = staticTokens.map(t => ({
         token_id: t.token_id,
