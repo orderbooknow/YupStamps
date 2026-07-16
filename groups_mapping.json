@@ -24,7 +24,7 @@
     "group": "Профессии"
   },
   {
-    "name": "Africa",
+    "name": "Africa golden",
     "reputation": 2900,
     "rarity": "Legendary",
     "group": "АФРИКА"
@@ -66,7 +66,7 @@
     "group": "АФРИКА"
   },
   {
-    "name": "Antartica",
+    "name": "Antarctica",
     "reputation": 550,
     "rarity": "Common",
     "group": "Северные Миры"
@@ -126,7 +126,7 @@
     "group": "Времена года"
   },
   {
-    "name": "Azerbajan",
+    "name": "Azerbajan golden",
     "reputation": 2500,
     "rarity": "Legendary",
     "group": "АЗИЯ"
@@ -330,7 +330,7 @@
     "group": "ЕВРОПА"
   },
   {
-    "name": "Delhi",
+    "name": "Delhi golden",
     "reputation": 2500,
     "rarity": "Legendary",
     "group": "АЗИЯ"
@@ -402,7 +402,7 @@
     "group": "Профессии"
   },
   {
-    "name": "Finland",
+    "name": "Finland gold",
     "reputation": 2500,
     "rarity": "Legendary",
     "group": "ЕВРОПА"
@@ -468,7 +468,7 @@
     "group": "Охотники"
   },
   {
-    "name": "GEMENI",
+    "name": "Gemini",
     "reputation": 1200,
     "rarity": "Legendary",
     "group": "ЗОДИАКИ"
@@ -786,7 +786,7 @@
     "group": "ЕВРОПА"
   },
   {
-    "name": "Longyear",
+    "name": "Longyearbyen",
     "reputation": 600,
     "rarity": "Epic",
     "group": "Северные Миры"
@@ -966,7 +966,7 @@
     "group": "СОЛНЕЧНАЯ СИСТЕМА"
   },
   {
-    "name": "New York",
+    "name": "New York golden",
     "reputation": 2500,
     "rarity": "Legendary",
     "group": "АМЕРИКА"
@@ -1206,7 +1206,7 @@
     "group": "СКАЗОЧНЫЕ МИРЫ"
   },
   {
-    "name": "Singapore",
+    "name": "Singapore golden",
     "reputation": 2950,
     "rarity": "Legendary",
     "group": "АЗИЯ"
@@ -1350,13 +1350,13 @@
     "group": "СКАЗОЧНЫЕ МИРЫ"
   },
   {
-    "name": "Tokyo",
+    "name": "Tokyo (uncommon)",
     "reputation": 360,
     "rarity": "Uncommon",
     "group": "АЗИЯ"
   },
   {
-    "name": "Tokyo",
+    "name": "Tokyo (common)",
     "reputation": 350,
     "rarity": "Common",
     "group": "АЗИЯ"
