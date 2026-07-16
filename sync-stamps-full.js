@@ -271,7 +271,7 @@ async function syncDynamicStamps(allTokens) {
 // ============================================================
 // ОТЧЁТ В TELEGRAM
 // ============================================================
-async function sendTelegramReport(stats, startTime) {
+async function sendTelegramReport(allTokens, stats, startTime) {
     const token = process.env.TELEGRAM_BOT_TOKEN;
     const chatIds = (process.env.TELEGRAM_CHAT_ID || '').split(',').map(s => s.trim()).filter(Boolean);
     if (!token || chatIds.length === 0) {
@@ -279,18 +279,50 @@ async function sendTelegramReport(stats, startTime) {
         return;
     }
 
+    const stampTokens = allTokens.filter(t => t.title?.includes('Postage Stamp') || DYNAMIC_NAMES.includes(t.title));
+    const stampHolders = new Set(stampTokens.map(t => t.owner_id).filter(Boolean));
+    const stampBurned = stampTokens.filter(t => t.owner_id === 'darai_duplo.near').length;
+    const stampShop = stampTokens.filter(t => t.owner_id === 'sendler-alchemy.near').length;
+
+    const otherTokens = allTokens.filter(t => !t.title?.includes('Postage Stamp') && !DYNAMIC_NAMES.includes(t.title));
+    const otherHolders = new Set(otherTokens.map(t => t.owner_id).filter(Boolean));
+    const otherBurned = otherTokens.filter(t => t.owner_id === 'darai_duplo.near').length;
+    const otherShop = otherTokens.filter(t => t.owner_id === 'sendler-alchemy.near').length;
+
+    const onHotCraft = allTokens.filter(t => t.owner_id === 'intents.near').length;
+    const onPortal = allTokens.filter(t => t.owner_id === 'darai_portal.near').length;
+    const totalBurned = allTokens.filter(t => t.owner_id === 'darai_duplo.near').length;
+    const totalShop = allTokens.filter(t => t.owner_id === 'sendler-alchemy.near').length;
+
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
     const message =
-        `🖼️ <b>YupStamps Gallery Sync</b> 🖼️\n\n` +
-        `📊 Всего токенов с API: ${formatNumber(stats.totalTokens)}\n` +
-        `📮 Обычных марок: ${formatNumber(stats.staticCount)}\n` +
-        `✨ Динамических (алхимических): ${formatNumber(stats.dynamicCount)}\n` +
-        (stats.unclassifiedCount > 0 ? `❓ Не попало ни в марки, ни в динамические: ${formatNumber(stats.unclassifiedCount)}\n` : ``) +
-        `\n` +
+        `🏆 <b>Yupland Stamps Update</b> 🏆\n\n` +
+
+        `📮 <b>МАРКИ (Postage + Dynamic):</b>\n` +
+        `   📊 Всего: ${formatNumber(stampTokens.length)}\n` +
+        `   🔥 Сожжено: ${formatNumber(stampBurned)}\n` +
+        `   👥 Держателей: ${formatNumber(stampHolders.size)}\n` +
+        `   🏪 В Лавке: ${formatNumber(stampShop)}\n\n` +
+
+        `📦 <b>ПРОЧИЕ NFT (не марки):</b>\n` +
+        `   📊 Всего: ${formatNumber(otherTokens.length)}\n` +
+        `   🔥 Сожжено: ${formatNumber(otherBurned)}\n` +
+        `   👥 Держателей: ${formatNumber(otherHolders.size)}\n` +
+        `   🏪 В Лавке: ${formatNumber(otherShop)}\n\n` +
+
+        `📊 <b>ВСЕГО NFT на контракте:</b>\n` +
+        `   📊 Всего: ${formatNumber(allTokens.length)}\n` +
+        `   🔥 Сожжено: ${formatNumber(totalBurned)}\n` +
+        `   🏪 В лавке: ${formatNumber(totalShop)}\n` +
+        `   🏪 На ХК: ${formatNumber(onHotCraft)}\n` +
+        `   🏪 На Портале: ${formatNumber(onPortal)}\n\n` +
+
+        `✨ Динамических марок: ${formatNumber(stats.dynamicCount)}\n` +
         `✅ Сопоставлено с Excel-разметкой: ${formatNumber(stats.matched)}/${formatNumber(stats.staticCount)}\n` +
-        (stats.notFound > 0 ? `⚠️ Не найдено соответствие: ${formatNumber(stats.notFound)}\n\n` : `\n`) +
-        `⏱️ Время: ${elapsed} сек`;
+        (stats.notFound > 0 ? `⚠️ Не найдено соответствие: ${formatNumber(stats.notFound)}\n` : ``) +
+        (stats.unclassifiedCount > 0 ? `❓ Не марки и не динамические: ${formatNumber(stats.unclassifiedCount)}\n` : ``) +
+        `\n⏱️ Время: ${elapsed} сек`;
 
     for (const chatId of chatIds) {
         try {
@@ -360,7 +392,7 @@ async function main() {
     const staticStats = await syncStaticStamps(allTokens);
     const dynamicStats = await syncDynamicStamps(allTokens);
 
-    await sendTelegramReport({
+    await sendTelegramReport(allTokens, {
         totalTokens: allTokens.length,
         staticCount: staticStats.staticCount,
         matched: staticStats.matched,
