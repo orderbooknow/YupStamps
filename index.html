@@ -2527,7 +2527,8 @@ function handleDelete(e) {
         const names = selected.map(s => s.name);
         await saveRaffle(finalGroup, names, mode, rewardAmount);
 
-        const resultText = count === 1 ? names[0] : `${t('combo2Label')} ${count} (${names.join(' + ')})`;
+        const modeLabel = count === 1 ? '' : count === 2 ? t('combo2Label') : t('combo3Label');
+        const resultText = count === 1 ? names[0] : `${modeLabel} (${names.join(' + ')})`;
         let chanceText = '';
         if (count === 1) {
             const ch = ((selected[0].available / totalAvail) * 100).toFixed(2);
