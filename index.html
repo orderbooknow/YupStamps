@@ -630,7 +630,6 @@
     const ADMIN_PASSWORD = 'DrakonAdmin2026';
     const EDGE_FUNCTION_URL = 'https://rplputivoyxqqjxjkvgd.supabase.co/functions/v1/send-report';
     const TRIGGER_UPDATE_URL = 'https://rplputivoyxqqjxjkvgd.supabase.co/functions/v1/trigger-update';
-    const BOT_TOKEN = '8708530374:AAHhcWFtjLqXK_Yxl0qlCtYrwi0ORLcDHNQ';
     const GROUP_CHAT_ID = '-1002166870776';
     const YAROSLAV_CHAT_ID = '454371494';
 
@@ -980,16 +979,26 @@
         document.getElementById('debugInfo').innerHTML = t('loading');
     }
 
-    // ==================== ОТПРАВКА В TELEGRAM ====================
+    // ==================== ОТПРАВКА В TELEGRAM (через Edge Function, токен не светится в браузере) ====================
+    const SEND_TELEGRAM_URL = 'https://rplputivoyxqqjxjkvgd.supabase.co/functions/v1/send-telegram';
+
+    function chatTarget(chatId) {
+        if (chatId === GROUP_CHAT_ID) return 'group';
+        if (chatId === YAROSLAV_CHAT_ID) return 'admin';
+        return null;
+    }
+
     async function sendTelegramMessage(chatId, text, parseMode = 'HTML') {
         try {
-            const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
-            const response = await fetch(url, {
+            const target = chatTarget(chatId);
+            if (!target) { console.error('❌ Неизвестный получатель Telegram:', chatId); return false; }
+            const response = await fetch(SEND_TELEGRAM_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ chat_id: chatId, text: text, parse_mode: parseMode })
+                body: JSON.stringify({ target, kind: 'message', text, parseMode })
             });
-            return response.ok;
+            const result = await response.json();
+            return result.success === true;
         } catch (e) {
             console.error('❌ Ошибка отправки в Telegram:', e);
             return false;
@@ -998,15 +1007,15 @@
 
     async function sendTelegramFile(chatId, filename, content, caption = '') {
         try {
-            const formData = new FormData();
-            const blob = new Blob([content], { type: 'text/csv' });
-            formData.append('document', blob, filename);
-            formData.append('chat_id', chatId);
-            if (caption) formData.append('caption', caption);
-
-            const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendDocument`;
-            const response = await fetch(url, { method: 'POST', body: formData });
-            return response.ok;
+            const target = chatTarget(chatId);
+            if (!target) { console.error('❌ Неизвестный получатель Telegram:', chatId); return false; }
+            const response = await fetch(SEND_TELEGRAM_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ target, kind: 'document', filename, content, caption })
+            });
+            const result = await response.json();
+            return result.success === true;
         } catch (e) {
             console.error('❌ Ошибка отправки файла:', e);
             return false;
@@ -1175,7 +1184,14 @@
     async function loadStaticStamps() {
         let data = [], from = 0, limit = 1000, hasMore = true;
         while (hasMore) {
-            const { data: d, error } = await supabaseClient.from('stamps').select('*').range(from, from + limit - 1);
+            // 🆕 Исключаем "шаблонные" строки динамических марок (token_id вида 'dynamic:...') —
+            // они нужны только для внутренней структуры базы, реальные экземпляры
+            // берутся отдельно из stamp_instances через loadDynamicInstances()
+            const { data: d, error } = await supabaseClient
+                .from('stamps')
+                .select('*')
+                .not('token_id', 'like', 'dynamic:%')
+                .range(from, from + limit - 1);
             if (error) throw error;
             data.push(...d);
             from += limit;
@@ -2091,13 +2107,47 @@ function handleDelete(e) {
         }
     }
 
-    window.onHistoryItemClick = function(id, stampName, rewardAmount) {
+    window.onHistoryItemClick = async function(id, stampName, rewardAmount) {
         let stamps = [];
         if (stampName.includes(' + ')) {
             stamps = stampName.split(' + ');
         } else {
             stamps = [stampName];
         }
+
+        // 🆕 Если розыгрыш зафиксирован (нажата ✅) — показываем СОХРАНЁННЫЙ снимок,
+        // а не пересчитываем текущих держателей заново (иначе результат "плывёт"
+        // вместе с движением NFT между кошельками уже после розыгрыша)
+        const history = await loadHistory();
+        const raffle = history.find(h => String(h.id) === String(id));
+
+        if (raffle && raffle.reward_status === 'closed' && raffle.reward_snapshot && raffle.reward_snapshot.length > 0) {
+            const snapshot = raffle.reward_snapshot; // [{ address, nftCount, amount }]
+            const owners = snapshot
+                .map(s => ({ address: s.address, count: s.nftCount }))
+                .sort((a, b) => b.count - a.count);
+            const totalCount = snapshot.reduce((sum, s) => sum + s.nftCount, 0);
+            const data = stamps.length === 1 ? {
+                type: 'single',
+                name: stamps[0],
+                group: raffle.group_name,
+                totalCount, burned: 0, alchemy: 0,
+                owners,
+                distribution: snapshot,
+                rewardAmount: raffle.reward_amount || 0
+            } : {
+                type: 'combo',
+                names: stamps,
+                group: raffle.group_name,
+                totalCount, burned: 0, alchemy: 0,
+                owners,
+                distribution: snapshot,
+                rewardAmount: raffle.reward_amount || 0
+            };
+            showHoldersModal(data);
+            return;
+        }
+
         getCurrentHoldersForRaffle(stamps, rewardAmount > 0 ? rewardAmount : null).then(data => {
             if (!data) {
                 alert(t('noStampFound'));
