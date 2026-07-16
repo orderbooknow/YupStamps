@@ -43,8 +43,32 @@ const DYNAMIC_GROUPS = {
 };
 
 // ============================================================
-// 1. ЗАБИРАЕМ ВСЕ ТОКЕНЫ С API (постранично, целиком)
+// 1. ЗАБИРАЕМ ВСЕ ТОКЕНЫ С API (постранично, целиком, с повторными попытками)
 // ============================================================
+async function fetchPage(url, attempt = 1) {
+    try {
+        const response = await fetch(url, { headers: { 'X-API-Key': API_KEY } });
+        if (!response.ok) {
+            if ([502, 503, 504].includes(response.status) && attempt < 5) {
+                const delay = attempt * 2000;
+                console.log(`⚠️ HTTP ${response.status} на странице, попытка ${attempt}, повтор через ${delay}мс...`);
+                await sleep(delay);
+                return fetchPage(url, attempt + 1);
+            }
+            throw new Error(`HTTP ${response.status}`);
+        }
+        return await response.json();
+    } catch (e) {
+        if (attempt < 5 && (e.message?.includes('HTTP 502') || e.message?.includes('HTTP 503') || e.message?.includes('HTTP 504') || e.name === 'TypeError')) {
+            const delay = attempt * 2000;
+            console.log(`⚠️ Ошибка сети (${e.message}), попытка ${attempt}, повтор через ${delay}мс...`);
+            await sleep(delay);
+            return fetchPage(url, attempt + 1);
+        }
+        throw e;
+    }
+}
+
 async function fetchAllTokens() {
     console.log('📥 Забираем все токены с API sendler...');
     let allTokens = [];
@@ -53,9 +77,7 @@ async function fetchAllTokens() {
     while (true) {
         let url = API_URL;
         if (cursor) url += `&cursor=${cursor}`;
-        const response = await fetch(url, { headers: { 'X-API-Key': API_KEY } });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const data = await response.json();
+        const data = await fetchPage(url);
         allTokens.push(...data.items);
         console.log(`📦 Страница ${++page}: загружено ${data.items.length}, всего ${allTokens.length}`);
         if (data.next_cursor) { cursor = data.next_cursor; await sleep(500); }
@@ -144,7 +166,7 @@ async function syncDynamicStamps(allTokens) {
 // ============================================================
 // ОТЧЁТ В TELEGRAM
 // ============================================================
-async function sendTelegramReport(stats, startTime) {
+async function sendTelegramReport(allTokens, stats, startTime) {
     const token = process.env.TELEGRAM_BOT_TOKEN;
     const chatIds = (process.env.TELEGRAM_CHAT_ID || '').split(',').map(s => s.trim()).filter(Boolean);
     if (!token || chatIds.length === 0) {
@@ -152,15 +174,51 @@ async function sendTelegramReport(stats, startTime) {
         return;
     }
 
+    // Марки (обычные + динамические)
+    const stampTokens = allTokens.filter(t => t.title?.includes('Postage Stamp') || DYNAMIC_NAMES.includes(t.title));
+    const stampHolders = new Set(stampTokens.map(t => t.owner_id).filter(Boolean));
+    const stampBurned = stampTokens.filter(t => t.owner_id === 'darai_duplo.near').length;
+    const stampShop = stampTokens.filter(t => t.owner_id === 'sendler-alchemy.near').length;
+
+    // Прочие NFT на том же контракте (не марки)
+    const otherTokens = allTokens.filter(t => !t.title?.includes('Postage Stamp') && !DYNAMIC_NAMES.includes(t.title));
+    const otherHolders = new Set(otherTokens.map(t => t.owner_id).filter(Boolean));
+    const otherBurned = otherTokens.filter(t => t.owner_id === 'darai_duplo.near').length;
+    const otherShop = otherTokens.filter(t => t.owner_id === 'sendler-alchemy.near').length;
+
+    // Специальные кошельки (по всем NFT на контракте)
+    const onHotCraft = allTokens.filter(t => t.owner_id === 'intents.near').length;
+    const onPortal = allTokens.filter(t => t.owner_id === 'darai_portal.near').length;
+    const totalBurned = allTokens.filter(t => t.owner_id === 'darai_duplo.near').length;
+    const totalShop = allTokens.filter(t => t.owner_id === 'sendler-alchemy.near').length;
+
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
     const message =
-        `🖼️ <b>YupStamps Gallery Sync</b> 🖼️\n\n` +
-        `📊 Всего токенов с API: ${formatNumber(stats.totalTokens)}\n` +
-        `📮 Обычных марок (обновлён владелец): ${formatNumber(stats.staticCount)}\n` +
-        `✨ Динамических (алхимических): ${formatNumber(stats.dynamicCount)}\n` +
-        (stats.unclassifiedCount > 0 ? `❓ Не попало ни в марки, ни в динамические: ${formatNumber(stats.unclassifiedCount)}\n` : ``) +
-        `\n` +
+        `🏆 <b>Yupland Stamps Update</b> 🏆\n\n` +
+
+        `📮 <b>МАРКИ (Postage + Dynamic):</b>\n` +
+        `   📊 Всего: ${formatNumber(stampTokens.length)}\n` +
+        `   🔥 Сожжено: ${formatNumber(stampBurned)}\n` +
+        `   👥 Держателей: ${formatNumber(stampHolders.size)}\n` +
+        `   🏪 В Лавке: ${formatNumber(stampShop)}\n\n` +
+
+        `📦 <b>ПРОЧИЕ NFT (не марки):</b>\n` +
+        `   📊 Всего: ${formatNumber(otherTokens.length)}\n` +
+        `   🔥 Сожжено: ${formatNumber(otherBurned)}\n` +
+        `   👥 Держателей: ${formatNumber(otherHolders.size)}\n` +
+        `   🏪 В Лавке: ${formatNumber(otherShop)}\n\n` +
+
+        `📊 <b>ВСЕГО NFT на контракте:</b>\n` +
+        `   📊 Всего: ${formatNumber(allTokens.length)}\n` +
+        `   🔥 Сожжено: ${formatNumber(totalBurned)}\n` +
+        `   🏪 В лавке: ${formatNumber(totalShop)}\n` +
+        `   🏪 На ХК: ${formatNumber(onHotCraft)}\n` +
+        `   🏪 На Портале: ${formatNumber(onPortal)}\n\n` +
+
+        `🔄 Обновлено владельцев: ${formatNumber(stats.staticCount)}\n` +
+        `✨ Динамических марок: ${formatNumber(stats.dynamicCount)}\n` +
+        (stats.unclassifiedCount > 0 ? `❓ Не марки и не динамические: ${formatNumber(stats.unclassifiedCount)}\n\n` : `\n`) +
         `⏱️ Время: ${elapsed} сек`;
 
     for (const chatId of chatIds) {
@@ -227,7 +285,7 @@ async function main() {
     const staticStats = await syncOwners(allTokens);
     const dynamicStats = await syncDynamicStamps(allTokens);
 
-    await sendTelegramReport({
+    await sendTelegramReport(allTokens, {
         totalTokens: allTokens.length,
         staticCount: staticStats.staticCount,
         dynamicCount: dynamicStats.dynamicCount,
