@@ -60,7 +60,6 @@ const RARITY_WORDS = ['common', 'rare', 'legendary', 'epic', 'uncommon', 'unique
 function extractBaseName(apiTitle) {
     if (!apiTitle) return null;
     let base = apiTitle.replace(/^Postage Stamp - /, '');
-    base = base.replace(/\s*\((common|rare|legendary|epic|uncommon|unique|mystic)\)$/i, '');
     base = base.replace(/^- /, '').trim();
     return base;
 }
