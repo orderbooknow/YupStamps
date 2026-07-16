@@ -2,7 +2,7 @@ const { createClient } = require('@supabase/supabase-js');
 const WebSocket = require('ws');
 
 // ============================================================
-// НАСТРОЙКИ — секреты берутся из переменных окружения GitHub Actions
+// НАСТРОЙКИ
 // ============================================================
 const SUPABASE_URL = 'https://rplputivoyxqqjxjkvgd.supabase.co';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -29,7 +29,6 @@ const DYNAMIC_NAMES = [
     'Stamp (Golden Soon - 8 Lv)'
 ];
 
-// Группы для динамических (алхимических) марок — как было в sync-dynamic-stamps.js
 const DYNAMIC_GROUPS = {
     'Stamp (legendary - 1 Lv)': 'Alchemist (old-3)',
     'Stamp (legendary - 2 Lv)': 'Alchemist (old-3)',
@@ -43,7 +42,7 @@ const DYNAMIC_GROUPS = {
 };
 
 // ============================================================
-// 1. ЗАБИРАЕМ ВСЕ ТОКЕНЫ С API (постранично, целиком, с повторными попытками)
+// 1. ЗАГРУЗКА ТОКЕНОВ
 // ============================================================
 async function fetchPage(url, attempt = 1) {
     try {
@@ -87,22 +86,45 @@ async function fetchAllTokens() {
 }
 
 // ============================================================
-// 2. ОБЫЧНЫЕ МАРКИ — набор закрыт (новые никогда не минтятся),
-//    поэтому обновляем ТОЛЬКО owner_id, без Excel-разметки.
-//    group_name/rarity/reputation были один раз проставлены
-//    скриптом sync-stamps-full.js и больше не трогаются.
+// 2. ОБНОВЛЕНИЕ ВЛАДЕЛЬЦЕВ ДЛЯ МАРОК
 // ============================================================
 async function syncOwners(allTokens) {
     console.log('📊 Обновляем владельцев обычных марок...');
-    // 🆕 На контракте лежат не только марки — фильтруем строго по названию,
-    // как и было в оригинальном quick-update.js
     const staticTokens = allTokens.filter(t => t.title?.includes('Postage Stamp'));
 
-    const rows = staticTokens.map(t => ({
-        token_id: t.token_id,
-        owner_id: t.owner_id || null,
-        last_updated: new Date().toISOString()
-    }));
+    // Загружаем текущие owner_id из базы
+    let currentStamps = [];
+    let from = 0;
+    const limit = 1000;
+    let hasMore = true;
+    while (hasMore) {
+        const { data, error } = await supabase
+            .from('stamps')
+            .select('token_id, owner_id')
+            .range(from, from + limit - 1);
+        if (error) throw error;
+        currentStamps.push(...data);
+        from += limit;
+        hasMore = data.length === limit;
+    }
+
+    const currentOwnerMap = new Map();
+    currentStamps.forEach(s => currentOwnerMap.set(s.token_id, s.owner_id));
+
+    let changedOwners = 0;
+
+    const rows = staticTokens.map(t => {
+        const newOwner = t.owner_id || null;
+        const currentOwner = currentOwnerMap.get(t.token_id);
+        if (newOwner !== currentOwner) {
+            changedOwners++;
+        }
+        return {
+            token_id: t.token_id,
+            owner_id: newOwner,
+            last_updated: new Date().toISOString()
+        };
+    });
 
     const batchSize = 500;
     let saved = 0;
@@ -112,13 +134,54 @@ async function syncOwners(allTokens) {
         if (error) console.error(`❌ Ошибка обновления батча ${i}-${i + batch.length}:`, error.message);
         else saved += batch.length;
     }
-    console.log(`✅ Обновлено владельцев: ${saved}/${rows.length}`);
-    return { staticCount: rows.length };
+    console.log(`✅ Обновлено владельцев марок: ${saved}/${rows.length}, из них реально изменились: ${changedOwners}`);
+    return { staticCount: rows.length, changedOwners };
 }
 
 // ============================================================
-// 3. ДИНАМИЧЕСКИЕ (алхимические) МАРКИ — новые появляются постоянно,
-//    тут своя логика: полностью пересобираем stamp_instances каждый раз.
+// 3. ПОДСЧЁТ ИЗМЕНЕНИЙ ДЛЯ ВСЕХ NFT (без обновления)
+// ============================================================
+async function countAllChanges(allTokens) {
+    console.log('📊 Считаем изменения владельцев для всех NFT...');
+
+    // Загружаем текущие owner_id из базы для всех токенов (кроме динамических шаблонов)
+    let currentAll = [];
+    let from = 0;
+    const limit = 1000;
+    let hasMore = true;
+    while (hasMore) {
+        const { data, error } = await supabase
+            .from('stamps')
+            .select('token_id, owner_id')
+            .not('token_id', 'like', 'dynamic:%') // исключаем шаблоны динамических марок
+            .range(from, from + limit - 1);
+        if (error) throw error;
+        currentAll.push(...data);
+        from += limit;
+        hasMore = data.length === limit;
+    }
+
+    const currentOwnerMap = new Map();
+    currentAll.forEach(s => currentOwnerMap.set(s.token_id, s.owner_id));
+
+    // Фильтруем все токены, кроме динамических шаблонов (они не имеют owner_id в API)
+    const allRealTokens = allTokens.filter(t => !t.token_id?.startsWith('dynamic:'));
+
+    let changedAll = 0;
+    allRealTokens.forEach(t => {
+        const newOwner = t.owner_id || null;
+        const currentOwner = currentOwnerMap.get(t.token_id);
+        if (newOwner !== currentOwner) {
+            changedAll++;
+        }
+    });
+
+    console.log(`📊 Изменений владельцев среди всех NFT: ${changedAll}`);
+    return changedAll;
+}
+
+// ============================================================
+// 4. ДИНАМИЧЕСКИЕ МАРКИ
 // ============================================================
 async function syncDynamicStamps(allTokens) {
     const dynamicTokens = allTokens.filter(t => DYNAMIC_NAMES.includes(t.title));
@@ -145,9 +208,6 @@ async function syncDynamicStamps(allTokens) {
     }
     console.log(`✅ Сохранено ${saved}/${rows.length} динамических экземпляров`);
 
-    // Одна "шаблонная" запись в stamps на каждое динамическое название.
-    // 🆕 Используем синтетический token_id (а не base_name) — чтобы конфликт
-    // разрешался через тот же полноценный уникальный индекс, что и у обычных марок.
     for (const name of DYNAMIC_NAMES) {
         const { error } = await supabase.from('stamps').upsert({
             token_id: `dynamic:${name}`,
@@ -164,9 +224,9 @@ async function syncDynamicStamps(allTokens) {
 }
 
 // ============================================================
-// ОТЧЁТ В TELEGRAM
+// 5. ОТЧЁТ В TELEGRAM
 // ============================================================
-async function sendTelegramReport(allTokens, stats, startTime) {
+async function sendTelegramReport(allTokens, stats, changedAll, startTime) {
     const token = process.env.TELEGRAM_BOT_TOKEN;
     const chatIds = (process.env.TELEGRAM_CHAT_ID || '').split(',').map(s => s.trim()).filter(Boolean);
     if (!token || chatIds.length === 0) {
@@ -174,51 +234,36 @@ async function sendTelegramReport(allTokens, stats, startTime) {
         return;
     }
 
-    // Марки (обычные + динамические)
     const stampTokens = allTokens.filter(t => t.title?.includes('Postage Stamp') || DYNAMIC_NAMES.includes(t.title));
     const stampHolders = new Set(stampTokens.map(t => t.owner_id).filter(Boolean));
     const stampBurned = stampTokens.filter(t => t.owner_id === 'darai_duplo.near').length;
     const stampShop = stampTokens.filter(t => t.owner_id === 'sendler-alchemy.near').length;
 
-    // Прочие NFT на том же контракте (не марки)
-    const otherTokens = allTokens.filter(t => !t.title?.includes('Postage Stamp') && !DYNAMIC_NAMES.includes(t.title));
-    const otherHolders = new Set(otherTokens.map(t => t.owner_id).filter(Boolean));
-    const otherBurned = otherTokens.filter(t => t.owner_id === 'darai_duplo.near').length;
-    const otherShop = otherTokens.filter(t => t.owner_id === 'sendler-alchemy.near').length;
-
-    // Специальные кошельки (по всем NFT на контракте)
-    const onHotCraft = allTokens.filter(t => t.owner_id === 'intents.near').length;
-    const onPortal = allTokens.filter(t => t.owner_id === 'darai_portal.near').length;
+    const totalHolders = new Set(allTokens.map(t => t.owner_id).filter(Boolean));
     const totalBurned = allTokens.filter(t => t.owner_id === 'darai_duplo.near').length;
     const totalShop = allTokens.filter(t => t.owner_id === 'sendler-alchemy.near').length;
+    const onHotCraft = allTokens.filter(t => t.owner_id === 'intents.near').length;
+    const onPortal = allTokens.filter(t => t.owner_id === 'darai_portal.near').length;
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
     const message =
         `🏆 <b>Yupland Stamps Update</b> 🏆\n\n` +
-
         `📮 <b>МАРКИ (Postage + Dynamic):</b>\n` +
         `   📊 Всего: ${formatNumber(stampTokens.length)}\n` +
         `   🔥 Сожжено: ${formatNumber(stampBurned)}\n` +
         `   👥 Держателей: ${formatNumber(stampHolders.size)}\n` +
-        `   🏪 В Лавке: ${formatNumber(stampShop)}\n\n` +
-
-        `📦 <b>ПРОЧИЕ NFT (не марки):</b>\n` +
-        `   📊 Всего: ${formatNumber(otherTokens.length)}\n` +
-        `   🔥 Сожжено: ${formatNumber(otherBurned)}\n` +
-        `   👥 Держателей: ${formatNumber(otherHolders.size)}\n` +
-        `   🏪 В Лавке: ${formatNumber(otherShop)}\n\n` +
-
+        `   🏪 В Лавке: ${formatNumber(stampShop)}\n` +
+        `   🔄 Изменилось владельцев: ${formatNumber(stats.changedOwners || 0)}\n\n` +
         `📊 <b>ВСЕГО NFT на контракте:</b>\n` +
         `   📊 Всего: ${formatNumber(allTokens.length)}\n` +
         `   🔥 Сожжено: ${formatNumber(totalBurned)}\n` +
+        `   👥 Держателей: ${formatNumber(totalHolders.size)}\n` +
         `   🏪 В лавке: ${formatNumber(totalShop)}\n` +
         `   🏪 На ХК: ${formatNumber(onHotCraft)}\n` +
-        `   🏪 На Портале: ${formatNumber(onPortal)}\n\n` +
-
-        `🔄 Обновлено владельцев: ${formatNumber(stats.staticCount)}\n` +
+        `   🏪 На Портале: ${formatNumber(onPortal)}\n` +
+        `   🔄 Изменилось владельцев: ${formatNumber(changedAll || 0)}\n\n` +
         `✨ Динамических марок: ${formatNumber(stats.dynamicCount)}\n` +
-        (stats.unclassifiedCount > 0 ? `❓ Не марки и не динамические: ${formatNumber(stats.unclassifiedCount)}\n\n` : `\n`) +
         `⏱️ Время: ${elapsed} сек`;
 
     for (const chatId of chatIds) {
@@ -245,33 +290,6 @@ function formatNumber(num) {
 }
 
 // ============================================================
-// 🆕 ПРОВЕРКА: токены, не попавшие НИ под фильтр марок, НИ под динамические
-// ============================================================
-function findUnclassifiedTokens(allTokens) {
-    const unclassified = allTokens.filter(t =>
-        !t.title?.includes('Postage Stamp') && !DYNAMIC_NAMES.includes(t.title)
-    );
-
-    console.log(`🔎 Токенов, не попавших ни в марки, ни в динамические: ${unclassified.length}`);
-
-    if (unclassified.length > 0) {
-        const byTitle = {};
-        unclassified.forEach(t => {
-            const key = t.title || '(без названия)';
-            byTitle[key] = (byTitle[key] || 0) + 1;
-        });
-        const sorted = Object.entries(byTitle).sort((a, b) => b[1] - a[1]);
-
-        console.log('   Топ названий среди не попавших в обработку (первые 15):');
-        sorted.slice(0, 15).forEach(([title, count]) => {
-            console.log(`   - "${title}": ${count} шт.`);
-        });
-    }
-
-    return unclassified.length;
-}
-
-// ============================================================
 // MAIN
 // ============================================================
 async function main() {
@@ -280,17 +298,16 @@ async function main() {
     const allTokens = await fetchAllTokens();
     console.log(`✅ Всего токенов получено: ${allTokens.length}`);
 
-    const unclassifiedCount = findUnclassifiedTokens(allTokens);
-
     const staticStats = await syncOwners(allTokens);
+    const changedAll = await countAllChanges(allTokens);
     const dynamicStats = await syncDynamicStamps(allTokens);
 
     await sendTelegramReport(allTokens, {
         totalTokens: allTokens.length,
         staticCount: staticStats.staticCount,
         dynamicCount: dynamicStats.dynamicCount,
-        unclassifiedCount
-    }, startTime);
+        changedOwners: staticStats.changedOwners || 0
+    }, changedAll, startTime);
 
     console.log('🎉 Готово!');
 }
