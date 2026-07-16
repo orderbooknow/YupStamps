@@ -77,28 +77,17 @@ function normalizeForMatch(s) {
 
 // 🆕 Разбираем название строки Excel на (базовое имя, редкость) — редкость может быть
 // записана по-разному: "Name (rare)" ИЛИ просто "Name Rare" без скобок, с большой буквы
-function splitExcelNameAndRarity(name) {
-    if (!name) return { base: name, rarity: null };
-    let m = name.match(/^(.*?)\s*\((common|rare|legendary|epic|uncommon|unique|mystic)\)\s*$/i);
-    if (m) return { base: m[1].trim(), rarity: m[2].toLowerCase() };
 
-    const words = name.trim().split(/\s+/);
-    const lastWord = words[words.length - 1]?.toLowerCase();
-    if (words.length > 1 && RARITY_WORDS.includes(lastWord)) {
-        return { base: words.slice(0, -1).join(' '), rarity: lastWord };
-    }
-    return { base: name.trim(), rarity: null };
-}
 
 // 🆕 Группируем Excel-строки по нормализованному базовому имени.
 // Под одним именем может быть НЕСКОЛЬКО строк с разной редкостью
 // (например, "YupLand Duplo" — common/uncommon/rare/epic отдельными строками).
 const groupsByNormBase = new Map();
 groupsList.forEach(g => {
-    const { base, rarity } = splitExcelNameAndRarity(g.name);
-    const normBase = normalizeForMatch(base);
+    // 🆕 Используем ПОЛНОЕ имя, а не только базовое
+    const normBase = normalizeForMatch(g.name);
     if (!groupsByNormBase.has(normBase)) groupsByNormBase.set(normBase, []);
-    groupsByNormBase.get(normBase).push({ rarity, info: g });
+    groupsByNormBase.get(normBase).push({ rarity: null, info: g });
 });
 
 // 🆕 Ищем соответствие по (базовое имя + редкость).
