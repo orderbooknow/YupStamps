@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="images/icon-192.png">
+    <meta name="theme-color" content="#0f172a">
     <title>Yupland Stamps Explorer</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="supabase.js"></script>
@@ -3035,7 +3038,16 @@ function handleDelete(e) {
             console.error(e);
         }
     }
-    init();
+  init();
+
+    // ============================================================
+    // 🆕 SERVICE WORKER ДЛЯ PWA
+    // ============================================================
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/YupStamps/sw.js')
+            .then(() => console.log('✅ SW registered'))
+            .catch(err => console.error('❌ SW error:', err));
+    }
 </script>
 </body>
 </html>
