@@ -176,10 +176,8 @@ async function sendTelegramReport(allTokens, stats, startTime) {
     }
 
     // ============================================================
-    // УНИКАЛЬНЫЕ ТОКЕНЫ ПО token_id (чтобы исключить дубли)
+    // 1. ОБЫЧНЫЕ МАРКИ (Postage Stamp) — уникальные по token_id
     // ============================================================
-
-    // 1. Обычные марки (Postage Stamp) — уникальные по token_id
     const regularMap = new Map();
     allTokens.forEach(t => {
         if (t.title?.includes('Postage Stamp') && t.token_id) {
@@ -188,9 +186,17 @@ async function sendTelegramReport(allTokens, stats, startTime) {
             }
         }
     });
-    const regularStamps = Array.from(regularMap.values());
+    const allRegularStamps = Array.from(regularMap.values());
 
-    // 2. Динамические марки (Alchemist) — уникальные по token_id
+    // Живые обычные марки (исключаем только сожжённые)
+    const regularStamps = allRegularStamps.filter(t => t.owner_id !== 'darai_duplo.near');
+    const regularBurned = allRegularStamps.filter(t => t.owner_id === 'darai_duplo.near').length;
+    const regularShop = allRegularStamps.filter(t => t.owner_id === 'sendler-alchemy.near').length;
+    const regularHolders = new Set(regularStamps.map(t => t.owner_id).filter(Boolean));
+
+    // ============================================================
+    // 2. ДИНАМИЧЕСКИЕ МАРКИ (Alchemist) — уникальные по token_id
+    // ============================================================
     const dynamicMap = new Map();
     allTokens.forEach(t => {
         if (DYNAMIC_NAMES.includes(t.title) && t.token_id) {
@@ -199,28 +205,26 @@ async function sendTelegramReport(allTokens, stats, startTime) {
             }
         }
     });
-    const dynamicStamps = Array.from(dynamicMap.values());
+    const allDynamicStamps = Array.from(dynamicMap.values());
 
-    // 3. Все марки вместе
-    const allStamps = [...regularStamps, ...dynamicStamps];
-
-    // 4. Подсчёт для обычных марок
-    const regularHolders = new Set(regularStamps.map(t => t.owner_id).filter(Boolean));
-    const regularBurned = regularStamps.filter(t => t.owner_id === 'darai_duplo.near').length;
-    const regularShop = regularStamps.filter(t => t.owner_id === 'sendler-alchemy.near').length;
-
-    // 5. Подсчёт для динамических марок
+    // Живые динамические марки (исключаем только сожжённые)
+    const dynamicStamps = allDynamicStamps.filter(t => t.owner_id !== 'darai_duplo.near');
+    const dynamicBurned = allDynamicStamps.filter(t => t.owner_id === 'darai_duplo.near').length;
+    const dynamicShop = allDynamicStamps.filter(t => t.owner_id === 'sendler-alchemy.near').length;
     const dynamicHolders = new Set(dynamicStamps.map(t => t.owner_id).filter(Boolean));
-    const dynamicBurned = dynamicStamps.filter(t => t.owner_id === 'darai_duplo.near').length;
-    const dynamicShop = dynamicStamps.filter(t => t.owner_id === 'sendler-alchemy.near').length;
 
-    // 6. Общая статистика по всем маркам
+    // ============================================================
+    // 3. ВСЕ МАРКИ (живые)
+    // ============================================================
+    const allStamps = [...regularStamps, ...dynamicStamps];
     const totalStamps = allStamps.length;
     const totalHolders = new Set(allStamps.map(t => t.owner_id).filter(Boolean));
-    const totalBurned = allStamps.filter(t => t.owner_id === 'darai_duplo.near').length;
-    const totalShop = allStamps.filter(t => t.owner_id === 'sendler-alchemy.near').length;
+    const totalBurned = regularBurned + dynamicBurned;
+    const totalShop = regularShop + dynamicShop;
 
-    // 7. ВСЕГО NFT на контракте (уникальные токены)
+    // ============================================================
+    // 4. ВСЕГО NFT НА КОНТРАКТЕ (уникальные токены)
+    // ============================================================
     const allNftMap = new Map();
     allTokens.forEach(t => {
         if (t.token_id && !allNftMap.has(t.token_id)) {
@@ -235,8 +239,9 @@ async function sendTelegramReport(allTokens, stats, startTime) {
     const onHotCraft = uniqueAllTokens.filter(t => t.owner_id === 'intents.near').length;
     const onPortal = uniqueAllTokens.filter(t => t.owner_id === 'darai_portal.near').length;
 
-    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-
+    // ============================================================
+    // 5. ФОРМИРУЕМ СООБЩЕНИЕ
+    // ============================================================
     const message =
         `🏆 <b>Yupland Stamps Update</b> 🏆\n\n` +
 
@@ -252,7 +257,7 @@ async function sendTelegramReport(allTokens, stats, startTime) {
         `   👥 Держателей: ${formatNumber(dynamicHolders.size)}\n` +
         `   🏪 В Лавке: ${formatNumber(dynamicShop)}\n\n` +
 
-        `📮 <b>ВСЕГО МАРОК (обычные + динамические):</b>\n` +
+        `📮 <b>ВСЕГО МАРОК (в игре):</b>\n` +
         `   📊 Всего: ${formatNumber(totalStamps)}\n` +
         `   🔥 Сожжено: ${formatNumber(totalBurned)}\n` +
         `   👥 Держателей: ${formatNumber(totalHolders.size)}\n` +
