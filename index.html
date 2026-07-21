@@ -989,38 +989,42 @@
     }
 
     async function sendTelegramMessage(chatId, text, parseMode = 'HTML') {
-        try {
-            const target = chatTarget(chatId);
-            if (!target) { console.error('❌ Неизвестный получатель Telegram:', chatId); return false; }
-            const response = await fetch(SEND_TELEGRAM_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ target, kind: 'message', text, parseMode })
-            });
-            const result = await response.json();
-            return result.success === true;
-        } catch (e) {
-            console.error('❌ Ошибка отправки в Telegram:', e);
+    try {
+        if (!chatId) {
+            console.error('❌ Не передан chatId');
             return false;
         }
+        const response = await fetch(SEND_TELEGRAM_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chatId, kind: 'message', text, parseMode })
+        });
+        const result = await response.json();
+        return result.success === true;
+    } catch (e) {
+        console.error('❌ Ошибка отправки в Telegram:', e);
+        return false;
     }
+}
 
     async function sendTelegramFile(chatId, filename, content, caption = '') {
-        try {
-            const target = chatTarget(chatId);
-            if (!target) { console.error('❌ Неизвестный получатель Telegram:', chatId); return false; }
-            const response = await fetch(SEND_TELEGRAM_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ target, kind: 'document', filename, content, caption })
-            });
-            const result = await response.json();
-            return result.success === true;
-        } catch (e) {
-            console.error('❌ Ошибка отправки файла:', e);
+    try {
+        if (!chatId) {
+            console.error('❌ Не передан chatId');
             return false;
         }
+        const response = await fetch(SEND_TELEGRAM_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chatId, kind: 'document', filename, content, caption })
+        });
+        const result = await response.json();
+        return result.success === true;
+    } catch (e) {
+        console.error('❌ Ошибка отправки файла:', e);
+        return false;
     }
+}
 
     function generatePaymentCSV(data) {
         let csv = 'wallet,count\n';
@@ -1155,7 +1159,7 @@
     if (isMobile() || window.innerWidth < 768) {
         // Отправляем файл в Telegram (Ярославу или в группу)
         const caption = `📊 Выгрузка розыгрышей (${rafflesData.length} шт.)\n\n📅 ${getMoscowTime(new Date())}`;
-        const sent = await sendTelegramFile(YAROSLAV_CHAT_ID, filename, csv, caption);
+        const sent = await sendTelegramFile(currentUserId, filename, csv, caption);
         if (sent) {
             alert('✅ Файл отправлен в Telegram!');
         } else {
