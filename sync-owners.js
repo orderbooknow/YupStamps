@@ -174,7 +174,11 @@ async function sendTelegramReport(allTokens, stats, startTime) {
         return;
     }
 
-    const stampTokens = allTokens.filter(t => t.title?.includes('Postage Stamp') || DYNAMIC_NAMES.includes(t.title));
+    // 🆕 Разделяем обычные и динамические марки для подсчёта
+    const regularStamps = allTokens.filter(t => t.title?.includes('Postage Stamp'));
+    const dynamicStamps = allTokens.filter(t => DYNAMIC_NAMES.includes(t.title));
+    const stampTokens = [...regularStamps, ...dynamicStamps]; // Все марки вместе
+
     const stampHolders = new Set(stampTokens.map(t => t.owner_id).filter(Boolean));
     const stampBurned = stampTokens.filter(t => t.owner_id === 'darai_duplo.near').length;
     const stampShop = stampTokens.filter(t => t.owner_id === 'sendler-alchemy.near').length;
