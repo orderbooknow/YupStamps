@@ -176,40 +176,64 @@ async function sendTelegramReport(allTokens, stats, startTime) {
     }
 
     // ============================================================
-    // РАЗДЕЛЬНЫЙ ПОДСЧЁТ
+    // УНИКАЛЬНЫЕ ТОКЕНЫ ПО token_id (чтобы исключить дубли)
     // ============================================================
-    
-    // 1. Обычные марки (Postage Stamp)
-    const regularStamps = allTokens.filter(t => t.title?.includes('Postage Stamp'));
-    
-    // 2. Динамические марки (алхимические)
-    const dynamicStamps = allTokens.filter(t => DYNAMIC_NAMES.includes(t.title));
-    
+
+    // 1. Обычные марки (Postage Stamp) — уникальные по token_id
+    const regularMap = new Map();
+    allTokens.forEach(t => {
+        if (t.title?.includes('Postage Stamp') && t.token_id) {
+            if (!regularMap.has(t.token_id)) {
+                regularMap.set(t.token_id, t);
+            }
+        }
+    });
+    const regularStamps = Array.from(regularMap.values());
+
+    // 2. Динамические марки (Alchemist) — уникальные по token_id
+    const dynamicMap = new Map();
+    allTokens.forEach(t => {
+        if (DYNAMIC_NAMES.includes(t.title) && t.token_id) {
+            if (!dynamicMap.has(t.token_id)) {
+                dynamicMap.set(t.token_id, t);
+            }
+        }
+    });
+    const dynamicStamps = Array.from(dynamicMap.values());
+
     // 3. Все марки вместе
     const allStamps = [...regularStamps, ...dynamicStamps];
-    
+
     // 4. Подсчёт для обычных марок
     const regularHolders = new Set(regularStamps.map(t => t.owner_id).filter(Boolean));
     const regularBurned = regularStamps.filter(t => t.owner_id === 'darai_duplo.near').length;
     const regularShop = regularStamps.filter(t => t.owner_id === 'sendler-alchemy.near').length;
-    
+
     // 5. Подсчёт для динамических марок
     const dynamicHolders = new Set(dynamicStamps.map(t => t.owner_id).filter(Boolean));
     const dynamicBurned = dynamicStamps.filter(t => t.owner_id === 'darai_duplo.near').length;
     const dynamicShop = dynamicStamps.filter(t => t.owner_id === 'sendler-alchemy.near').length;
-    
+
     // 6. Общая статистика по всем маркам
     const totalStamps = allStamps.length;
     const totalHolders = new Set(allStamps.map(t => t.owner_id).filter(Boolean));
     const totalBurned = allStamps.filter(t => t.owner_id === 'darai_duplo.near').length;
     const totalShop = allStamps.filter(t => t.owner_id === 'sendler-alchemy.near').length;
 
-    // 7. ВСЕГО NFT на контракте (включая мусор)
-    const allNftHolders = new Set(allTokens.map(t => t.owner_id).filter(Boolean));
-    const allNftBurned = allTokens.filter(t => t.owner_id === 'darai_duplo.near').length;
-    const allNftShop = allTokens.filter(t => t.owner_id === 'sendler-alchemy.near').length;
-    const onHotCraft = allTokens.filter(t => t.owner_id === 'intents.near').length;
-    const onPortal = allTokens.filter(t => t.owner_id === 'darai_portal.near').length;
+    // 7. ВСЕГО NFT на контракте (уникальные токены)
+    const allNftMap = new Map();
+    allTokens.forEach(t => {
+        if (t.token_id && !allNftMap.has(t.token_id)) {
+            allNftMap.set(t.token_id, t);
+        }
+    });
+    const uniqueAllTokens = Array.from(allNftMap.values());
+
+    const allNftHolders = new Set(uniqueAllTokens.map(t => t.owner_id).filter(Boolean));
+    const allNftBurned = uniqueAllTokens.filter(t => t.owner_id === 'darai_duplo.near').length;
+    const allNftShop = uniqueAllTokens.filter(t => t.owner_id === 'sendler-alchemy.near').length;
+    const onHotCraft = uniqueAllTokens.filter(t => t.owner_id === 'intents.near').length;
+    const onPortal = uniqueAllTokens.filter(t => t.owner_id === 'darai_portal.near').length;
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
@@ -235,15 +259,14 @@ async function sendTelegramReport(allTokens, stats, startTime) {
         `   🏪 В Лавке: ${formatNumber(totalShop)}\n\n` +
 
         `📊 <b>ВСЕГО NFT на контракте:</b>\n` +
-        `   📊 Всего: ${formatNumber(allTokens.length)}\n` +
+        `   📊 Всего: ${formatNumber(uniqueAllTokens.length)}\n` +
         `   🔥 Сожжено: ${formatNumber(allNftBurned)}\n` +
         `   👥 Держателей: ${formatNumber(allNftHolders.size)}\n` +
         `   🏪 В лавке: ${formatNumber(allNftShop)}\n` +
         `   🏪 На ХК: ${formatNumber(onHotCraft)}\n` +
         `   🏪 На Портале: ${formatNumber(onPortal)}\n\n` +
 
-        `🔄 Изменилось владельцев: ${formatNumber(stats.changedOwners || 0)}\n` +
-        `⏱️ Время: ${elapsed} сек`;
+        `🔄 Изменилось владельцев: ${formatNumber(stats.changedOwners || 0)}`;
 
     for (const chatId of chatIds) {
         try {
