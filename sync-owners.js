@@ -132,6 +132,7 @@ async function syncDynamicStamps(allTokens) {
         name: t.title,
         owner_id: t.owner_id || null,
         image_url: t.media || t.image_url || null,
+        group_name: DYNAMIC_GROUPS[t.title] || null,
         last_updated: new Date().toISOString()
     }));
 
