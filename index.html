@@ -1532,7 +1532,7 @@
         const distribution = [];
         for (const [address, count] of ownerCounts) {
             const share = Math.floor((count / total) * rewardAmount);
-            if (share > 0) distribution.push({ address, nftCount: count, amount: share });
+            distribution.push({ address, nftCount: count, amount: share });
         }
         return distribution.sort((a, b) => b.amount - a.amount);
     }
@@ -1562,7 +1562,7 @@
         const distribution = [];
         for (const [address, count] of comboCounts) {
             const share = Math.floor((count / totalCombos) * rewardAmount);
-            if (share > 0) distribution.push({ address, nftCount: count, amount: share });
+            distribution.push({ address, nftCount: count, amount: share });
         }
         return distribution.sort((a, b) => b.amount - a.amount);
     }
@@ -1614,9 +1614,11 @@
     }
 
     function updateStats() {
-        const total = groupedStamps.reduce((s, g) => s + g.count, 0);
         const burned = groupedStamps.reduce((s, g) => s + g.burned, 0);
-        const inAlchemy = groupedStamps.reduce((s, g) => s + g.alchemyCount, 0) + dynamicInstances.filter(i => i.owner_id === ALCHEMY_ACCOUNT).length;
+        // "Всего" считаем БЕЗ сожжённых — они уже никогда не вернутся в игру и показаны отдельной карточкой
+        const total = groupedStamps.reduce((s, g) => s + g.count, 0) - burned;
+        // dynamicInstances уже учтены внутри groupedStamps (через g.alchemyCount) — раньше тут был двойной счёт
+        const inAlchemy = groupedStamps.reduce((s, g) => s + g.alchemyCount, 0);
         document.getElementById('statsGrid').innerHTML = `
             <div class="stat-card"><div class="stat-value">${total}</div><div class="stat-label">${t('totalStamps')}</div></div>
             <div class="stat-card"><div class="stat-value">${groupedStamps.length}</div><div class="stat-label">${t('types')}</div></div>
